@@ -268,7 +268,7 @@ def combineCounts(input_dir, read_lengths, samp):
 
         # Remove temporary files
         rm_cmd = "rm " + input_dir + samp + "/tmp_" + samp + "_" + repr(read_len) + "_intron_exon_junction_counts.txt"
-        os.system(rm_cmd, SHELL, True)
+        os.system(rm_cmd)
 
         rm_cmd = "rm " + input_dir + samp + "/tmp_" + repr(read_len) + "_reads.txt.gz"
 #        runCmd(rm_cmd, SHELL, True)
