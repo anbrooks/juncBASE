@@ -604,7 +604,8 @@ def main():
          annotated_exon_search_tree) = getAnnotatedExonCoords(db, txt_db1, this_chr)
 
     # {chr: [(sgid, name, strand, start, end)]}
-    annotated_genes = getAnnotatedGenes(db, txt_db1, this_chr)
+    (annotated_genes,
+     annotated_genes_by_strand) = getAnnotatedGenes(db, txt_db1, this_chr)
 
     # {chr:(start, end)} 
     (alt_first_exons, 
@@ -716,6 +717,7 @@ def main():
                                         alt_first_exons,
                                         alt_last_exons,
                                         annotated_genes,
+                                        annotated_genes_by_strand,
                                         all_jcn_count_dict, 
                                         all_coord_start2end,
                                         all_coord_end2start,
@@ -747,6 +749,7 @@ def main():
     # Cassette exons is updated in this function
     printMutuallyExclusive(db,
                            annotated_genes,
+                           annotated_genes_by_strand,
                            annotated_internal_exons,
                            alt_first_exons,
                            alt_last_exons,
@@ -773,6 +776,7 @@ def main():
     print "Multi-Cassette"
     printMultiCassetteExons(db,
                             annotated_genes,
+                            annotated_genes_by_strand,
                             alt_first_exons,
                             alt_last_exons,
                             all_jcn_count_dict, 
@@ -797,6 +801,7 @@ def main():
     print "Alternative Donors and Acceptors"
     printAlternativeDonorsAcceptors(db,
                                     annotated_genes,
+                                    annotated_genes_by_strand,
                                     alt_first_exons,
                                     alt_last_exons,
                                     alt_first_exons_start2end,
@@ -839,7 +844,7 @@ def main():
 
     print "Intron Retention Events"
     if ir_count_dict is not None:
-        printIREvents(db, annotated_genes, annotated_exons,
+        printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exons,
                       annotated_exons_by_strand, all_coord_start2end, all_coord_end2start,
                       all_jcn_count_dict, all_jcn2strand, ir_count_dict, 
                       ir_left_out, ir_right_out, printExonCoords, exon_coords, norm1, norm2, jcn_seq_len,
@@ -4037,6 +4042,7 @@ def getAnnotatedGenes(db, txt_db, this_chr):
 
 
     gene_dict = {}
+    gene_dict_by_strand = {}
     for row in gene_records:
 
         gid = int(row["gene_id"])
@@ -4049,6 +4055,11 @@ def getAnnotatedGenes(db, txt_db, this_chr):
         chr = formatChr(row["chr"])
 
         updateDictOfLists(gene_dict, chr, (gid, name, strand, start, end)) 
+        if chr in gene_dict_by_strand:
+            updateDictOfLists(gene_dict_by_strand[chr], strand, (gid, name, strand, start, end))
+        else:
+            gene_dict_by_strand[chr] = {strand:
+                                        [(gid, name, strand, start,end)]}
 
     # If for some reason there are no genes on a chromosome, can check for
     # chromosomes that have exon to avoid key errors on chromosomes
@@ -4063,7 +4074,17 @@ def getAnnotatedGenes(db, txt_db, this_chr):
             # Add an empty list.
             gene_dict[chr] = []
 
-    return gene_dict
+        # Update gene_dict_by_strand as well
+        if chr not in gene_dict_by_strand:
+            gene_dict_by_strand[chr] = {"+": [],
+                                        "-": []}
+        else:
+            if "+" not in gene_dict_by_strand[chr]:
+                gene_dict_by_strand[chr]["+"] = []
+            if "-" not in gene_dict_by_strand[chr]:
+                gene_dict_by_strand[chr]["-"] = [] 
+
+    return gene_dict, gene_dict_by_strand
 
 def getAnnotatedIntronCoords(db, txt_db, this_chr):
     """
@@ -4667,7 +4688,7 @@ def inferExclusionJunctions(upstrm_jcns, dwnstrm_jcns):
    
     return excl_jcns 
 
-def inferGeneName(annotated_genes, chr, start, end, strand):
+def inferGeneName(annotated_genes_by_strand, chr, start, end, strand):
     """
     Looks for the gene(s) that the start and end coordinate is contained in
     """
@@ -4676,7 +4697,10 @@ def inferGeneName(annotated_genes, chr, start, end, strand):
     if chr not in annotated_genes:
         return "None"
 
-    for (sgid, name, gene_strand, gene_start, gene_end) in annotated_genes[chr]:
+    if strand not in annotated_genes[chr]:
+        return "None"
+
+    for (sgid, name, gene_strand, gene_start, gene_end) in annotated_genes[chr][strand]:
          
         if coordsOverlap(start, end, gene_start, gene_end):
             if strand == ".":
@@ -4686,11 +4710,11 @@ def inferGeneName(annotated_genes, chr, start, end, strand):
             elif strand is None:
                 gene_list.append(name)
 
-    if strand is None:
-        if len(gene_list) > 1:
-            return "None"
-        else:
-            return gene_list[0]
+#   if strand is None:
+#       if len(gene_list) > 1:
+#           return "None"
+#       else:
+#           return gene_list[0]
 
     return ",".join(gene_list)
 
@@ -5030,6 +5054,7 @@ def parseReadAssocFile(paired_read_w_coord_file_name):
 
 def printAlternativeDonorsAcceptors(db,
                                     annotated_genes,
+                                    annotated_genes_by_strand,
                                     alt_first_exons,
                                     alt_last_exons,
                                     alt_first_exons_start2end,
@@ -5383,7 +5408,7 @@ def printAlternativeDonorsAcceptors(db,
 
 
 
-                    gene_name = inferGeneName(annotated_genes, chr, start, end, strand)
+                    gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
 
 
                     out_str = "%s\t%s\t%s\t%s\t%s" % (n_or_k,
@@ -5826,7 +5851,7 @@ def printAlternativeDonorsAcceptors(db,
                                                                    proportions1,
                                                                    proportions2)
                                                                 
-                    gene_name = inferGeneName(annotated_genes, chr, start, end, strand)
+                    gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
 
 
                     out_str = "%s\t%s\t%s\t%s\t%s" % (n_or_k,
@@ -6078,7 +6103,7 @@ def printAlternativePolyA(db, txt_db,
 
            
             exon_chr, exon_start, exon_end = exon_str.split("_") 
-            gene_name = inferGeneName(annotated_genes, chr, int(exon_start),
+            gene_name = inferGeneName(annotated_genes_by_strand, chr, int(exon_start),
                         int(exon_end), ".")
 
 
@@ -6129,6 +6154,7 @@ def printCassetteExons(db,
                        alt_first_exons,
                        alt_last_exons,
                        annotated_genes,
+                       annotated_genes_by_strand,
                        all_jcn_count_dict, 
                        all_coord_start2end, 
                        all_coord_end2start,
@@ -6443,7 +6469,7 @@ def printCassetteExons(db,
                                         excl_file2_count,
                                         incl_file2_count) 
 
-        gene_name = inferGeneName(annotated_genes, chr, exon_start, exon_end,
+        gene_name = inferGeneName(annotated_genes_by_strand, chr, exon_start, exon_end,
                                   cassette_exon_dict[exon_coord]["strand"])
 
 
@@ -6506,7 +6532,7 @@ def printCassetteExons(db,
         
     return return_cassette_exons 
 
-def printIREvents(db, annotated_genes, annotated_exons,
+def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exons,
                   annotated_exons_by_strand, coord_start2end, coord_end2start,
                   jcn_count_dict, jcn2strand, ir_count_dict, 
                   ir_left_out, ir_right_out, printExonCoords, exon_coords, norm1, norm2, jcn_seq_len,
@@ -6568,7 +6594,7 @@ def printIREvents(db, annotated_genes, annotated_exons,
 #            else:
 #                label = "N"
 
-            gene_name = inferGeneName(annotated_genes, chr, start, end, strand)
+            gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
 
             if norm1:
                 excl_file1_count = int(round(excl_file1_count/norm1))
@@ -6670,7 +6696,7 @@ def printIREvents(db, annotated_genes, annotated_exons,
 #                label = "N"
 
             
-            gene_name = inferGeneName(annotated_genes, chr, start, end, strand)
+            gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
 
             if norm1:
                 excl_file1_count = int(round(excl_file1_count/norm1))
@@ -6727,6 +6753,7 @@ def printIREvents(db, annotated_genes, annotated_exons,
 
 def printMultiCassetteExons(db,
                             annotated_genes,
+                            annotated_genes_by_strand,
                             alt_first_exons,
                             alt_last_exons,
                             all_jcn_count_dict, 
@@ -7098,7 +7125,7 @@ def printMultiCassetteExons(db,
                             if isNovel:
                                 label = "N"
 
-                            gene_name = inferGeneName(annotated_genes, chr,
+                            gene_name = inferGeneName(annotated_genes_by_strand, chr,
                                                       exclusion_start, exclusion_end, strand)
 
 
@@ -7147,6 +7174,7 @@ def printMultiCassetteExons(db,
 
 def printMutuallyExclusive(db,
                            annotated_genes,
+                           annotated_genes_by_strand,
                            annotated_internal_exons,
                            alt_first_exons,
                            alt_last_exons,
@@ -7294,7 +7322,7 @@ def printMutuallyExclusive(db,
             # Infer strand information
             strand = None
             jcn = "%s_%d_%d" % (chr, upstream_start, 
-                                me_dict4[(upstream_start, downstream_end)][0][0] - 1)  # one of the exon's start -1
+                                me_dict4[(upstream_start, downstream_end)][0][0][0] - 1)  # one of the exon's start -1
 
             strand = updateStrand(strand, all_jcn2strand[jcn])
 
@@ -7508,7 +7536,7 @@ def printMutuallyExclusive(db,
                                                     excl_file2_count,
                                                     incl_file2_count) 
 
-                    gene_name = inferGeneName(annotated_genes, chr,
+                    gene_name = inferGeneName(annotated_genes_by_strand, chr,
                                               upstream_start, downstream_end, strand)
 
 
