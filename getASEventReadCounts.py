@@ -7293,7 +7293,9 @@ def printMutuallyExclusive(db,
         for (upstream_start, downstream_end) in me_dict4:
             # Infer strand information
             strand = None
-            jcn = "%s_%d_%d" % (chr, upstream_start, downstream_end)
+            jcn = "%s_%d_%d" % (chr, upstream_start, 
+                                me_dict4[(upstream_start, downstream_end)][0][0] - 1)  # one of the exon's start -1
+
             strand = updateStrand(strand, all_jcn2strand[jcn])
 
             upstr_const = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, upstream_start - 1, "P")
