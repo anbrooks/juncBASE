@@ -4694,13 +4694,13 @@ def inferGeneName(annotated_genes_by_strand, chr, start, end, strand):
     """
     # annotated_genes -  {chr: [(sgid, name, strand, start, end)]}
     gene_list = []
-    if chr not in annotated_genes:
+    if chr not in annotated_genes_by_strand:
         return "None"
 
-    if strand not in annotated_genes[chr]:
+    if strand not in annotated_genes_by_strand[chr]:
         return "None"
 
-    for (sgid, name, gene_strand, gene_start, gene_end) in annotated_genes[chr][strand]:
+    for (sgid, name, gene_strand, gene_start, gene_end) in annotated_genes_by_strand[chr][strand]:
          
         if coordsOverlap(start, end, gene_start, gene_end):
             if strand == ".":
