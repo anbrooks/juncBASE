@@ -13,6 +13,7 @@ import sys
 import optparse 
 import os
 import gzip
+import pdb
 
 from helperFunctions import runCmd
 #############
@@ -100,7 +101,7 @@ def main():
     samp = options.sample
 
     # if by_chr is False, only one chr
-    chr2pseduo_dir = {}
+    chr2pseudo_dir = {}
     
     # Create pseudo directory
     if by_chr:
@@ -112,13 +113,20 @@ def main():
             sys.exit(1)
 
         for chr in chrs:
-            chr2pseudo_dir[chr] = input_dir + "/pseudo_" % chr
+            chr2pseudo_dir[chr] = input_dir + "/pseudo_" + chr
     else:
         pseudo_dir = input_dir + "/pseudo"
         chr2pseudo_dir["all"] = pseudo_dir
 
     for chr in chr2pseudo_dir:
-        if not os.path.exists(chr2pseudo_dir[chr]):
+        if os.path.exists(chr2pseudo_dir[chr]):
+            # Remove existing files
+            for subfile in os.listdir(chr2pseudo_dir[chr]):
+                try:
+                    os.remove(chr2pseudo_dir[chr] + "/" + subfile)
+                except:
+                    pdb.set_trace()
+        else:
             os.mkdir(chr2pseudo_dir[chr])
 
     # Make a link to the junction file made in
@@ -198,24 +206,24 @@ def main():
 
     else:                                                                        
         for chr in chr2pseudo_dir:
-            genome_file = input_dir + "%s/%s_%s/%s_%s_genome_reads.txt.gz" % (samp,
+            genome_file = input_dir + "/%s/%s_%s/%s_%s_genome_reads.txt.gz" % (samp,
                                                                               samp, chr,
                                                                               samp, chr)
-            pseudo_file = pseudo_dir + "/pseudo_%s_genome_reads.txt.gz" % chr
+            pseudo_file = chr2pseudo_dir[chr] + "/pseudo_%s_genome_reads.txt.gz" % chr
 
             if not os.path.exists(genome_file):
                 print "Missing file %s" % genome_file
                 sys.exit(1)
 
             genome_fh = gzip.open(genome_file, "rb")
-            pseudo_fh = gzip.open(pseudo_genome_file, "wb")
+            pseudo_fh = gzip.open(pseudo_file, "wb")
 
             line_ctr = 0
             for line in genome_fh:
                 if NUM_GENOME_READS == line_ctr:
                     break
    
-                pseduo_fh.write(line)
+                pseudo_fh.write(line)
                 line_ctr += 1
 
             genome_fh.close()
@@ -241,7 +249,7 @@ def getChr(input_dir):
         if not subfile.endswith("preProcess_getASEventReadCounts_step2.bed"):
             continue
 
-        first_split = bed_file.split("preProcess")[0]
+        first_split = subfile.split("preProcess")[0]
         second_split = first_split.split("tmp")[-1]
         chr_list.append(second_split.strip("_"))
 
