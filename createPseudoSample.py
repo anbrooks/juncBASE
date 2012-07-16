@@ -237,7 +237,7 @@ def formatLine(line):
 
 def getChr(input_dir):
     chr_list = []
-    for subfile in input_dir:
+    for subfile in os.listdir(input_dir):
         if not subfile.endswith("preProcess_getASEventReadCounts_step2.bed"):
             continue
 
