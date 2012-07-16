@@ -282,6 +282,9 @@ def combineCounts(input_dir, read_lengths, samp):
 #        runCmd(rm_cmd, SHELL, True)
         os.system(rm_cmd)
 
+        rm_cmd = "rm " + input_dir + samp + "/tmp_" + samp + "_" + repr(read_len) + "_confident_ie.txt"
+        os.system(rm_cmd)
+
     # Now print results
     for intron in intron2counts:  
         outline = "%s\t%d\t%d\n" % (intron,
