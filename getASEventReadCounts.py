@@ -600,6 +600,7 @@ def main():
         (annotated_exons,
          annotated_internal_exons,
          annotated_exons_no_strand,
+         annotated_exons_by_strand,
          annotated_exon_search_tree) = getAnnotatedExonCoords(db, txt_db1, this_chr)
 
     # {chr: [(sgid, name, strand, start, end)]}
@@ -730,6 +731,7 @@ def main():
                                         start_multi_exon_count_dict,
                                         end_multi_exon_count_dict,
                                         annotated_exons,
+                                        annotated_exons_by_strand,
                                         annotated_introns,
                                         printExonCoords,
                                         exon_coords,
@@ -757,6 +759,7 @@ def main():
                            cassette_exons,
                            annotated_introns,
                            annotated_exons,
+                           annotated_exons_by_strand,
                            annotated_exon_search_tree,
                            printExonCoords,
                            exon_coords,
@@ -781,6 +784,7 @@ def main():
                             cassette_exons,
                             annotated_introns,
                             annotated_exons,
+                            annotated_exons_by_strand,
                             printExonCoords,
                             exon_coords,
                             excl_jcns,
@@ -809,6 +813,7 @@ def main():
                                     cassette_exons,
                                     annotated_introns,
                                     annotated_exons_no_strand,
+                                    annotated_exons_by_strand,
                                     all_confident_exons,
                                     all_confident_exons_start2end,
                                     all_confident_exons_end2start,
@@ -834,7 +839,8 @@ def main():
 
     print "Intron Retention Events"
     if ir_count_dict is not None:
-        printIREvents(db, annotated_genes, annotated_exons, all_coord_start2end, all_coord_end2start,
+        printIREvents(db, annotated_genes, annotated_exons,
+                      annotated_exons_by_strand, all_coord_start2end, all_coord_end2start,
                       all_jcn_count_dict, all_jcn2strand, ir_count_dict, 
                       ir_left_out, ir_right_out, printExonCoords, exon_coords, norm1, norm2, jcn_seq_len,
                       paired_ie_junction2qname2count1, paired_ie_junction2qname2count2)
@@ -3527,14 +3533,17 @@ def findAdjacentAFE_ALE_exon(chr, afe_ale_dict, annotated_exon_dict, pos,
 
     return None
     
-def findAdjacentSharedRegion(chr, annotated_exon_dict, pos, n_or_p):
+def findAdjacentSharedRegion(chr, strand, annotated_exon_dict, pos, n_or_p):
     
     if chr not in annotated_exon_dict:
         return None
 
+    if strand not in annotated_exon_dict[chr]:
+        return None
+
     region_start_or_end = None
 
-    for coord in annotated_exon_dict[chr]:
+    for coord in annotated_exon_dict[chr][strand]:
         exon_start = coord[0]
         exon_end = coord[1]
         if exon_start <= pos <= exon_end:
@@ -3952,6 +3961,7 @@ def getAnnotatedExonCoords(db, txt_db, this_chr):
     exon_dict = {}
     exon_internal_dict = {}
     exon_dict_no_strand = {}
+    exon_dict_by_strand = {}
     
     exon_search_tree_coords = {}
     
@@ -3968,9 +3978,14 @@ def getAnnotatedExonCoords(db, txt_db, this_chr):
         if chr in exon_dict:
             exon_dict[chr].add((start, end, strand))
             exon_dict_no_strand[chr].add((start, end))
+            try:
+                exon_dict_by_strand[chr][strand].add((start,end))
+            except:
+                exon_dict_by_strand[chr] = {strand: set([(start,end)])}
         else:
             exon_dict[chr] = set([(start, end, strand)])
             exon_dict_no_strand[chr] = set([(start, end)])
+            exon_dict_by_strand[chr] = {strand:set([(start,end)])}
 
         updateDictOfSets(transcript2exons, txt_id, (chr, start, end, strand))
 
@@ -4006,7 +4021,7 @@ def getAnnotatedExonCoords(db, txt_db, this_chr):
             exon_search_tree[chr] = {strand:
                                      getSearchTree(list(exon_search_tree_coords[chr][strand]))}
 
-    return exon_dict, exon_internal_dict, exon_dict_no_strand, exon_search_tree
+    return exon_dict, exon_internal_dict, exon_dict_no_strand, exon_dict_by_strand, exon_search_tree
 
     # {chr: [(gid, name, strand, start, end)]}
 def getAnnotatedGenes(db, txt_db, this_chr):
@@ -5031,6 +5046,7 @@ def printAlternativeDonorsAcceptors(db,
                                     cassette_exons,
                                     annotated_introns,
                                     annotated_exons,
+                                    annotated_exons_by_strand,
                                     all_confident_exons,
                                     all_confident_exons_start2end,
                                     all_confident_exons_end2start,
@@ -5251,7 +5267,7 @@ def printAlternativeDonorsAcceptors(db,
                
                     ie_jcn = None 
                     const_regions = []
-                    const_str = findAdjacentSharedRegion(chr, annotated_exons, end + 1, "N")
+                    const_str = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, end + 1, "N")
                     if const_str:
                         const_regions.append(const_str)
                         if printExonCoord:
@@ -5400,7 +5416,7 @@ def printAlternativeDonorsAcceptors(db,
                                 exon_coords.add(convertCoordStr(incl_reg))
 
                         # Add an additional constitutive region
-                        const_str = findAdjacentSharedRegion(chr, annotated_exons, longest_start - 1, "P")
+                        const_str = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, longest_start - 1, "P")
                         if const_str:
                             const_regions.append(const_str)
                             if printExonCoord:
@@ -5701,7 +5717,7 @@ def printAlternativeDonorsAcceptors(db,
        
                     ie_jcn = None 
                     const_regions = []
-                    const_str = findAdjacentSharedRegion(chr, annotated_exons, start - 1, "P")
+                    const_str = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, start - 1, "P")
                     if const_str:
                         const_regions.append(const_str)
                         if printExonCoord:
@@ -5844,7 +5860,7 @@ def printAlternativeDonorsAcceptors(db,
                                 exon_coords.add(convertCoordStr(incl_reg))
 
                         # Add an additional constituve region
-                        const_str = findAdjacentSharedRegion(chr, annotated_exons, longest_end + 1, "N")
+                        const_str = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, longest_end + 1, "N")
                         if const_str:
                             const_regions.append(const_str)
                             if printExonCoord:
@@ -6128,6 +6144,7 @@ def printCassetteExons(db,
                        start_multi_exon_count_dict,
                        end_multi_exon_count_dict,
                        annotated_exons,
+                       annotated_exons_by_strand,
                        annotated_introns,
                        printExonCoord,
                        exon_coords,
@@ -6379,8 +6396,13 @@ def printCassetteExons(db,
             excl_jcn_counts_samp2.append(excl_str_samp2_ct)
 
         # Find flanking constitutive regions
-        upstr_const = findAdjacentSharedRegion(chr, annotated_exons, left_most_excl_start - 1, "P")
-        dwnstr_const = findAdjacentSharedRegion(chr, annotated_exons, right_most_excl_end + 1, "N")
+        upstr_const = findAdjacentSharedRegion(chr,
+                                               cassette_exon_dict[exon_coord]["strand"],
+                                               annotated_exons_by_strand, left_most_excl_start - 1, "P")
+
+        dwnstr_const = findAdjacentSharedRegion(chr, 
+                                                cassette_exon_dict[exon_coord]["strand"],
+                                                annotated_exons_by_strand, right_most_excl_end + 1, "N")
 
         const_strs = []
 
@@ -6484,7 +6506,8 @@ def printCassetteExons(db,
         
     return return_cassette_exons 
 
-def printIREvents(db, annotated_genes, annotated_exons, coord_start2end, coord_end2start,
+def printIREvents(db, annotated_genes, annotated_exons,
+                  annotated_exons_by_strand, coord_start2end, coord_end2start,
                   jcn_count_dict, jcn2strand, ir_count_dict, 
                   ir_left_out, ir_right_out, printExonCoords, exon_coords, norm1, norm2, jcn_seq_len,
                   paired_ie_junction2qname2count1, paired_ie_junction2qname2count2):
@@ -6534,7 +6557,7 @@ def printIREvents(db, annotated_genes, annotated_exons, coord_start2end, coord_e
 #                continue
 
             # Add potential constitutive exon to exon_coords
-            upstr_const = findAdjacentSharedRegion(chr, annotated_exons, start - 1, "P")
+            upstr_const = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, start - 1, "P")
             if printExonCoords:
                 if upstr_const:
                     exon_coords.add(convertCoordStr(upstr_const))
@@ -6634,7 +6657,7 @@ def printIREvents(db, annotated_genes, annotated_exons, coord_start2end, coord_e
 #            if excl_file1_count == 0 and excl_file2_count == 0 and incl_file1_count == 0 and incl_file2_count == 0:
 #                continue
 
-            downstr_const = findAdjacentSharedRegion(chr, annotated_exons, end + 1, "N")
+            downstr_const = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, end + 1, "N")
             if printExonCoords:
                 if downstr_const:
                     exon_coords.add(convertCoordStr(downstr_const))
@@ -6715,6 +6738,7 @@ def printMultiCassetteExons(db,
                             cassette_exons,
                             annotated_introns,
                             annotated_exons,
+                            annotated_exons_by_strand,
                             printExonCoords,
                             exon_coords,
                             excl_jcns,
@@ -6887,8 +6911,8 @@ def printMultiCassetteExons(db,
                             strand = None
                             strand = updateStrand(strand, all_jcn2strand[excl_jcn_str])
 
-                            upstr_const = findAdjacentSharedRegion(chr, annotated_exons, exclusion_start - 1, "P")
-                            dwnstr_const = findAdjacentSharedRegion(chr, annotated_exons, exclusion_end + 1, "N")
+                            upstr_const = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, exclusion_start - 1, "P")
+                            dwnstr_const = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, exclusion_end + 1, "N")
 
                             const_strs = []
                             if upstr_const:
@@ -7135,6 +7159,7 @@ def printMutuallyExclusive(db,
                            cassette_exons,
                            annotated_introns,
                            annotated_exons,
+                           annotated_exons_by_strand,
                            annotated_exon_search_tree,
                            printExonCoords,
                            exon_coords,
@@ -7266,9 +7291,13 @@ def printMutuallyExclusive(db,
 
         # Now, calculate inclusion and exclusion for each exon in ME events
         for (upstream_start, downstream_end) in me_dict4:
+            # Infer strand information
+            strand = None
+            jcn = "%s_%d_%d" % (chr, upstream_start, downstream_end)
+            strand = updateStrand(strand, all_jcn2strand[jcn])
 
-            upstr_const = findAdjacentSharedRegion(chr, annotated_exons, upstream_start - 1, "P")
-            dwnstr_const = findAdjacentSharedRegion(chr, annotated_exons, downstream_end + 1, "N")
+            upstr_const = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, upstream_start - 1, "P")
+            dwnstr_const = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, downstream_end + 1, "N")
 
             const_strs = []
 
