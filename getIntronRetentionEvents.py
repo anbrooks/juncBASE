@@ -182,12 +182,12 @@ def main():
         left_no_partner_out = open(prefix + "_IR_left_no_partner.txt", "w")
         right_no_partner_out = open(prefix + "_IR_right_no_partner.txt", "w")
         diff_direction_out = open(prefix + "_IR_diff_direction.txt", "w")
-        affected_out = open(prefix + "_IR_events.txt", "w")    
+#        affected_out = open(prefix + "_IR_events.txt", "w")    
     else:
         left_no_partner_out = open("IR_left_no_partner.txt", "w")
         right_no_partner_out = open("IR_right_no_partner.txt", "w")
         diff_direction_out = open("IR_diff_direction.txt", "w")
-        affected_out = open("IR_events.txt", "w")    
+#        affected_out = open("IR_events.txt", "w")    
 
     # {chr: set[(start, end, strand)])
     annotated_introns = getAnnotatedIntronCoords(db, as_db, this_chr)
@@ -242,18 +242,18 @@ def main():
 #           out_str = getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_introns, lengthNorm)
 #           all_as_event_file.write(out_str + "\n")
         else:
-            combined_pval = getCombinedPval(left_line_list[left_intron2line[intron]],
-                                            right_line_list[right_intron2line[intron]])
+#           combined_pval = getCombinedPval(left_line_list[left_intron2line[intron]],
+#                                           right_line_list[right_intron2line[intron]])
 
             # Write all IR events to allEventInfo file.
             combined_line = combineLines(left_line_list[left_intron2line[intron]],
                                          right_line_list[right_intron2line[intron]])
 
             # Only when both samples have counts, will a p_val be associated.
-            if isValidIR(combined_line):
-                combined_pvals.append(combined_pval)
+#           if isValidIR(combined_line):
+#               combined_pvals.append(combined_pval)
 
-                pval_intron_tuples.append((combined_pval, intron))
+#               pval_intron_tuples.append((combined_pval, intron))
 
             # Print all events to allEvent file
             out_str = getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_introns, lengthNorm)
@@ -265,36 +265,38 @@ def main():
             right_no_partner_out.write(right_line_list[right_intron2line[intron]])
             
 
-    # Adjust the pvalues
-    adj_pvals_rVec = robjects.r['p.adjust'](robjects.FloatVector(combined_pvals), 
-                       method)
+# No longer doing p-value test here
+#   # Adjust the pvalues
+#   adj_pvals_rVec = robjects.r['p.adjust'](robjects.FloatVector(combined_pvals), 
+#                      method)
 
-    adj_pvals = []
+#   adj_pvals = []
 
-    for p_val in adj_pvals_rVec:
-        adj_pvals.append(p_val)
+#   for p_val in adj_pvals_rVec:
+#       adj_pvals.append(p_val)
 
-    adj_pvals_sort = list(adj_pvals)
-    adj_pvals_sort.sort()
-   
-    for pval in adj_pvals_sort:
-        for i in range(len(pval_intron_tuples)):
-            if pval_intron_tuples[i] == None:
-                continue
-            this_pval = adj_pvals[i]
-            intron = pval_intron_tuples[i][1]
-            if this_pval == pval:
-                combined_line = combineLines(left_line_list[left_intron2line[intron]],
-                                             right_line_list[right_intron2line[intron]])
+#   adj_pvals_sort = list(adj_pvals)
+#   adj_pvals_sort.sort()
+#  
+#   for pval in adj_pvals_sort:
+#       for i in range(len(pval_intron_tuples)):
+#           if pval_intron_tuples[i] == None:
+#               continue
+#           this_pval = adj_pvals[i]
+#           intron = pval_intron_tuples[i][1]
+#           if this_pval == pval:
+#               combined_line = combineLines(left_line_list[left_intron2line[intron]],
+#                                            right_line_list[right_intron2line[intron]])
 
-                affected_out.write(combined_line + "\t" + intron + "\t" +
-                                   repr(pval_intron_tuples[i][0]) + "\t" + 
-                                   repr(pval) + "\n")
+#               affected_out.write(combined_line + "\t" + intron + "\t" +
+#                                  repr(pval_intron_tuples[i][0]) + "\t" + 
+#                                  repr(pval) + "\n")
 
-                pval_intron_tuples[i] = None
-                break
-            
-    affected_out.close()
+#               pval_intron_tuples[i] = None
+#               break
+#           
+#   affected_out.close()
+
     all_as_event_file.close()
 
 #   # Add Constitutive counts
@@ -460,14 +462,18 @@ def getEventInfo(combined_line, lengthNorm):
     if lengthNorm:
         # Each ie counts need to be renormalized considering both ends
         ie_left_samp1 = int(round(float(line_elems[7])/2))
-        ie_right_samp1 = int(round(float(line_elems[19])/2))
+#        ie_right_samp1 = int(round(float(line_elems[19])/2))
+        ie_right_samp1 = int(round(float(line_elems[17])/2))
         ie_left_samp2 = int(round(float(line_elems[9])/2))
-        ie_right_samp2 = int(round(float(line_elems[21])/2))
+#        ie_right_samp2 = int(round(float(line_elems[21])/2))
+        ie_right_samp2 = int(round(float(line_elems[19])/2))
     else:
         ie_left_samp1 = int(line_elems[7])
-        ie_right_samp1 = int(line_elems[19])
+#        ie_right_samp1 = int(line_elems[19])
+        ie_right_samp1 = int(line_elems[17])
         ie_left_samp2 = int(line_elems[9])
-        ie_right_samp2 = int(line_elems[21])
+#        ie_right_samp2 = int(line_elems[21])
+        ie_right_samp2 = int(line_elems[19])
 
     ie_cts_samp1 = "%d;%d" % (ie_left_samp1,
                               ie_right_samp1)
@@ -514,16 +520,21 @@ def isValidIR(combined_line):
 
     # Sample 1 exclusion counts
     samp1_excl = int(line_list[6])
-    samp1_excl += int(line_list[18])
+#    samp1_excl += int(line_list[18])
+    # No longer doing p-val calculation here.
+    samp1_excl += int(line_list[16])
 
     samp1_incl = int(line_list[7])
-    samp1_incl += int(line_list[19])
+#    samp1_incl += int(line_list[19])
+    samp1_incl += int(line_list[17])
 
     samp2_excl = int(line_list[8])
-    samp2_excl += int(line_list[20])
+#    samp2_excl += int(line_list[20])
+    samp2_excl += int(line_list[18])
     
     samp2_incl = int(line_list[9])
-    samp2_incl += int(line_list[21])
+#    samp2_incl += int(line_list[21])
+    samp2_incl += int(line_list[19])
 
     if samp1_excl == 0 and samp1_incl == 0:
         return False
