@@ -158,7 +158,6 @@ def main():
         sys.exit(1)
     
     as_db = options.as_db
-    
     lengthNorm = options.lengthNorm
 
     this_chr = options.this_chr
