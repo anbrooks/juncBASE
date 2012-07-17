@@ -23,7 +23,7 @@ import os
 import profile
 
 from helperFunctions import updateDictOfLists, updateDictOfSets, coordsOverlap, runCmd
-from coord_helperFunctions import getSearchTree, hasOuterContainer, findInternalCoords
+from coord_helperFunctions import getSearchTree, hasOuterContainer, findInternalCoords, hasOverlap
 
 from Bio import SeqIO
 #############
@@ -615,7 +615,9 @@ def main():
      alt_first_exons_start2end,
      alt_first_exons_end2start,
      alt_last_exons_start2end,
-     alt_last_exons_end2start) = getFirstLastExons(db, txt_db2, this_chr)
+     alt_last_exons_end2start,
+     alt_first_exon_search_tree,
+     alt_last_exon_search_tree) = getFirstLastExons(db, txt_db2, this_chr)
 
     if not annotated_exons:
         print "ERROR: No exon entries in --txt_db1. Please check the \"exon\" table"
@@ -781,10 +783,13 @@ def main():
                             annotated_genes_by_strand,
                             alt_first_exons,
                             alt_last_exons,
+                            alt_first_exon_search_tree,
+                            alt_last_exon_search_tree,
                             all_jcn_count_dict, 
                             all_coord_start2end,
                             all_coord_end2start,
                             all_jcn2strand,
+                            all_jcn_search_tree,
                             full_exon_count_dict,
                             full_multi_exon_count_dict,
                             cassette_exons,
@@ -3781,6 +3786,10 @@ def getFirstLastExons(db, txt_db, this_chr):
     ale_dict_start2end = {}
     ale_dict_end2start = {}
 
+    # {chr:coordSearchTree}
+    afe_search_tree = {}
+    ale_search_tree = {}
+
     # {gene:set([(exon_start, exon_end)])}
     gene2most_upstrm_exons = {}
     gene2most_dwnstrm_exons = {}
@@ -3868,6 +3877,7 @@ def getFirstLastExons(db, txt_db, this_chr):
                 updateDictExons(ale_dict_end2start, this_chr, 
                                 exon_list[-1][1], exon_list[-1][0])
 
+
             else: 
                 updateDictOfLists(afe_dict, this_chr, exon_list[-1])
                 updateDictOfLists(ale_dict, this_chr, exon_list[0])
@@ -3943,9 +3953,15 @@ def getFirstLastExons(db, txt_db, this_chr):
         if chr not in ale_dict_end2start:
             ale_dict_end2start[chr] = {}
 
+    for chr in afe_dict:
+        afe_search_tree[chr] = getSearchTree(afe_dict[chr])
+    for chr in ale_dict:
+        ale_search_tree[chr] = getSearchTree(ale_dict[chr])
+
     return (afe_dict, ale_dict, 
             afe_dict_start2end, afe_dict_end2start,
-            ale_dict_start2end, ale_dict_end2start)
+            ale_dict_start2end, ale_dict_end2start,
+            afe_search_tree, ale_search_tree)
 
 def updateDictExons(exon_dict, chr, pos1, pos2):
     try:
@@ -4239,17 +4255,21 @@ def getInclusionPortion(inclusion_exon, other_exon_list):
     return inclusion_start, inclusion_end
     
     
-def getInternalIntrons(coord_start2end, chr, start_pos, end_pos):
+def getInternalIntrons(intron_search_tree, start_pos, end_pos):
     """
     Will return a list of all intron coordinates that are contained within the
     start and end positions
     """
     intron_coords = []
-    for intron_start in coord_start2end[chr]:
-        if intron_start > start_pos:
-            for intron_end in coord_start2end[chr][intron_start]:
-                if intron_end < end_pos:
-                    intron_coords.append((intron_start, intron_end))
+    
+    this_coord = (start_pos, end_pos)
+
+    findInternalCoords(intron_search_tree, intron_coords, this_coord)    
+#   for intron_start in coord_start2end[chr]:
+#       if intron_start > start_pos:
+#           for intron_end in coord_start2end[chr][intron_start]:
+#               if intron_end < end_pos:
+#                   intron_coords.append((intron_start, intron_end))
 
     if intron_coords == []:
         return None
@@ -6776,10 +6796,13 @@ def printMultiCassetteExons(db,
                             annotated_genes_by_strand,
                             alt_first_exons,
                             alt_last_exons,
+                            alt_first_exon_search_tree,
+                            alt_last_exon_search_tree,
                             all_jcn_count_dict, 
                             all_coord_start2end,
                             all_coord_end2start,
                             all_jcn2strand,
+                            all_jcn_search_tree,
                             full_exon_count_dict,
                             full_multi_exon_count_dict,
                             cassette_exons,
@@ -6815,10 +6838,16 @@ def printMultiCassetteExons(db,
                         # Check for potential internal cassette exons by
                         # looking for internal introns that exist between the
                         # left inclusion end and the right inclusion_start
-                        internal_introns = getInternalIntrons(all_coord_start2end,
-                                                              chr,
+                        excl_jcn = "%s_%d_%d" % (chr, 
+                                                 exclusion_start,
+                                                 exclusion_end)
+                        strand = None
+                        strand = updateStrand(strand, all_jcn2strand[excl_jcn])
+
+                        internal_introns = getInternalIntrons(all_jcn_search_tree[chr][strand],
                                                               left_inclusion_end,
                                                               right_inclusion_start)
+
                         if internal_introns is None:
                             continue
 
@@ -6897,20 +6926,17 @@ def printMultiCassetteExons(db,
                                     if not a_exonFound:
                                         exonCheck = False
                                         break
-                                    
 
-                                # Check if overlap with first and last exons
-                                for (alt_first_start, alt_first_end) in alt_first_exons[chr]:
-                                    if coordsOverlap(alt_first_start, alt_first_end,    
-                                                     exon_start, exon_end):
-                                        exonCheck=False
-                                        break
-                                for (alt_last_start, alt_last_end) in alt_last_exons[chr]:
-                                    if coordsOverlap(alt_last_start, alt_last_end,
-                                                     exon_start, exon_end):
-                                        exonCheck = False
-                                        break
-    
+                                if hasOverlap(alt_first_exon_search_tree[chr],
+                                              (exon_start, exon_end)):
+                                    exonCheck=False
+                                    break
+
+                                if hasOverlap(alt_last_exon_search_tree[chr],
+                                              (exon_start, exon_end)):
+                                    exonCheck=False
+                                    break
+           
                                 if not exonCheck:
                                     break
 
