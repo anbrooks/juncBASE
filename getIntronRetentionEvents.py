@@ -194,6 +194,7 @@ def main():
     (annotated_exons,
      annotated_internal_exons,
      annotated_exons_no_strand,
+     annotated_exons_by_strand,
      annotated_exon_search_tree) = getAnnotatedExonCoords(db, as_db, this_chr)
 
 
@@ -255,7 +256,7 @@ def main():
 #               pval_intron_tuples.append((combined_pval, intron))
 
             # Print all events to allEvent file
-            out_str = getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_introns, lengthNorm)
+            out_str = getAllEventInfoLine(combined_line, intron, annotated_exons_by_strand, annotated_introns, lengthNorm)
             all_as_event_file.write(out_str + "\n")
 
     # Checking for right_no_partner
@@ -355,11 +356,11 @@ def getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_intron
     ie_jcns.append("%s_%d_%d" % (chr, right_intron_end, right_intron_end + 1))
  
     const_regions = [] 
-    const_str = findAdjacentSharedRegion(chr, annotated_exons,
+    const_str = findAdjacentSharedRegion(chr, strand, annotated_exons,
                                          left_intron_start - 1, "P")
     if const_str:
         const_regions.append(const_str)
-    const_str = findAdjacentSharedRegion(chr, annotated_exons,
+    const_str = findAdjacentSharedRegion(chr, strand, annotated_exons,
                                          right_intron_end + 1, "N")
     if const_str:
         const_regions.append(const_str)
