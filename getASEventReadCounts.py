@@ -23,7 +23,7 @@ import os
 import profile
 
 from helperFunctions import updateDictOfLists, updateDictOfSets, coordsOverlap, runCmd
-from coord_helperFunctions import getSearchTree, hasOuterContainer
+from coord_helperFunctions import getSearchTree, hasOuterContainer, findInternalCoords
 
 from Bio import SeqIO
 #############
@@ -569,11 +569,13 @@ def main():
     jcn_count_dict = None
     coord_start2end = None
     coord_end2start = None
-
+    
+    # Search tree: {chr:strand:searchTreeOfCoords}
     (all_jcn_count_dict,
      all_coord_start2end,
      all_coord_end2start,
-     all_jcn2strand) = parseJcns(jcn1_file, jcn2_file, genome_file, disambiguate_jcn_strand)
+     all_jcn2strand,
+     all_jcn_search_tree) = parseJcns(jcn1_file, jcn2_file, genome_file, disambiguate_jcn_strand)
 
     # full_exon_count_dict = {chr_start_end:count}
     # start_exon_count_dict = {chr_start:sum of counts}
@@ -4927,6 +4929,9 @@ def parseJcns(jcn_file1, jcn_file2, genome_file, disambiguate_jcn_strand):
     # {chr_start_end: strand}
     jcn2strand = {}
 
+    # {chr: strand: coord search tree}
+    jcn_search_tree = {}
+
     jcnFilesHaveStrandInfo = False
 
     for line in jcn_file1:
@@ -5013,7 +5018,22 @@ def parseJcns(jcn_file1, jcn_file2, genome_file, disambiguate_jcn_strand):
     if disambiguate_jcn_strand:
         getJcnStrandInfo(jcn2strand, genome_file)
 
-    return (jcn_count_dict, coord_start2end, coord_end2start, jcn2strand)
+    # Build jcn_search from this structure
+    jcn_dict = {} # Prior to making search tree
+    for jcn_str in jcn2strand:
+        chr, start, end = convertCoordStr(jcn_str)
+        
+        if chr in jcn_dict:
+            updateDictOfLists(jcn_dict[chr], jcn2strand[jcn_str], (start, end))
+        else: 
+            jcn_dict[chr] = {jcn2strand[jcn_str]: [(start,end)]}
+    # Build search tree
+    for chr in jcn_dict:
+        for strand in jcn_dict:
+            jcn_search_tree[chr] = {strand:
+                                    getSearchTree(jcn_dict[chr][strand])}
+    
+    return (jcn_count_dict, coord_start2end, coord_end2start, jcn2strand, jcn_search_tree)
 
 def parseReadAssocFile(paired_read_w_coord_file_name):
     """ 
