@@ -5049,7 +5049,7 @@ def parseJcns(jcn_file1, jcn_file2, genome_file, disambiguate_jcn_strand):
             jcn_dict[chr] = {jcn2strand[jcn_str]: [(start,end)]}
     # Build search tree
     for chr in jcn_dict:
-        for strand in jcn_dict:
+        for strand in jcn_dict[chr]:
             jcn_search_tree[chr] = {strand:
                                     getSearchTree(jcn_dict[chr][strand])}
     
