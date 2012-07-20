@@ -237,10 +237,8 @@ def main():
             diff_direction_out.write(combined_line + "\t" + intron + "\n")
 
             # Print all events to allEvent file
-            # 120716: No longer printing to allEvent file if each side is going
-            # in opposite directions.
-#           out_str = getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_introns, lengthNorm)
-#           all_as_event_file.write(out_str + "\n")
+            out_str = getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_introns, lengthNorm)
+            all_as_event_file.write(out_str + "\n")
         else:
 #           combined_pval = getCombinedPval(left_line_list[left_intron2line[intron]],
 #                                           right_line_list[right_intron2line[intron]])
@@ -441,7 +439,8 @@ def getEventInfo(combined_line, lengthNorm):
     chr = line_elems[2]
 
     strand_first = line_elems[3]    
-    strand_second = line_elems[15]
+#    strand_second = line_elems[15]
+    strand_second = line_elems[13]
 
     if strand_first != strand_second:
         strand = "."
@@ -449,7 +448,8 @@ def getEventInfo(combined_line, lengthNorm):
         strand = strand_first
 
     left_intron_start = int(line_elems[4])
-    right_intron_end = int(line_elems[16])
+#    right_intron_end = int(line_elems[16])
+    right_intron_end = int(line_elems[14])
 
     excl_cts_samp1 = int(line_elems[6])
     excl_cts_samp2 = int(line_elems[8])
@@ -459,8 +459,7 @@ def getEventInfo(combined_line, lengthNorm):
     ie_left_samp2 = None
     ie_right_samp2 = None
 
-    if lengthNorm:
-        # Each ie counts need to be renormalized considering both ends
+    if lengthNorm: # Each ie counts need to be renormalized considering both ends
         ie_left_samp1 = int(round(float(line_elems[7])/2))
 #        ie_right_samp1 = int(round(float(line_elems[19])/2))
         ie_right_samp1 = int(round(float(line_elems[17])/2))
