@@ -176,6 +176,19 @@ def main():
                           help="""Indicates that input files are broken up by
                                   chromosome""",
                           default=False)
+    opt_parser.add_option("--force",
+                          dest="force",
+                          action="store_true",
+                          help="""By default, will check for the existence of
+                                  the final output before running commands. This
+                                  option will force all runs.""",
+                          default=False)
+    opt_parser.add_option("--check",
+                          dest="check",
+                          action="store_true",
+                          help="""Will check samples that are not done and print
+                                  out which need to still be run""",
+                         default=False)
 
     (options, args) = opt_parser.parse_args()
 	
@@ -222,6 +235,9 @@ def main():
     num_processes = options.num_processes
     run_LSF = options.run_lsf
 
+    force = options.force
+    check = options.check
+
     by_chr = options.by_chr
 
     if by_chr:
@@ -241,6 +257,26 @@ def main():
                     os.mkdir(chr_dir)
 
                 os.chdir(chr_dir)
+
+                expected_out_file = "%s_%s_all_AS_event_info.txt" % (samp, chr)
+
+                file_is_present = False
+                try:
+                    if os.path.getsize(expected_out_file) == 0:
+                        if check:
+                            print "File is empty: %s" % expected_out_file
+                    else:   
+                        file_is_present = True
+                except:
+                    if check:
+                        print "Does not exist: %s" % expected_out_file
+
+                if check:
+                    continue
+
+                if not force:
+                    if file_is_present:
+                        continue
 
                 cmd = "python %s " % SCRIPT
                 cmd += "--jcn1 %s/pseudo_%s/pseudo_%s_junctions.bed " % (input_dir,
@@ -310,6 +346,26 @@ def main():
                 os.mkdir(full_output_dir)
 
             os.chdir(full_output_dir)
+
+            expected_out_file = "%s_all_AS_event_info.txt" % (samp)    
+                                                                               
+            file_is_present = False                                            
+            try:
+                if os.path.getsize(expected_out_file) == 0:                           
+                    if check:                                                         
+                        print "File is empty: %s" % expected_out_file
+                else:                                                            
+                    file_is_present = True                                       
+            except:                                                              
+                if check:
+                    print "Does not exist: %s" % expected_out_file
+            
+            if check:
+                continue
+            
+            if not force:
+                if file_is_present:
+                    continue
 
             cmd = "python %s " % SCRIPT
             cmd += "--jcn1 %s/pseudo/pseudo_junctions.bed " % input_dir
