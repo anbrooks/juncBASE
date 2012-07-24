@@ -245,13 +245,13 @@ def main():
         
         ctr = 0
         for samp in samples:
-            ctr += 1
             # Check for output subdirectory
             samp_dir = output_dir + "/" + samp
             if not os.path.exists(samp_dir):
                 os.mkdir(samp_dir)
 
             for chr in chr_list:
+                ctr += 1
                 chr_dir = samp_dir + "/" + samp + "_" + chr
                 if not os.path.exists(chr_dir):
                     os.mkdir(chr_dir)
