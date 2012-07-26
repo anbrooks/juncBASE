@@ -275,7 +275,8 @@ def getMedianVirtualReferences(excl_incl_vals, total_thresh,
 
         psis.append(float(incl_count)/total_count)
 
-        weights.append(all_weights[i])
+        if weights:
+            weights.append(all_weights[i])
 
     if excl_counts == []:
         return "NA", "NA", "NA"
