@@ -242,6 +242,10 @@ def main():
         right_input_file = open(right_input_file_name)
 
     output_dir = formatDir(options.output_dir)
+
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
     out_prefix = "%s/%s" % (output_dir, options.prefix)
     
     psi_out = open("%s_most_sign_PSI.txt" % out_prefix, "w")
@@ -351,7 +355,7 @@ def main():
             line_list = line.split("\t")
             samples = line_list[11:]
             if weights:
-                if len(weights) != len(samples):
+                if len(weights) != len(samples)-1:
                     print "Weights for every sample needs to be given"
                     opt_parser.print_help()
                     sys.exit(1)
