@@ -318,6 +318,14 @@ def main():
     if options.weights:
         weights = map(float, options.weights.split(","))
 
+        # Use R limma package
+        try:
+            r.library("limma")
+        except:
+            print """In order to use weighted median, please install the limma package from Bioconductor: 
+                     http://www.bioconductor.org/packages/release/bioc/html/limma.html"""
+            print """In R:\nsource("http://bioconductor.org/biocLite.R")\nbiocLite("limma")"""
+
     event_sum = open("%s_event_sum.txt" % out_prefix, "w")
 
     method = options.method
@@ -970,7 +978,10 @@ def recalculateRefPSI(col2psi_str, col2total_count, weights):
         psi_vals.append(float(col2psi_str[col]))
         total_vals.append(col2total_count[col])
 
+    pdb.set_trace()
+
     if weights:
+        pdb.set_trace()
         median_psi = r['weighted.median'](robjects.FloatVector(psi_vals), 
                                           robjects.FloatVector(weights))[0]
         median_total = int(round(r['weighted.median'](robjects.IntVector(total_vals),                                
