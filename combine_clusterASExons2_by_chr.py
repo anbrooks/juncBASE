@@ -91,8 +91,8 @@ def main():
                           dest="remove_interm_files",
                           type="string",
                           help="""Removes intermediate output files from
-                                  individual runs of the sample and
-                                  chromosomes.""",
+                                  individual getASEventReadCount runs of the sample and
+                                  chromosomes. Use only to save disk space.""",
                           default=None)
 
     (options, args) = opt_parser.parse_args()
@@ -141,11 +141,19 @@ def main():
         os.remove(left_file)
         os.remove(right_file)
 
-    # Delete files
-    # BOOKMARK DELETING INTERMEDIATE FILES
-    
-
-
+    # Delete intermediate files
+    if options.remove_interm_files:
+        for samp in os.listdir(root_dir):
+            for this_chr in chr_list:
+                sub_dir = "%s/%s/%s_%s" % (root_dir,
+                                           samp,
+                                           samp, this_chr)   
+                for filename in os.listdir(sub_dir):
+                    os.remove(sub_dir + "/" + filename)
+                # Write a message
+                readme_file = open(sub_dir + "/README", "w")
+                readme_file.write("Files deleted on %s\n" % time.strftime("%a, %d %b %Y %H:%M:%S",time.localtime()))
+                readme_file.close()
     sys.exit(0)
 
 ############
