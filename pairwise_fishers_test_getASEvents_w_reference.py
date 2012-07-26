@@ -353,6 +353,9 @@ def main():
     # {event:{col:sum_counts}}
     event2col2sum = {}
 
+    # For weighted median
+    col2weights = None
+
     header = None
     total_samples = None
     for line in input_file:
@@ -367,6 +370,10 @@ def main():
                     print "Weights for every sample needs to be given"
                     opt_parser.print_help()
                     sys.exit(1)
+
+                col2weights = {}
+                for i in len(samples):
+                    col2weights[i] = weights[i]
             continue
 
         line_list = line.split("\t")
@@ -410,7 +417,7 @@ def main():
         if recalculate_ref_psi and has_virtual:
             adj_psi, adj_totalCount = recalculateRefPSI(event2col2psi[event],
                                                         lenNormalized_counts_event2total_counts[event],
-                                                        weights)
+                                                        col2weights)
             event2col2psi[event][0] = adj_psi
             lenNormalized_counts_event2total_counts[event][0] = adj_totalCount
                                                         
@@ -540,9 +547,9 @@ def main():
         # existing values
         if recalculate_ref_psi and has_virtual:
             allPSI_elems_left[0] = recalculateRefPSI_list(allPSI_elems_left,
-                                                          weights)
+                                                          col2weights)
             allPSI_elems_right[0] = recalculateRefPSI_list(allPSI_elems_right,
-                                                           weights)
+                                                           col2weights)
 
         [left_col1_excl, left_col1_incl] = map(int,left_events2counts[event][0].split(";"))
         [right_col1_excl, right_col1_incl] = map(int,right_events2counts[event][0].split(";"))
@@ -964,12 +971,13 @@ def elems_split(jcn_str):
 
     return returnJcns
     
-def recalculateRefPSI(col2psi_str, col2total_count, weights):
+def recalculateRefPSI(col2psi_str, col2total_count, col2weights):
     """
     Reference is assumed to be col 0
     """
     psi_vals = []
     total_vals = []
+    weights = []
     for col in col2psi_str:
         if col == 0:
             continue
@@ -977,6 +985,7 @@ def recalculateRefPSI(col2psi_str, col2total_count, weights):
             continue
         psi_vals.append(float(col2psi_str[col]))
         total_vals.append(col2total_count[col])
+        weights.append(col2weights[col])
 
     pdb.set_trace()
 
@@ -993,15 +1002,17 @@ def recalculateRefPSI(col2psi_str, col2total_count, weights):
     return "%.2f" % median_psi, median_total
 
 
-def recalculateRefPSI_list(psi_list, weights):
+def recalculateRefPSI_list(psi_list, col2weights):
     """
     Reference is assumed to be col 0
     """
     vals = []
+    weights = []
     for i in range(1,len(psi_list)):
         if psi_list[i] == NA:
             continue
         vals.append(float(psi_list[i]))
+        weights.append(col2weights[i-1])
 
     if weights:
         median_psi = r['weighted.median'](robjects.FloatVecotr(vals),
