@@ -281,7 +281,7 @@ def getMedianVirtualReferences(excl_incl_vals, total_thresh,
     if excl_counts == []:
         return "NA", "NA", "NA"
 
-    if weights:
+    if all_weights:
         virtual_median = "%d;%d" % (int(round(r['weighted.median'](robjects.IntVector(excl_counts),
                                                                    robjects.FloatVector(weights))[0])), 
                                     int(round(r['weighted.median'](robjects.IntVector(incl_counts),
