@@ -216,7 +216,8 @@ def main():
     input_file.close()
 #    output_median.close()
     output_median_ratio.close()
-    output_median_psi.close()
+    if output_median_psi:
+        output_median_psi.close()
         
 			
     sys.exit(0)
@@ -287,7 +288,7 @@ def getMedianVirtualReferences(excl_incl_vals, total_thresh,
         median_total = int(round(r['weighted.median'](robjects.IntVector(total_expressions),
                                                       robjects.FloatVector(weights))[0]))
         median_psi = r['weighted.median'](robjects.FloatVector(psis),
-                                          robjects.FloatVecotr(weights))[0]
+                                          robjects.FloatVector(weights))[0]
 
     else:
         virtual_median = "%d;%d" % (int(round(r['median'](robjects.IntVector(excl_counts))[0])), 
