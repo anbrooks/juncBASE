@@ -118,13 +118,13 @@ def main():
                                   done on the counts. Used for splitting the IR
                                   counts back into left and right counts""",
                           default=False)
-    opt_parser.add_option("--by_chr",
+    opt_parser.add_option("--which_chr",
                           dest="which_chr",
                           type="string",
-                          help="""Indicates that samples were run by individual
-                                  chromosomes. This script should be run for
-                                  each chromosome""",
-                          default=False)
+                          help="""When running by chromsome, it will find the
+                                  appropriate files given the expected directory
+                                  structure.""",
+                          default=None)
 
     (options, args) = opt_parser.parse_args()
 	
