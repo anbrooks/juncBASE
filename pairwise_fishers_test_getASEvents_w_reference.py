@@ -372,8 +372,8 @@ def main():
                     sys.exit(1)
 
                 col2weights = {}
-                for i in len(samples):
-                    col2weights[i] = weights[i]
+                for i in range(1,len(samples)):
+                    col2weights[i-1] = weights[i-1]
             continue
 
         line_list = line.split("\t")
@@ -470,7 +470,7 @@ def main():
                 event2col2idx[event][j] = cur_len2
             else:
                 event2col2idx[event] = {j:cur_len2}
-            
+
             raw_pval = robjects.r['fisher.test'](r.matrix(robjects.IntVector([col1_excl,
                                                                               col1_incl,
                                                                               col2_excl,
@@ -985,12 +985,9 @@ def recalculateRefPSI(col2psi_str, col2total_count, col2weights):
             continue
         psi_vals.append(float(col2psi_str[col]))
         total_vals.append(col2total_count[col])
-        weights.append(col2weights[col])
-
-    pdb.set_trace()
+        weights.append(col2weights[col-1])
 
     if weights:
-        pdb.set_trace()
         median_psi = r['weighted.median'](robjects.FloatVector(psi_vals), 
                                           robjects.FloatVector(weights))[0]
         median_total = int(round(r['weighted.median'](robjects.IntVector(total_vals),                                
