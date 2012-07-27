@@ -129,6 +129,8 @@ def main():
 
     ctr = 0
     for this_chr in chr_list:
+        ctr += 1
+
         cmd = "python %s " % SCRIPT
         cmd += "-d %s " % root_dir
         cmd += "-o tmp_clusterASExons2_%s.out " % this_chr
@@ -139,7 +141,7 @@ def main():
         if lengthNorm:
             cmd += "--lengthNorm "
 
-        cmd += "--by_chr %s" % this_chr
+        cmd += "--which_chr %s" % this_chr
 
         if run_lsf:
             runLSF(cmd,
