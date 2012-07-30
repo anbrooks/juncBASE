@@ -108,8 +108,9 @@ class DB:
 			val_string_comp = ["?" for n in range(values.count(",")+1)]
 			val_string = ",".join(val_string_comp)
 
-		insert_statement = "INSERT INTO %s VALUES (%s)" % (table_name,
-								  	val_string)
+		insert_statement = "INSERT INTO %s (%s) VALUES (%s)" % (table_name,
+                                                            column_names,
+								  	                                        val_string)
 		try:
 			cursor.execute( insert_statement, values )
 			conn.commit()
@@ -128,8 +129,9 @@ class DB:
 			val_string_comp = ["?" for n in range(values.count(",")+1)]
 			val_string = ",".join(val_string_comp)
 
-		insert_statement = "INSERT INTO %s VALUES (%s)" % (table_name,
-														val_string)
+		insert_statement = "INSERT INTO %s (%s) VALUES (%s)" % (table_name,
+                                                            column_names,
+														                                val_string)
 		try:
 			cursor.executemany( insert_statement, values_list )
 			conn.commit()
