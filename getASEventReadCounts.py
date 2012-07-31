@@ -4040,9 +4040,14 @@ def getAnnotatedExonCoords(db, txt_db, this_chr):
     # Make search tree
     exon_search_tree = {}
     for chr in exon_search_tree_coords:
+        exon_search_tree[chr] = {}
         for strand in exon_search_tree_coords[chr]:
-            exon_search_tree[chr] = {strand:
-                                     getSearchTree(list(exon_search_tree_coords[chr][strand]))}
+            exon_search_tree[chr][strand] = getSearchTree(list(exon_search_tree_coords[chr][strand]))
+
+        # Add empty search trees for remaining strands
+        for strand in ["+", "-", "."]:
+            if strand not in exon_search_tree_coords[chr]:
+                exon_search_tree[chr][strand] = getSearchTree([])
 
     return exon_dict, exon_internal_dict, exon_dict_no_strand, exon_dict_by_strand, exon_search_tree
 
@@ -5052,6 +5057,11 @@ def parseJcns(jcn_file1, jcn_file2, genome_file, disambiguate_jcn_strand):
         jcn_search_tree[chr] = {}
         for strand in jcn_dict[chr]:
             jcn_search_tree[chr][strand] = getSearchTree(jcn_dict[chr][strand])
+
+        # Add empty search trees for remaining strands
+        for strand in ["+", "-", "."]:
+            if strand not in jcn_search_tree[chr]:
+                jcn_search_tree[chr][strand] = getSearchTree([])
     
     return (jcn_count_dict, coord_start2end, coord_end2start, jcn2strand, jcn_search_tree)
 
@@ -6843,7 +6853,7 @@ def printMultiCassetteExons(db,
                                                  exclusion_end)
                         strand = None
                         strand = updateStrand(strand, all_jcn2strand[excl_jcn])
-
+        
                         internal_introns = getInternalIntrons(all_jcn_search_tree[chr][strand],
                                                               left_inclusion_end,
                                                               right_inclusion_start)
