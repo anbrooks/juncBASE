@@ -132,6 +132,14 @@ def main():
                           type="string",
                           help="GTF annotation file.",
                           default=None)
+    opt_parser.add_option("--use_gene_name",
+                          dest="use_gene_name",
+                          action="store_true",
+                          help="""By default, the gene_id attribute will be used
+                                  for the gene name used in the database, but
+                                  the gene_name attribute can be used
+                                  instead.""",
+                          default=False)
     opt_parser.add_option("-f",
                           dest="genome_file_name",
                           type="string",
@@ -158,6 +166,8 @@ def main():
     opt_parser.check_required("-g")
     opt_parser.check_required("-d")
 
+    use_gene_name = options.use_gene_name
+
     db_obj = DB(options.sqlite_db_dir)
 
     db_name = options.db_name
@@ -166,7 +176,7 @@ def main():
 
     chr2gtf_lines = getGTFLines(options.gtf_file)
 
-    buildAnnotDB(db_obj, chr2gtf_lines, db_name)
+    buildAnnotDB(db_obj, chr2gtf_lines, db_name, use_gene_name)
 
     inferIntrons(db_obj, db_name)
    
@@ -183,7 +193,7 @@ def main():
 #############
 # FUNCTIONS #
 #############
-def buildAnnotDB(db, chr2gtf_lines, db_name):
+def buildAnnotDB(db, chr2gtf_lines, db_name, use_gene_name):
     db.createDatabase(db_name)
 
     createAnnotTables(db, db_name)
@@ -235,7 +245,7 @@ def buildAnnotDB(db, chr2gtf_lines, db_name):
                        start_codon_dict,
                        stop_codon_dict,
                        cds_dict,
-                       exon_dict, db_name)
+                       exon_dict, db_name, use_gene_name)
 
 #       insertFeature(db, "cds", cds_dict, db_name)
 #       insertFeature(db, "start_codon", start_codon_dict, db_name)
@@ -251,7 +261,8 @@ def buildExonTable(db, chr, transcript_id2strand,
                    start_codon_dict,
                    stop_codon_dict,
                    cds_dict,
-                   exon_dict, db_name):
+                   exon_dict, db_name,
+                   use_gene_name):
     """
     For each transcript, it extracts coordinates from all features (5'utr,
     3'utr, start codon, etc.) and merges and connects blocks of coordinates to
@@ -287,9 +298,9 @@ def buildExonTable(db, chr, transcript_id2strand,
    
         # Getting gene Name from arbitrary CDS or exon entry 
         if txt_id in exon_dict:
-            gene_name = getGeneName(exon_dict[txt_id][0])
+            gene_name = getGeneName(exon_dict[txt_id][0], use_gene_name)
         else:
-            gene_name = getGeneName(cds_dict[txt_id][0])
+            gene_name = getGeneName(cds_dict[txt_id][0], use_gene_name)
             
         strand = transcript_id2strand[txt_id]
 
@@ -517,8 +528,15 @@ def getAllComponents(txt_id, dict_list):
 
     return blocks, classification
 
-def getGeneName(gff_obj):
-    name = gff_obj.attributes.split(";")[0]
+def getGeneName(gff_obj, use_gene_name):
+    attributes = gff_obj.attirbutes.split(";")
+    name = None
+    if use_gene_name:
+        for attrib in attributes:
+            if "gene_name" in attrib:
+                name = attrib
+    if not name:
+        name = attributes[0]
     name = name.split()[1]
     name = name.replace("\"","")
     return name
