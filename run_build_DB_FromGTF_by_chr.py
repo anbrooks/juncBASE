@@ -219,14 +219,16 @@ def main():
     # Use gtf file to figure out temp file names, Build the database from them
     tmp_file_list = []
     
+    gtf_file_name = gtf_file_name.split("/")[-1]
     gtf_file_comp = gtf_file_name.split(".")   
-    gtf_file_prefix = ".".join(gtf_file_name[:-1])
+    gtf_file_prefix = ".".join(gtf_file_comp[:-1])
 
     for this_file in os.listdir(tmp_dir):
         if gtf_file_prefix in this_file:
             if this_file == gtf_file_name:
                 continue
             tmp_file_list.append(this_file)
+
 
     # Now run script for every chromosome file
     ctr = 0
@@ -302,7 +304,7 @@ def checkChr(db, db_name, this_chr):
 
     exon_records = db.getDBRecords_Dict(exon_select, db_name)
 
-    if exon_records == ():
+    if exon_records == []:
         return False
     
     intron_select = """SELECT * from intron 
@@ -311,7 +313,7 @@ def checkChr(db, db_name, this_chr):
 
     intron_records = db.getDBRecords_Dict(intron_select, db_name)
 
-    if intron_records == ():
+    if intron_records == []:
         return False
 
     gene_select = """SELECT * from gene 
@@ -320,7 +322,7 @@ def checkChr(db, db_name, this_chr):
 
     gene_records = db.getDBRecords_Dict(gene_select, db_name)
 
-    if gene_records == ():
+    if gene_records == []:
         return False
 
     # passed all checks
