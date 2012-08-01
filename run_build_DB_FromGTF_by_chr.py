@@ -299,7 +299,7 @@ def checkChr(db, db_name, this_chr):
     Checks for exon, gene, and intron records from this chr
     """
     exon_select = """SELECT * from exon 
-                     WHERE chr=%s
+                     WHERE chr=\'%s\'
                      LIMIT 10""" % this_chr
 
     exon_records = db.getDBRecords_Dict(exon_select, db_name)
@@ -308,7 +308,7 @@ def checkChr(db, db_name, this_chr):
         return False
     
     intron_select = """SELECT * from intron 
-                     WHERE chr=%s
+                     WHERE chr=\'%s\'
                      LIMIT 10""" % this_chr
 
     intron_records = db.getDBRecords_Dict(intron_select, db_name)
@@ -317,7 +317,7 @@ def checkChr(db, db_name, this_chr):
         return False
 
     gene_select = """SELECT * from gene 
-                     WHERE chr=%s
+                     WHERE chr=\'%s\'
                      LIMIT 10""" % this_chr
 
     gene_records = db.getDBRecords_Dict(gene_select, db_name)
