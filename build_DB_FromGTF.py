@@ -127,6 +127,14 @@ def main():
     opt_parser = OptionParser()
    
     # Add Options. Required options should have default=None
+    opt_parser.add_option("--initialize",
+                          dest="initialize",
+                          action="store_true",
+                          help="""Will initialize the database by creating the
+                                  database and tables. Will not insert any
+                                  data. If database already exists, it will
+                                  erase the existing data.""",
+                          default=False)
     opt_parser.add_option("-g",
                           dest="gtf_file",
                           type="string",
@@ -146,7 +154,10 @@ def main():
                           help="""Fasta file containing all chromosome
                                   sequences.  If this option is given, exon and
                                   intron sequences will be stored in the
-                                  database as well.""",
+                                  database as well. If running this script on
+                                  individual chromosomes (for parallelization),
+                                  only use give the chromosome sequence, not the
+                                  full genome""",
                           default=None)
     opt_parser.add_option("-d",
                           dest="db_name",
@@ -162,6 +173,13 @@ def main():
 
     (options, args) = opt_parser.parse_args()
 	
+    initialize = options.initialize
+
+    if initialize:
+        db_obj.createDatabase(db_name)
+        createAnnotTables(db_obj, db_name)
+        sys.exit(0)
+
     # validate the command line arguments
     opt_parser.check_required("-g")
     opt_parser.check_required("-d")
@@ -177,8 +195,6 @@ def main():
     chr2gtf_lines = getGTFLines(options.gtf_file)
 
     buildAnnotDB(db_obj, chr2gtf_lines, db_name, use_gene_name)
-
-    inferIntrons(db_obj, db_name)
    
     if genome_file:
         extractInsertSeqs("exon", db_obj, genome_file, db_name)
@@ -194,12 +210,8 @@ def main():
 # FUNCTIONS #
 #############
 def buildAnnotDB(db, chr2gtf_lines, db_name, use_gene_name):
-    db.createDatabase(db_name)
-
-    createAnnotTables(db, db_name)
 
     for chr in chr2gtf_lines:
-    
         # Dictionary to hold information before creating exon entries.
         # Dictionaries will be of the form {transcript_id: [gff_obj]}
         five_utr_dict = {}
@@ -253,7 +265,9 @@ def buildAnnotDB(db, chr2gtf_lines, db_name, use_gene_name):
 #       insertFeature(db, "five_utr", five_utr_dict, db_name)
 #       insertFeature(db, "three_utr", three_utr_dict, db_name)
 
-    buildGeneTable(db, db_name)       
+        buildGeneTable(db, db_name, chr)       
+
+        inferIntrons(db, db_name, chr)
  
 def buildExonTable(db, chr, transcript_id2strand,
                    five_utr_dict,
@@ -391,7 +405,7 @@ def createAnnotTables(db_obj, db_name):
     db_obj.createIndex("gene_idx", "gene",
                        "name", db_name)
 
-def buildGeneTable(db, db_name):
+def buildGeneTable(db, db_name, chr):
     """
     This function derives the gene coordinates by finding the starting posiiton
     of the first exon(first occuring exon from all transcripts) and the ending
@@ -402,7 +416,8 @@ def buildGeneTable(db, db_name):
     first_exon_idx = 0
     last_exon_idx = -1
 
-    cg_nums = db.getDBRecords_Dict("SELECT DISTINCT gene_name FROM exon",
+    cg_nums = db.getDBRecords_Dict("""SELECT DISTINCT gene_name FROM exon 
+                                      WHERE chr = \'%s\'""" % chr,
                                    db_name)
 
     gene_rows = []
@@ -471,7 +486,7 @@ def extractInsertSeqs(tbl_name, db_obj, genome_file_name, db_name):
         # Get all exons or introns from this chr
         select_statement = """SELECT * FROM %s
                               WHERE chr=\'%s\'""" % (tbl_name,
-                                                          chr_name)
+                                                     chr_name)
 
         records = db_obj.getDBRecords_Dict(select_statement, db_name)
 
@@ -529,7 +544,7 @@ def getAllComponents(txt_id, dict_list):
     return blocks, classification
 
 def getGeneName(gff_obj, use_gene_name):
-    attributes = gff_obj.attirbutes.split(";")
+    attributes = gff_obj.attributes.split(";")
     name = None
     if use_gene_name:
         for attrib in attributes:
@@ -598,14 +613,16 @@ def get_transcript_id(gff_obj):
     return t_id
 
 
-def inferIntrons(db, db_name):
+def inferIntrons(db, db_name, chr):
     """
     Iterates through all transcripts, collects all exons, sorts them in order,
     and spaces in between each exon are considered intron coordinates.
     """
 
     # Get all transcripts
-    txt_select = "SELECT DISTINCT transcript_id FROM exon"
+    txt_select = """SELECT DISTINCT transcript_id FROM exon
+                    WHERE chr=\'%s\'""" % chr
+
     txt_records = db.getDBRecords_Dict(txt_select, db_name)
 
     intron_rows = []
@@ -639,8 +656,6 @@ def inferIntrons(db, db_name):
             intron_start = prev_exon_end + 1
             intron_end = this_exon_start - 1
 
-            
-            
             gene_name = exon_row["gene_name"]
             if "'" in gene_name:
                 gene_name = gene_name.replace("'","''")
