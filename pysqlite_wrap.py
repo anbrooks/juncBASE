@@ -156,7 +156,7 @@ class DB:
 	
 	def getDBRecords_Dict( self, select_statement, database):
 		"""
-		Returns () if no records exist.
+		Returns [] if no records exist.
 		"""
         	#Connect to Database
         	conn = self.__connect(database)
