@@ -22,6 +22,9 @@ from broad_helperFunctions import runLSF
 #############
 # CONSTANTS #
 #############
+# Database variables
+DB_DIR = "./"
+
 BIN_DIR = os.path.realpath(os.path.dirname(sys.argv[0]))
 SCRIPT = "%s/build_DB_FromGTF.py" % BIN_DIR
 if not os.path.exists(SCRIPT):
@@ -68,7 +71,7 @@ def main():
    
     # Add Options. Required options should have default=None
     opt_parser.add_option("--initialize",
-                          dest="intialize",
+                          dest="initialize",
                           action="store_true",
                           help="""Will split up the gtf file into separate temp files
                                   and initalize the database.""",
@@ -166,7 +169,7 @@ def main():
 
     sqlite_db_dir = options.sqlite_db_dir
 
-    num_processes = option.num_processes
+    num_processes = options.num_processes
     run_lsf = options.run_lsf
 
     force = options.force
@@ -181,10 +184,12 @@ def main():
     if options.initialize:    
         chr2lines = {}
 
+        gtf_file_path = gtf_file_name
+        gtf_file_name = gtf_file_name.split("/")[-1]
         gtf_file_comp = gtf_file_name.split(".")   
-        gtf_file_prefix = ".".join(gtf_file_name[:-1])
+        gtf_file_prefix = ".".join(gtf_file_comp[:-1])
  
-        gtf_file = open(gtf_file_name)
+        gtf_file = open(gtf_file_path)
 
         for line in gtf_file:
             this_chr = line.split("\t")[0]
