@@ -348,10 +348,12 @@ def createAnnotTables(db_obj, db_name):
            strand TEXT,
            watson_strand_sequence TEXT,
            classification TEXT""",
-         db_name)
+         db_name,
+         check_same_thread = False)
 
     db_obj.createIndex("exon_idx", "exon",
-                       "transcript_id, gene_name", db_name)
+                       "transcript_id, gene_name", db_name,
+                       check_same_thread = False)
 
     
     db_obj.createTable("intron",
@@ -364,9 +366,11 @@ def createAnnotTables(db_obj, db_name):
            strand TEXT,
            watson_strand_sequence TEXT,
            classification TEXT""",
-       db_name)
+       db_name,
+       check_same_thread = False)
     db_obj.createIndex("intron_idx", "intron",
-                       "transcript_id, gene_name", db_name)
+                       "transcript_id, gene_name", db_name,
+                       check_same_thread = False)
 
 #   db_obj.createTable("cds",
 #       """exon_id INTEGER PRIMARY KEY,
@@ -405,9 +409,11 @@ def createAnnotTables(db_obj, db_name):
            start INTEGER,
            end INTEGER,
            strand TEXT""",
-        db_name)
+        db_name,
+        check_same_thread = False)
     db_obj.createIndex("gene_idx", "gene",
-                       "name", db_name)
+                       "name", db_name,
+                        check_same_thread = False)
 
 def buildGeneTable(db, db_name, chr):
     """
@@ -422,7 +428,8 @@ def buildGeneTable(db, db_name, chr):
 
     cg_nums = db.getDBRecords_Dict("""SELECT DISTINCT gene_name FROM exon 
                                       WHERE chr = \'%s\'""" % chr,
-                                   db_name)
+                                   db_name,
+                                   check_same_thread = False)
 
     gene_rows = []
     for row in cg_nums:
@@ -440,7 +447,8 @@ def buildGeneTable(db, db_name, chr):
                                 WHERE gene_name=\'%s\'
                                 ORDER BY start""" % mysql_query_gene
 
-        start_records = db.getDBRecords_Dict(start_select_state, db_name)
+        start_records = db.getDBRecords_Dict(start_select_state, db_name,
+                                             check_same_thread = False)
 
         # Get the strand of the gene, inferred from exon strands
         strand = getStrand(start_records, gene)
@@ -451,7 +459,8 @@ def buildGeneTable(db, db_name, chr):
         end_select_state = """SELECT end FROM exon
                               WHERE gene_name=\'%s\'
                               ORDER BY end""" % mysql_query_gene
-        end_records = db.getDBRecords_Dict(end_select_state, db_name)
+        end_records = db.getDBRecords_Dict(end_select_state, db_name,
+                                           check_same_thread = False)
 
         gene_start = int(start_records[first_exon_idx]["start"])
         gene_end = int(end_records[last_exon_idx]["end"])
@@ -493,7 +502,8 @@ def extractInsertSeqs(tbl_name, db_obj, genome_file_name, db_name):
                               WHERE chr=\'%s\'""" % (tbl_name,
                                                      chr_name)
 
-        records = db_obj.getDBRecords_Dict(select_statement, db_name)
+        records = db_obj.getDBRecords_Dict(select_statement, db_name,
+                                           check_same_thread = False)
 
         if records is None:
             print "No records found on %s" % chr_name
@@ -516,7 +526,8 @@ def extractInsertSeqs(tbl_name, db_obj, genome_file_name, db_name):
                                       WHERE intron_id=%d""" % (seq,
                                                             int(row["intron_id"]))
 
-            db_obj.updateTable(tbl_name, update_statement, db_name)
+            db_obj.updateTable(tbl_name, update_statement, db_name,
+                               check_same_thread = False)
                 
 
 def formatLine(line):
@@ -628,7 +639,7 @@ def inferIntrons(db, db_name, chr):
     txt_select = """SELECT DISTINCT transcript_id FROM exon
                     WHERE chr=\'%s\'""" % chr
 
-    txt_records = db.getDBRecords_Dict(txt_select, db_name)
+    txt_records = db.getDBRecords_Dict(txt_select, db_name, check_same_thread = False)
 
     intron_rows = []
     for row in txt_records:
@@ -645,7 +656,8 @@ def inferIntrons(db, db_name, chr):
                          WHERE transcript_id=\'%s\'
                          ORDER BY start""" % txt
 
-        exon_records = db.getDBRecords_Dict(exon_select, db_name)
+        exon_records = db.getDBRecords_Dict(exon_select, db_name,
+                                            check_same_thread = False)
 
         if not validTranscript(exon_records):
             print "Transcript has overlapping exons: %s" % txt
@@ -717,7 +729,8 @@ def insertFeature(db, table, table_dict, db_name):
                                   end>=%d""" % (this_txt_id,
                                                 int(gff_obj.start),
                                                 int(gff_obj.end))
-            record = db.getDBRow_Dict(select_statement, db_name)
+            record = db.getDBRow_Dict(select_statement, db_name,
+                                      check_same_thread = False)
             if record == None:
                 print "Could not find exon for %s:" % table
                 print gff_obj
@@ -736,7 +749,7 @@ def insertFeature(db, table, table_dict, db_name):
 
             cols = "exon_id, start, end"
             vals = "%d,%d,%d" % (exon_id, int(gff_obj.start), int(gff_obj.end))
-            db.insertIntoTable(table, cols, vals, db_name)
+            db.insertIntoTable(table, cols, vals, db_name, check_same_thread = False)
 
 def mergeConnectBlocks(blocks):
     """
@@ -788,7 +801,8 @@ def mergeConnectBlocks(blocks):
         
 def rowExists( db, db_name, select_statement):
 
-    row = db.getDBRow_Dict( select_statement, db_name )
+    row = db.getDBRow_Dict( select_statement, db_name ,
+                            check_same_thread = False)
 
     if row == None:
         return False
