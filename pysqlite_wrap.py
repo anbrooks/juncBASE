@@ -49,8 +49,8 @@ class DB:
 		if not db_dir.endswith("/"):
 			self.db_dir=db_dir + "/"
 
-	def __connect(self, database):
-		return sqlite.connect( self.db_dir + database )	
+	def __connect(self, database, check_same_thread = True):
+		return sqlite.connect( self.db_dir + database, check_same_thread )	
 
 	def createDatabase(self,database_name):
 		# Delete previoius database
@@ -121,8 +121,8 @@ class DB:
 		conn.close()	
 
 	def insertListIntoTable(self, table_name, column_names, values_list, database,
-                          val_string=None):
-		conn = self.__connect(database)
+                          val_string=None, check_same_thread = True):
+		conn = self.__connect(database, check_same_thread)
 		cursor = conn.cursor()
 
 		if not val_string:
