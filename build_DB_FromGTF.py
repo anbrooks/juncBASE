@@ -173,6 +173,13 @@ def main():
 
     (options, args) = opt_parser.parse_args()
 	
+    # validate the command line arguments
+    opt_parser.check_required("-d")
+
+    db_obj = DB(options.sqlite_db_dir)
+
+    db_name = options.db_name
+
     initialize = options.initialize
 
     if initialize:
@@ -182,13 +189,9 @@ def main():
 
     # validate the command line arguments
     opt_parser.check_required("-g")
-    opt_parser.check_required("-d")
 
     use_gene_name = options.use_gene_name
 
-    db_obj = DB(options.sqlite_db_dir)
-
-    db_name = options.db_name
 
     genome_file = options.genome_file_name
 
@@ -331,7 +334,8 @@ def buildExonTable(db, chr, transcript_id2strand,
                            "transcript_id, gene_name, chr, start, end, strand, classification",
                            exon_table_rows,
                            db_name,
-                           "?,?,?,?,?,?,?")
+                           "?,?,?,?,?,?,?",
+                           check_same_thread = False)
 
 def createAnnotTables(db_obj, db_name):
     db_obj.createTable("exon",
@@ -463,7 +467,8 @@ def buildGeneTable(db, db_name, chr):
                            "name, strand, chr, start, end",
                            gene_rows,
                            db_name,
-                           "?,?,?,?,?")
+                           "?,?,?,?,?",
+                           check_same_thread = False)
 
 def extractInsertSeqs(tbl_name, db_obj, genome_file_name, db_name):
     """
@@ -672,7 +677,8 @@ def inferIntrons(db, db_name, chr):
                            "transcript_id, start, end, chr, strand, gene_name, classification",
                            intron_rows,
                            db_name,
-                           "?,?,?,?,?,?,?")
+                           "?,?,?,?,?,?,?",
+                           check_same_thread = False)
 
 def getExonTuple(db, txt_id, gene_name, chr, start, end, strand, classification,
                 db_name):
