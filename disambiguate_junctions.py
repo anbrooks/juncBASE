@@ -12,6 +12,7 @@ import sys
 import optparse 
 import os
 import pdb
+import shutil
 
 from Bio import SeqIO
 from createPseudoSample import getChr
@@ -119,7 +120,7 @@ def main():
                 # Do not overwrite original file if it exists (prevents totally
                 # losing information in reruns
                 if not os.path.exists(original_bed_name):
-                    os.path.copy(bed_file_name, original_bed_name)
+                    shutil.copy(bed_file_name, original_bed_name)
                 
                 original_bed = open(original_bed_name)
                 bed_file = open(bed_file_name, "w")
@@ -153,7 +154,7 @@ def main():
 
             # Do not overwirte original file
             if not os.path.exists(original_bed_name):
-                os.path.copy(bed_file_name, original_bed_name)
+                shutil.copy(bed_file_name, original_bed_name)
 
             original_bed = open(original_bed_name)
             bed_file = open(bed_file_name, "w")
