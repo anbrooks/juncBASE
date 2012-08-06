@@ -166,6 +166,9 @@ def main():
     # {event:sample:(excl, incl)}
     event2sample2counts = {}
 
+    # {event:(set(genes), strand)
+    event2genesStrand = {}    
+
     # {event:sample:(excl, incl)}
     left_intron2sample2counts = {}
     right_intron2sample2counts = {}
@@ -182,9 +185,11 @@ def main():
     for line in first_file:
         line = formatLine(line)
 
-        event_key, count_str = getKeyandCount(line)
+        event_key, count_str, genes, strand = getKeyandCount(line)
 
         event2sample2counts[event_key] = {first_sample:count_str}
+        
+        updateGeneStrand(event2genesStrand, event_key, genes, strand)
 
         if "intron_retention" in line:
             left_count_str, right_count_str = getIRKeyandCounts(line, lengthNorm)
@@ -203,7 +208,7 @@ def main():
         for line in samp_file:
             line = formatLine(line)
 
-            event_key, count_str = getKeyandCount(line)
+            event_key, count_str, genes, strand = getKeyandCount(line)
         
             if event_key not in event2sample2counts:
                 print "Event from sample, not in dict: %s, %s" % (samp,
@@ -211,6 +216,8 @@ def main():
                 continue
 
             event2sample2counts[event_key][samp] = count_str
+
+            updateGeneStrand(event2genesStrand, event_key, genes, strand)
         
             if "intron_retention" in line:
                 left_count_str, right_count_str = getIRKeyandCounts(line, lengthNorm)
@@ -256,12 +263,16 @@ def main():
                 skipped_ir_events.add(event_key)
                 continue
 
-        outline = "%s\t%s\n" % (event_key, 
+        out_key = getOutKey(event_key, 
+                            event2genesStrand[event_key][0],
+                            event2genesStrand[event_key][1],
+
+        outline = "%s\t%s\n" % (out_key, 
                                 "\t".join(counts_list))
 
         output_file.write(outline)
         if psi_output_file:
-            outline = "%s\t%s\n" % (event_key,
+            outline = "%s\t%s\n" % (out_key,
                                     "\t".join(psi_list))
             psi_output_file.write(outline)
 
@@ -292,13 +303,17 @@ def main():
                 counts_list.append("0;0")
                 psi_list.append(NA)
 
-        outline = "%s\t%s\n" % (event_key,
+        out_key = getOutKey(event_key, 
+                            event2genesStrand[event_key][0],
+                            event2genesStrand[event_key][1])
+
+        outline = "%s\t%s\n" % (out_key,
                                 "\t".join(counts_list))
 
         left_file.write(outline)
 
         if psi_left_file:
-            outline = "%s\t%s\n" % (event_key,
+            outline = "%s\t%s\n" % (out_key,
                                     "\t".join(psi_list))
             psi_left_file.write(outline)
 
@@ -330,13 +345,17 @@ def main():
                 counts_list.append("0;0")
                 psi_list.append(NA)
 
-        outline = "%s\t%s\n" % (event_key,
+        out_key = getOutKey(event_key, 
+                            event2genesStrand[event_key][0],
+                            event2genesStrand[event_key][1])
+
+        outline = "%s\t%s\n" % (out_key,
                                 "\t".join(counts_list))
 
         right_file.write(outline)
 
         if psi_right_file:
-            outline = "%s\t%s\n" % (event_key,
+            outline = "%s\t%s\n" % (out_key,
                                     "\t".join(psi_list))
             psi_right_file.write(outline)
 
@@ -345,8 +364,6 @@ def main():
     if psi_right_file:
         psi_right_file.close()
      
-    
-	
     sys.exit(0)
 
 ############
@@ -364,8 +381,11 @@ def formatLine(line):
 def getKeyandCount(line):
     line_list = line.split("\t")
 
-    event_key_list = line_list[0:1] + line_list[2:12]
+    event_key_list = line_list[0:1] + line_list[2:3] + line_list[4:5] + line_list[6:12]
     event_key = "\t".join(event_key_list)
+
+    genes = line_list[3].split(",")
+    strand = line_list[5]
 
     excl_count = line_list[-2]
     incl_count = line_list[-1] 
@@ -376,7 +396,7 @@ def getKeyandCount(line):
         print "Negative value in %s" % line
         count_str = "0;0"
 
-    return event_key, count_str
+    return event_key, count_str, genes, strand
 
 def getIRKeyandCounts(line, lengthNorm):
     """ 
@@ -407,12 +427,26 @@ def getIRKeyandCounts(line, lengthNorm):
 
     return left_count_str, right_count_str
 
+def getOutKey(event_key, genes, strand):
+    """
+    Inserts the gene and strand information into the output events
+    """
+    event_list = event_key.split("\t") 
+    event_list.insert(2, ",".join(genes))
+    event_list.insert(4, strand)
+
+    return "\t".join(event_list)
+
 def getPSI(excl_incl_ct_str):
 
     excl_str, incl_str = excl_incl_ct_str.split(";")
 
-    excl = float(excl_str)
-    incl = float(incl_str)
+    try:
+        excl = float(excl_str)
+        incl = float(incl_str)
+    except:
+        print "Warning:Bad PSI value"
+        return NA
 
     if excl + incl == 0:
         return NA
@@ -446,6 +480,31 @@ def hasInclusionCounts(event_key,
             break
 
     return (leftHasInclusion and rightHasInclusion)
+
+def updateGeneStrand(event2genesStrand, event_key, genes, strand):
+    """
+    Will resolve strand and gene information.
+    Dictionary is of the format:
+    {event_key: (set([genes,]),
+                 strand)}
+    """
+    try:
+        this_strand = event2genesStrand[event_key][1]
+        if this_strand != strand:
+            event2genesStrand[event_key][1] = "."
+    else:
+        # Key does not exist
+        event2genesStrand[event_key] = (set([]),
+                                       strand)
+            
+    genes2update = []
+    for gene in genes:
+        if gene != "None":
+            genes2update.append(gene)
+
+    event2genesStrand[event_key][0].update(genes2update)
+
+    
 #################
 # END FUNCTIONS #	
 #################	
