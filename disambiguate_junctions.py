@@ -258,7 +258,7 @@ def getSamples(input_dir):
     samples = []
 
     for this_samp in os.listdir(input_dir):
-        if "pseudo" in this_samples:
+        if "pseudo" in this_samp:
             continue
 
         samp = input_dir + "/" + this_samp
@@ -269,6 +269,7 @@ def getSamples(input_dir):
         samples.append(this_samp)
 
     return samples
+
 def unFormatChr(chr_name):
     return chr_name.lstrip("chr")
 #################
