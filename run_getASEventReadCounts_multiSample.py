@@ -164,6 +164,11 @@ def main():
                                   simultaneously with this many samples.
                                   Default=%d""" % DEF_NUM_PROCESSES,
                           default=DEF_NUM_PROCESSES)
+    opt_parser.add_option("--nice",
+                          dest="nice",
+                          action="store_true",
+                          help="When running locally, use nice",
+                         default=False)
     opt_parser.add_option("--LSF",
                           dest="run_lsf",
                           action="store_true",
@@ -188,6 +193,12 @@ def main():
                           action="store_true",
                           help="""Will check samples that are not done and print
                                   out which need to still be run""",
+                         default=False)
+    opt_parser.add_option("--print_cmd",
+                          dest="print_cmd",
+                          action="store_true",
+                          help="""Will print commands that will be run, but will
+                                  not run them. Used for debugging.""",
                          default=False)
 
     (options, args) = opt_parser.parse_args()
@@ -234,6 +245,10 @@ def main():
 
     num_processes = options.num_processes
     run_LSF = options.run_lsf
+
+    nice = options.nice
+
+    print_cmd = options.print_cmd 
 
     force = options.force
     check = options.check
@@ -322,6 +337,9 @@ def main():
                         cmd += "--host %s --user %s --passwd %s" % (options.host,
                                                                  options.user,
                                                                  options.passwd)
+                if print_cmd:
+                    print cmd
+                    continue
 
                 if run_LSF:
                     runLSF(cmd, 
@@ -329,6 +347,9 @@ def main():
                            samp,
                            "hour") 
                     continue
+
+                if nice:
+                    cmd = "nice " + cmd
 
                 if ctr % num_processes == 0:
                     os.system(cmd)
@@ -396,12 +417,19 @@ def main():
                                                              options.user,
                                                              options.passwd)
 
+            if print_cmd:
+                print cmd
+                continue
+
             if run_LSF:
                 runLSF(cmd, 
                        "%s.getASEventReadCounts.bsub.out" % samp,
                        samp,
                        "week") # Week cue if running whole samples
                 continue
+
+            if nice:
+                cmd = "nice " + cmd
 
             if ctr % num_processes == 0:
                 os.system(cmd)
