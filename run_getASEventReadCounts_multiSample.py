@@ -266,7 +266,6 @@ def main():
                 os.mkdir(samp_dir)
 
             for chr in chr_list:
-                ctr += 1
                 chr_dir = samp_dir + "/" + samp + "_" + chr
                 if not os.path.exists(chr_dir):
                     os.mkdir(chr_dir)
@@ -292,6 +291,8 @@ def main():
                 if not force:
                     if file_is_present:
                         continue
+
+                ctr += 1
 
                 cmd = "python %s " % SCRIPT
                 cmd += "--jcn1 %s/pseudo_%s/pseudo_%s_junctions.bed " % (input_dir,
@@ -338,6 +339,9 @@ def main():
                                                                  options.user,
                                                                  options.passwd)
                 if print_cmd:
+                    if not run_LSF:
+                        if nice:
+                            cmd = "nice " + cmd
                     print cmd
                     continue
 
@@ -360,7 +364,6 @@ def main():
     else:
         ctr = 0
         for samp in samples:
-            ctr += 1
             # Check for output subdirectory
             full_output_dir = output_dir + "/" + samp
             if not os.path.exists(full_output_dir):
@@ -387,6 +390,8 @@ def main():
             if not force:
                 if file_is_present:
                     continue
+
+            ctr += 1
 
             cmd = "python %s " % SCRIPT
             cmd += "--jcn1 %s/pseudo/pseudo_junctions.bed " % input_dir
@@ -418,6 +423,9 @@ def main():
                                                              options.passwd)
 
             if print_cmd:
+                if not run_LSF:
+                    if nice:
+                        cmd = "nice " + cmd
                 print cmd
                 continue
 
