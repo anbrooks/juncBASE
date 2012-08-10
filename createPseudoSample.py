@@ -251,6 +251,12 @@ def getChr(input_dir):
 
         first_split = subfile.split("preProcess")[0]
         second_split = first_split.split("tmp")[-1]
+    
+        chr = second_split.strip("_")
+
+        if chr == "":
+            continue
+
         chr_list.append(second_split.strip("_"))
 
     return chr_list
