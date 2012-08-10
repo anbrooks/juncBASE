@@ -144,6 +144,9 @@ def getAllJcns(input_dir):
         if not os.path.isdir(input_dir + samp):
             continue
 
+        if "pseudo" in samp:
+            continue
+
         bed_file = open(input_dir + samp + "/" + samp + "_junctions.bed")
 
         jcn_str2strand = getJunctionStrs(bed_file)
