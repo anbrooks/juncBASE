@@ -141,7 +141,7 @@ def getAllJcns(input_dir):
            samp.endswith(".py") or samp.startswith("."):
             continue
     
-        if not os.isdir(input_dir + samp):
+        if not os.path.isdir(input_dir + samp):
             continue
 
         bed_file = open(input_dir + samp + "/" + samp + "_junctions.bed")
