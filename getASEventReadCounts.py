@@ -4975,7 +4975,7 @@ def parseJcns(jcn_file1, jcn_file2, genome_file, disambiguate_jcn_strand):
     
         if coord_str is None:
             continue
-# strand = None if there is no strand info
+
         jcn2strand[coord_str] = strand
 
         # Initializing count dictionary
@@ -5015,8 +5015,10 @@ def parseJcns(jcn_file1, jcn_file2, genome_file, disambiguate_jcn_strand):
         if coord_str is None:
             continue
 
-        # strand = None if no strand info
-        jcn2strand[coord_str] = updateStrand(jcn2strand[coord_str], strand)
+        try:
+            jcn2strand[coord_str] = updateStrand(jcn2strand[coord_str], strand)
+        except:
+            jcn2strand[coord_str] = strand
 
         if coord_str in jcn_count_dict:
             jcn_count_dict[coord_str][1] = int(count)
