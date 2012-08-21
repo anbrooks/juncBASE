@@ -4291,7 +4291,7 @@ def getJcnStrandInfo(jcn2strand, genome_file):
     for jcn in jcn2strand:
 
         # Only check for strand information if it does not exist
-        if jcn2strand[jcn]:
+        if jcn2strand[jcn] == "+" or jcn2strand[jcn] == "-":
             continue
 
         (chr, start, end) = convertCoordStr(jcn)     
@@ -4975,8 +4975,7 @@ def parseJcns(jcn_file1, jcn_file2, genome_file, disambiguate_jcn_strand):
     
         if coord_str is None:
             continue
-
-        # strand = None if there is no strand info
+# strand = None if there is no strand info
         jcn2strand[coord_str] = strand
 
         # Initializing count dictionary
@@ -5017,7 +5016,7 @@ def parseJcns(jcn_file1, jcn_file2, genome_file, disambiguate_jcn_strand):
             continue
 
         # strand = None if no strand info
-        jcn2strand[coord_str] = strand 
+        jcn2strand[coord_str] = updateStrand(jcn2strand[coord_str], strand)
 
         if coord_str in jcn_count_dict:
             jcn_count_dict[coord_str][1] = int(count)
@@ -8099,8 +8098,8 @@ def translateInput(bed_line):
         strand = None
         print "Something wrong with strand of junction: %s\n" % bed_line
 
-    if strand == ".":
-        strand = None
+#   if strand == ".":
+#       strand = None
 
     count = int(input_list[4])
 
