@@ -1212,6 +1212,11 @@ def main():
 
     ERROR_LOG.close()                                  
 
+    # Create empty file to indicate that the run completed
+    finished_file = open("finished.txt", "w")
+    finished_file.write("DONE\n")
+    finished_file.close()
+
     sys.exit(0)
 
 ############
