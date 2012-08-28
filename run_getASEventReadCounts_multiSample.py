@@ -13,6 +13,7 @@
 import sys
 import optparse 
 import os
+import pdb
 
 from subprocess import Popen
 from helperFunctions import runCmd
@@ -272,7 +273,7 @@ def main():
 
                 os.chdir(chr_dir)
 
-                expected_out_file = "%s_%s_all_AS_event_info.txt" % (samp, chr)
+                expected_out_file = "%s_%s_all_AS_event_info_irOnly.txt" % (samp, chr)
 
                 file_is_present = False
                 try:
@@ -371,15 +372,12 @@ def main():
 
             os.chdir(full_output_dir)
 
-            expected_out_file = "%s_all_AS_event_info.txt" % (samp)    
+            expected_out_file = "finished.txt"
                                                                                
             file_is_present = False                                            
             try:
-                if os.path.getsize(expected_out_file) == 0:                           
-                    if check:                                                         
-                        print "File is empty: %s" % expected_out_file
-                else:                                                            
-                    file_is_present = True                                       
+                file_size = os.path.getsize(expected_out_file)
+                file_is_present = True                                       
             except:                                                              
                 if check:
                     print "Does not exist: %s" % expected_out_file
