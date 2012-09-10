@@ -119,14 +119,17 @@ def main():
             out_2_not_1.write(event + "\n")
             continue
 
-        buildDictionary(event, "1")
+        buildDictionary(as_type2redundantGroup2event, event, "1")
     table1.close()
 
     # Now insert events from table 2
     for event in table2:
+        if event.startswith("#"):
+            continue    
+
         event = formatLine(event)
 
-        buildDictionary(event, "2")
+        buildDictionary(as_type2redundantGroup2event, event, "2")
     table2.close()
 
     # Now go through dictionary and output events
@@ -138,11 +141,11 @@ def main():
                 this_event = as_type2redundantGroup2event[as_type][rGroup].pop()
                 this_event_list = this_event.split("\t")
                 out_1_and_2.write("\t".join(this_event_list[:-1]) + "\n")
-            elif which_tables = [1]:
+            elif which_tables == [1]:
                 for event in as_type2redundantGroup2event[as_type][rGroup]:
                     this_event_list = this_event.split("\t")
                     out_1_not_2.write("\t".join(this_event_list[:-1]) + "\n")
-            elif which_tables = [2]:
+            elif which_tables == [2]:
                 for event in as_type2redundantGroup2event[as_type][rGroup]:
                     this_event_list = this_event.split("\t")
                     out_2_not_1.write("\t".join(this_event_list[:-1]) + "\n")
@@ -163,7 +166,7 @@ def main():
 #############
 # FUNCTIONS #
 #############
-def buildDictionary(event, which_table):
+def buildDictionary(as_type2redundantGroup2event, event, which_table):
     
     line_list = event.split("\t")
 
@@ -180,7 +183,10 @@ def buildDictionary(event, which_table):
         group_start, group_end = findLargestRegion(",".join([line_list[5],
                                                              line_list[6]]))
     else:
-        group_start, group_end = findLargestRegion(line_list[5])
+        try:
+            group_start, group_end = findLargestRegion(line_list[5])
+        except:
+            pdb.set_trace()
 
     redundantRegion = (chr, strand, group_start, group_end)
 
