@@ -27,6 +27,7 @@ robjects.r["options"](warn=-1)
 NA = "NA"
 SIGN_CUTOFF = 0.05
 DEF_THRESH = 25
+DEF_DPSI_THRESH = 5.0
 
 #SAMP_SET_THRESH = 3
 
@@ -113,6 +114,16 @@ def main():
                           help="""Which test to use. Either "t-test" or
                                   "Wilcoxon". Default=%s""" % DEF_TEST,
                           default=DEF_TEST)
+    opt_parser.add_option("--as_dPSI_thresh",
+                          dest="as_dPSI_thresh",
+                          type="float",
+                          help="""Minimum PSI difference between the maximum
+                                  and minimum PSI values for a given event to be
+                                  called an alternatively spliced event. This
+                                  should probably be less than the dPSI
+                                  threshold used to filter significantly
+                                  associated events. Default=%s""" % DEF_DPSI_THRESH,
+                          default=DEF_DPSI_THRESH)
     opt_parser.add_option("--sample_set1",
                           dest="sample_set1",
                           type="string",
@@ -127,11 +138,11 @@ def main():
                                   Names must be in header columns of input
                                   files.""",
                           default=None)
-    opt_parser.add_option("--html_out_dir",
-                          dest="html_out_dir",
-                          type="string",
-                          help="Directory to output html report.",
-                          default=None)
+#   opt_parser.add_option("--html_out_dir",
+#                         dest="html_out_dir",
+#                         type="string",
+#                         help="Directory to output html report.",
+#                         default=None)
 
     (options, args) = opt_parser.parse_args()
 	
@@ -146,6 +157,8 @@ def main():
     left_input_file_name = options.left_input
     right_input_file_name = options.right_input
     sum_thresh = options.threshold
+
+    as_dPSI_thresh = options.as_dPSI_thresh
 
     left_input_file = None
     right_input_file = None
@@ -191,6 +204,9 @@ def main():
     # {event_type:[pval]}
     event_type2pvals = {}
 
+    # {event_type:(set1_medianPSI, set2medianPSI),]}
+    event_type2PSI_vals_4_set = {}
+
     # {event::pval_idx}
     event2idx = {}
 
@@ -229,8 +245,15 @@ def main():
         total_samples = len(counts)
 
         # Fill PSI dict
+        min_psi = 200
+        max_psi = -1
         for i in range(len(counts)):
             (psi, sum_ct) = getPSI_sample_sum(counts[i], sum_thresh)
+            if psi != NA:
+                if psi < min_psi:
+                    min_psi = psi
+                if psi < max_psi:
+                    max_psi = psi
             if event in event2col2psi:
                 event2col2psi[event][i] = psi
                 event2col2sum[event][i] = sum_ct
@@ -260,6 +283,9 @@ def main():
                     set2_psis.append(event2col2psi[event][j])
 
         if len(set1_psis) <= samp_set_thresh1 or len(set2_psis) <= samp_set_thresh2:
+            continue
+
+        if (max_psi - min_psi) < as_dPSI_thresh:
             continue
         
 
@@ -306,6 +332,10 @@ def main():
         set1_psis_right = []        
         set2_psis_right = []
 
+        left_min_psi = 200
+        left_max_psi = -1
+        right_min_psi = 200
+        right_max_psi = -1
         for j in range(total_samples):
             [left_col_excl, left_col_incl] = map(int,left_events2counts[event][j].split(";"))
             [right_col_excl, right_col_incl] = map(int,right_events2counts[event][j].split(";"))
@@ -318,6 +348,18 @@ def main():
 
             (left_psi, sum_ct) = getPSI_sample_sum(left_events2counts[event][j], sum_thresh)
             (right_psi, sum_ct) = getPSI_sample_sum(right_events2counts[event][j], sum_thresh)
+
+            if left_psi != NA:
+                if left_psi < left_min_psi:
+                    left_min_psi = left_psi
+                if left_psi > left_max_psi:
+                    left_max_psi = left_psi
+
+            if right_psi != NA:
+                if right_psi < right_min_psi:
+                    right_min_psi = right_psi
+                if right_psi > right_max_psi:
+                    right_max_psi = right_psi
 
             if idx2sample[j] in sample_set1:
                 if left_psi != NA:
@@ -332,6 +374,11 @@ def main():
 
         if len(set1_psis_left) <= samp_set_thresh1 or len(set1_psis_right) <= samp_set_thresh1\
             or len(set2_psis_left) <= samp_set_thresh2 or len(set2_psis_right) <= samp_set_thresh2:
+            continue
+
+        if (left_max_psi - left_min_psi) < as_dPSI_thresh:
+            continue
+        if (right_max_psi - right_min_psi) < as_dPSI_thresh:
             continue
 
         cur_len = len(event_type2pvals["intron_retention"])
