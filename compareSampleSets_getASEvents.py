@@ -256,7 +256,7 @@ def main():
                 psi_val = float(psi)
                 if psi_val < min_psi:
                     min_psi = psi_val
-                if psi_val < max_psi:
+                if psi_val > max_psi:
                     max_psi = psi_val
             if event in event2col2psi:
                 event2col2psi[event][i] = psi
@@ -286,10 +286,9 @@ def main():
         if (max_psi - min_psi) < as_dPSI_thresh:
             continue
         
-        event_type2PSI_vals_4_set[event_type].append((robjects.r['median'](robjects.FloatVector(set1_psis)),
-                                                      robjects.r['median'](robjects.FloatVector(set2_psis))))
+        event_type2PSI_vals_4_set[event_type].append((robjects.r['median'](robjects.FloatVector(set1_psis))[0],
+                                                      robjects.r['median'](robjects.FloatVector(set2_psis))[0]))
 
-        pdb.set_trace()
 
         # Calculate p-val for intron retention later
         if event_type == "intron_retention":
@@ -418,7 +417,7 @@ def main():
                                                                        method) 
     
     # Now go through all events and print out pvals
-    all_psi_output.write(header + "set1_med_psi\tset2_med_psi\tdeltaPSI\traw_pval\tcorrected_pval\n")
+    all_psi_output.write(header + "\tset1_med_psi\tset2_med_psi\tdeltaPSI\traw_pval\tcorrected_pval\n")
 
     for event in event2idx:
         event_type = getEventType(event)
