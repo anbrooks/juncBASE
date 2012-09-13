@@ -170,9 +170,9 @@ def main():
     
     all_psi_output = open(options.all_psi_output, "w")
 
-    html_out_dir = options.html_out_dir
-    if html_out_dir:
-        html_out_dir = formatDir(html_out_dir)
+#   html_out_dir = options.html_out_dir
+#   if html_out_dir:
+#       html_out_dir = formatDir(html_out_dir)
 
     method = options.mt_method
     if method != "BH" and method != "bonferroni":
@@ -248,13 +248,16 @@ def main():
         # Fill PSI dict
         min_psi = 200
         max_psi = -1
+        set1_psis = []        
+        set2_psis = []
         for i in range(len(counts)):
             (psi, sum_ct) = getPSI_sample_sum(counts[i], sum_thresh)
             if psi != NA:
-                if psi < min_psi:
-                    min_psi = psi
-                if psi < max_psi:
-                    max_psi = psi
+                psi_val = float(psi)
+                if psi_val < min_psi:
+                    min_psi = psi_val
+                if psi_val < max_psi:
+                    max_psi = psi_val
             if event in event2col2psi:
                 event2col2psi[event][i] = psi
                 event2col2sum[event][i] = sum_ct
@@ -262,23 +265,20 @@ def main():
                 event2col2psi[event] = {i:psi}
                 event2col2sum[event] = {i:sum_ct}
 
-
-        # Compare samples groups together in a wilcoxon rank sum test
-        set1_psis = []        
-        set2_psis = []
-        for j in range(len(counts)):
-            [col_excl, col_incl] = map(int,counts[j].split(";"))
+            # Compare samples groups together in a wilcoxon rank sum test
+            [col_excl, col_incl] = map(int,counts[i].split(";"))
 
             # Both samples have to be non-zero
             if belowThreshold(sum_thresh, col_excl, col_incl):
                 continue
 
-            if idx2sample[j] in sample_set1:
-                if event2col2psi[event][j] != NA:
-                    set1_psis.append(event2col2psi[event][j])
-            elif idx2sample[j] in sample_set2:
-                if event2col2psi[event][j] != NA:
-                    set2_psis.append(event2col2psi[event][j])
+            if idx2sample[i] in sample_set1:
+                if event2col2psi[event][i] != NA:
+                    set1_psis.append(event2col2psi[event][i])
+            elif idx2sample[i] in sample_set2:
+                if event2col2psi[event][i] != NA:
+                    set2_psis.append(event2col2psi[event][i])
+
 
         if len(set1_psis) <= samp_set_thresh1 or len(set2_psis) <= samp_set_thresh2:
             continue
@@ -288,6 +288,8 @@ def main():
         
         event_type2PSI_vals_4_set[event_type].append((robjects.r['median'](robjects.FloatVector(set1_psis)),
                                                       robjects.r['median'](robjects.FloatVector(set2_psis))))
+
+        pdb.set_trace()
 
         # Calculate p-val for intron retention later
         if event_type == "intron_retention":
@@ -354,16 +356,18 @@ def main():
             (right_psi, sum_ct) = getPSI_sample_sum(right_events2counts[event][j], sum_thresh)
 
             if left_psi != NA:
-                if left_psi < left_min_psi:
-                    left_min_psi = left_psi
-                if left_psi > left_max_psi:
-                    left_max_psi = left_psi
+                left_psi_val = float(left_psi)
+                if left_psi_val < left_min_psi:
+                    left_min_psi = left_psi_val
+                if left_psi_val > left_max_psi:
+                    left_max_psi = left_psi_val
 
             if right_psi != NA:
-                if right_psi < right_min_psi:
-                    right_min_psi = right_psi
-                if right_psi > right_max_psi:
-                    right_max_psi = right_psi
+                right_psi_val = float(right_psi)
+                if right_psi_val < right_min_psi:
+                    right_min_psi = right_psi_val
+                if right_psi_val > right_max_psi:
+                    right_max_psi = right_psi_val
 
             if idx2sample[j] in sample_set1:
                 if left_psi != NA:
