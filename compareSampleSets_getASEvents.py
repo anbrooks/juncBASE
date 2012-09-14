@@ -138,6 +138,14 @@ def main():
                                   Names must be in header columns of input
                                   files.""",
                           default=None)
+    opt_parser.add_option("--as_only",
+                          dest="as_only",
+                          action="store_true",
+                          help="""Will output the psi table just to get a sense
+                                  of alternative splicing. t will not 
+                                  Names must be in header columns of input
+                                  files.""",
+                          default=None)
 #   opt_parser.add_option("--html_out_dir",
 #                         dest="html_out_dir",
 #                         type="string",
@@ -159,6 +167,8 @@ def main():
     sum_thresh = options.threshold
 
     as_dPSI_thresh = options.as_dPSI_thresh
+
+    as_only = options.as_only
 
     left_input_file = None
     right_input_file = None
@@ -280,10 +290,18 @@ def main():
                     set2_psis.append(event2col2psi[event][i])
 
 
-        if len(set1_psis) <= samp_set_thresh1 or len(set2_psis) <= samp_set_thresh2:
-            continue
+        if not as_only:
+            if len(set1_psis) <= samp_set_thresh1 or len(set2_psis) <= samp_set_thresh2:
+                continue
 
         if (max_psi - min_psi) < as_dPSI_thresh:
+            continue
+
+        if as_only:
+            cur_len = len(event_type2pvals[event_type])
+            event_type2pvals[event_type].append(1.0)
+            event2idx[event] = cur_len
+            event_type2PSI_vals_4_set[event_type].append((0.0,0.0))
             continue
         
         event_type2PSI_vals_4_set[event_type].append((robjects.r['median'](robjects.FloatVector(set1_psis))[0],
@@ -321,91 +339,92 @@ def main():
         event2idx[event] = cur_len
 
     # Now calculate intron retention
-    if left_input_file:
-        left_events2counts = getIntronLeftRightCounts(left_input_file)
-        right_events2counts = getIntronLeftRightCounts(right_input_file)
-    else:
-        left_events2counts = {}
-        right_events2counts = {}
+    if not as_only:
+        if left_input_file:
+            left_events2counts = getIntronLeftRightCounts(left_input_file)
+            right_events2counts = getIntronLeftRightCounts(right_input_file)
+        else:
+            left_events2counts = {}
+            right_events2counts = {}
 
-    for event in left_events2counts:
-        if event not in right_events2counts:
-            continue
-
-        set1_psis_left = []        
-        set2_psis_left = []
-        set1_psis_right = []        
-        set2_psis_right = []
-
-        left_min_psi = 200
-        left_max_psi = -1
-        right_min_psi = 200
-        right_max_psi = -1
-        for j in range(total_samples):
-            [left_col_excl, left_col_incl] = map(int,left_events2counts[event][j].split(";"))
-            [right_col_excl, right_col_incl] = map(int,right_events2counts[event][j].split(";"))
-
-            # Both samples have to be non-zero
-            if (belowThreshold(sum_thresh, left_col_excl, left_col_incl)
-                               or
-                belowThreshold(sum_thresh, right_col_excl, right_col_incl)):
+        for event in left_events2counts:
+            if event not in right_events2counts:
                 continue
 
-            (left_psi, sum_ct) = getPSI_sample_sum(left_events2counts[event][j], sum_thresh)
-            (right_psi, sum_ct) = getPSI_sample_sum(right_events2counts[event][j], sum_thresh)
+            set1_psis_left = []        
+            set2_psis_left = []
+            set1_psis_right = []        
+            set2_psis_right = []
 
-            if left_psi != NA:
-                left_psi_val = float(left_psi)
-                if left_psi_val < left_min_psi:
-                    left_min_psi = left_psi_val
-                if left_psi_val > left_max_psi:
-                    left_max_psi = left_psi_val
+            left_min_psi = 200
+            left_max_psi = -1
+            right_min_psi = 200
+            right_max_psi = -1
+            for j in range(total_samples):
+                [left_col_excl, left_col_incl] = map(int,left_events2counts[event][j].split(";"))
+                [right_col_excl, right_col_incl] = map(int,right_events2counts[event][j].split(";"))
 
-            if right_psi != NA:
-                right_psi_val = float(right_psi)
-                if right_psi_val < right_min_psi:
-                    right_min_psi = right_psi_val
-                if right_psi_val > right_max_psi:
-                    right_max_psi = right_psi_val
+                # Both samples have to be non-zero
+                if (belowThreshold(sum_thresh, left_col_excl, left_col_incl)
+                                   or
+                    belowThreshold(sum_thresh, right_col_excl, right_col_incl)):
+                    continue
 
-            if idx2sample[j] in sample_set1:
+                (left_psi, sum_ct) = getPSI_sample_sum(left_events2counts[event][j], sum_thresh)
+                (right_psi, sum_ct) = getPSI_sample_sum(right_events2counts[event][j], sum_thresh)
+
                 if left_psi != NA:
-                    set1_psis_left.append(left_psi)
+                    left_psi_val = float(left_psi)
+                    if left_psi_val < left_min_psi:
+                        left_min_psi = left_psi_val
+                    if left_psi_val > left_max_psi:
+                        left_max_psi = left_psi_val
+
                 if right_psi != NA:
-                    set1_psis_right.append(right_psi)
-            elif idx2sample[j] in sample_set2:
-                if left_psi != NA:
-                    set2_psis_left.append(left_psi)
-                if right_psi != NA:
-                    set2_psis_right.append(right_psi)
+                    right_psi_val = float(right_psi)
+                    if right_psi_val < right_min_psi:
+                        right_min_psi = right_psi_val
+                    if right_psi_val > right_max_psi:
+                        right_max_psi = right_psi_val
 
-        if len(set1_psis_left) <= samp_set_thresh1 or len(set1_psis_right) <= samp_set_thresh1\
-            or len(set2_psis_left) <= samp_set_thresh2 or len(set2_psis_right) <= samp_set_thresh2:
-            continue
+                if idx2sample[j] in sample_set1:
+                    if left_psi != NA:
+                        set1_psis_left.append(left_psi)
+                    if right_psi != NA:
+                        set1_psis_right.append(right_psi)
+                elif idx2sample[j] in sample_set2:
+                    if left_psi != NA:
+                        set2_psis_left.append(left_psi)
+                    if right_psi != NA:
+                        set2_psis_right.append(right_psi)
 
-        if (left_max_psi - left_min_psi) < as_dPSI_thresh:
-            continue
-        if (right_max_psi - right_min_psi) < as_dPSI_thresh:
-            continue
+            if len(set1_psis_left) <= samp_set_thresh1 or len(set1_psis_right) <= samp_set_thresh1\
+                or len(set2_psis_left) <= samp_set_thresh2 or len(set2_psis_right) <= samp_set_thresh2:
+                continue
 
-        cur_len = len(event_type2pvals["intron_retention"])
+            if (left_max_psi - left_min_psi) < as_dPSI_thresh:
+                continue
+            if (right_max_psi - right_min_psi) < as_dPSI_thresh:
+                continue
 
-        try:
-            left_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
-                                               robjects.FloatVector(set2_psis_left))[2][0]
-                    
-            right_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
-                                                robjects.FloatVector(set2_psis_right))[2][0]
-        except:
-            continue
+            cur_len = len(event_type2pvals["intron_retention"])
 
-        if robjects.r["is.nan"](left_pval)[0] or robjects.r["is.nan"](right_pval)[0]:
-            continue
-        else:
-            combined_pval = (left_pval + right_pval) - left_pval * right_pval
+            try:
+                left_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
+                                                   robjects.FloatVector(set2_psis_left))[2][0]
+                        
+                right_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
+                                                    robjects.FloatVector(set2_psis_right))[2][0]
+            except:
+                continue
 
-        event_type2pvals["intron_retention"].append(combined_pval)
-        event2idx[event] = cur_len
+            if robjects.r["is.nan"](left_pval)[0] or robjects.r["is.nan"](right_pval)[0]:
+                continue
+            else:
+                combined_pval = (left_pval + right_pval) - left_pval * right_pval
+
+            event_type2pvals["intron_retention"].append(combined_pval)
+            event2idx[event] = cur_len
 
     # All pairs have been evaluated, so now do multiple testing correction on
     # everything
@@ -413,8 +432,11 @@ def main():
     event_type2col2adjusted_pvals = {}
 
     for event_type in event_type2pvals:
-        event_type2adjusted_pvals[event_type] = robjects.r['p.adjust'](robjects.FloatVector(event_type2pvals[event_type]),
-                                                                       method) 
+        if as_only:
+            event_type2adjusted_pvals[event_type] = list(event_type2pvals[event_type])
+        else:
+            event_type2adjusted_pvals[event_type] = robjects.r['p.adjust'](robjects.FloatVector(event_type2pvals[event_type]),
+                                                                           method) 
     
     # Now go through all events and print out pvals
     all_psi_output.write(header + "\tset1_med_psi\tset2_med_psi\tdeltaPSI\traw_pval\tcorrected_pval\n")
