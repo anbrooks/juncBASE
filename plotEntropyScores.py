@@ -86,8 +86,10 @@ def main():
     opt_parser.check_required("-s")
     opt_parser.check_required("-o")
 
-    if options.sam_file.endswiths(".bam"):
-        sam_file = open(pysam.Samfile(options.sam_file, "rb"))
+    isBam = False
+    if options.sam_file.endswith(".bam"):
+        sam_file = pysam.Samfile(options.sam_file, "rb")
+        isBam = True
     else:
         sam_file = open(options.sam_file)
     output_name = options.output_name
@@ -97,7 +99,7 @@ def main():
         known_junctions = getForcedJunctions(options.known_junctions)
     
 
-    jcn2JcnInfoDict, jcn2type = parseSAMFile(sam_file, known_junctions)
+    jcn2JcnInfoDict, jcn2type = parseSAMFile(sam_file, known_junctions, isBam)
 
 
 #    all_entropies = []
@@ -182,14 +184,14 @@ def getType(jcn_str, known_junctions):
     return "N"
     
 
-def parseSAMFile(sam_file, known_junctions):
+def parseSAMFile(sam_file, known_junctions, isBam):
     jcn2JcnInfo = {}
     jcn2type = {}
 
     insertionFlag = False
     deletionFlag = False
     for line in sam_file:
-        if options.sam_file.endswith(".bam"):
+        if isBam:
             line = convert2SAMLine(sam_file, line)
 
         line = formatLine(line)
