@@ -190,6 +190,9 @@ def parseSAMFile(sam_file, known_junctions, isBam):
 
     insertionFlag = False
     deletionFlag = False
+    softclipFlag = False
+    hardclipFlag = False
+
     for line in sam_file:
         if isBam:
             line = convert2SAMLine(sam_file, line)
