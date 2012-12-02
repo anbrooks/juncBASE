@@ -235,6 +235,21 @@ def parseSAMFile(sam_file, known_junctions, isBam):
                 deletionFlag = True
                 continue
 
+            s_count = cigar.count("S")
+            if s_count > 0:
+                if not softclipFlag:
+                    print "Not supporting softclipping, yet e.g., %s" % cigar
+                softclipFlag = True
+                continue
+
+            h_count = cigar.count("H")
+            if h_count > 0:
+                if not hardclipFlag:
+                    print "Not supporting hardclipping, yet e.g., %s" % cigar
+                hardclipFlag = True
+                continue
+
+
             if n_count == 0:
                 print "Expecting a junction read: %s" % cigar
                 continue
