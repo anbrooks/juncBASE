@@ -18,9 +18,12 @@ import math
 
 import pysam
 from preProcess_getASEventReadCounts import JcnInfo, convert2SAMLine, getForcedJunctions
-import rpy2.robjects as robjects
 
-r = robjects.r
+import matplotlib
+matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
+import numpy
 #############
 # CONSTANTS #
 #############
@@ -101,11 +104,15 @@ def main():
 
     jcn2JcnInfoDict, jcn2type = parseSAMFile(sam_file, known_junctions, isBam)
 
-
 #    all_entropies = []
 
     output_file = open(output_name + "_entropy_scores.txt", "w")
     offset_file = open(output_name + "_entropy_offset.txt", "w")
+
+    entropy_scores = []    
+    if known_junctions:
+        novel_entropy_scores = []
+
     for jcn in jcn2JcnInfoDict:
         pos2count = getPos2Count(jcn2JcnInfoDict[jcn].block_list)
         totalCount = len(jcn2JcnInfoDict[jcn].block_list)
@@ -115,6 +122,10 @@ def main():
 #        all_entropies.append(entropy)
         if known_junctions:
             output_file.write("%s\t%.3f\t%s\n" % (jcn, entropy, jcn2type[jcn]))
+            if jcn2type[jcn] == "N":
+                novel_entropy_scores.append(jcn2type[jcn])
+            else:
+                entropy_scores.append(jcn2type[jcn])
         else:
             output_file.write("%s\t%.3f\n" % (jcn, entropy))
 
@@ -127,6 +138,33 @@ def main():
     output_file.close()
     offset_file.close()
 
+    # Create entropy score distribution
+    fig = plt.figure()
+    
+    plt.hist(numpy.array(entropy_scores), 
+             bins=20,
+             range=[0,10],
+             histtype='stepfilled',
+             normed=True,
+             color = 'b',
+             alpha = 0.25,
+             label="junction entropy")
+
+    if known_junctions:
+        plt.hist(numpy.array(novel_entropy_scores), 
+                 bins=20,
+                 range=[0,10],
+                 histtype='stepfilled',
+                 normed=True,
+                 color = 'r',
+                 alpha = 0.25,
+                 label="junction entropy")
+
+    plt.xlabel("Entropy Score")
+    plt.ylabel("Probability")
+    plt.legend()
+
+    fig.savefig("%s_junction_entropy_distribution.png" % output_name)
 			
     sys.exit(0)
 
