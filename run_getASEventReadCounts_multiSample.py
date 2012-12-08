@@ -75,7 +75,8 @@ def main():
     opt_parser.add_option("-s",
                           dest="samples",
                           type="string",
-                          help="Comma separated list of samples to run.",
+                          help="""Comma separated list of samples to run or a file
+                                  with the names of the samples to run.""",
                           default=None)
     opt_parser.add_option("-i",
                           dest="input_dir",
@@ -176,6 +177,11 @@ def main():
                           help="""Will launch jobs on LSF. Default is running on
                                   local.""",
                           default=False)
+    opt_parser.add_option("--week",
+                          dest="week",
+                          action="store_true",
+                          help="Will launch jobs on LSF using week queue.",
+                          default=False)
     opt_parser.add_option("--by_chr",
                           dest="by_chr",
                           action="store_true",
@@ -214,7 +220,7 @@ def main():
     opt_parser.check_required("--fasta")
     opt_parser.check_required("--jcn_seq_len")
 
-    samples = options.samples.split(",")
+    samples = getSampleNames(options.samples)
 
     if os.path.exists(options.input_dir):
         input_dir = os.path.abspath(options.input_dir)
@@ -236,6 +242,7 @@ def main():
     if output_dir.endswith("/"):
         output_dir = output_dir.rstrip("/")
 
+
     txt_db1 = options.txt_db1
     txt_db2 = options.txt_db2
 
@@ -246,6 +253,8 @@ def main():
 
     num_processes = options.num_processes
     run_LSF = options.run_lsf
+
+    week = options.week
 
     nice = options.nice
 
@@ -273,18 +282,17 @@ def main():
 
                 os.chdir(chr_dir)
 
-                expected_out_file = "%s_%s_all_AS_event_info_irOnly.txt" % (samp, chr)
+                expected_out_file = "finished.txt"
 
                 file_is_present = False
+
                 try:
-                    if os.path.getsize(expected_out_file) == 0:
-                        if check:
-                            print "File is empty: %s" % expected_out_file
-                    else:   
-                        file_is_present = True
-                except:
+                    file_size = os.path.getsize(expected_out_file)
+                    file_is_present = True                                       
+                except:                                                              
                     if check:
-                        print "Does not exist: %s" % expected_out_file
+                        print "Does not exist: %s,%s,%s" % (samp, chr,
+                                                            expected_out_file)
 
                 if check:
                     continue
@@ -347,10 +355,15 @@ def main():
                     continue
 
                 if run_LSF:
+                    if week:
+                        queue = "week"
+                    else:
+                        queue = "hour"
+
                     runLSF(cmd, 
                            "%s_%s.getASEventReadCounts.bsub.out" % (samp, chr),
                            samp,
-                           "hour") 
+                           queue) 
                     continue
 
                 if nice:
@@ -380,7 +393,7 @@ def main():
                 file_is_present = True                                       
             except:                                                              
                 if check:
-                    print "Does not exist: %s" % expected_out_file
+                    print "Does not exist: %s, %s" % (samp, expected_out_file)
             
             if check:
                 continue
@@ -459,6 +472,24 @@ def formatLine(line):
     line = line.replace("\n","")
     return line
 
+def getSampleNames(samples_option):
+    if "," in samples_option:
+        return samples_options.split(",")
+
+    if not os.path.exists(samples_option):
+        print "Cannot find sample names file: %s" % samples_option
+        sys.exit(1)
+
+    s_file = open(samples_option)
+
+
+    samples = []
+    for line in s_file:
+        line = formatLine(line)
+        samples.append(line) 
+
+    return samples
+    
 #################
 # END FUNCTIONS #	
 #################	
