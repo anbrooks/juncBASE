@@ -837,7 +837,7 @@ def main():
                                     donor_out, afe_out, jcn_only_donor_out, 
                                     accept_out, ale_out, jcn_only_accept_out,
                                     all_event_info_out,
-                                    norm1, norm2, jcn_seq_len)
+                                    norm1, norm2)
 
 
 
@@ -1194,7 +1194,7 @@ def main():
 
     # Sum Totals for inclusion and exclusion isoforms in all_AS_event_info
     # and adjust for paired end counting
-    ## Get sum of exclusion/inclusion for alternative donor and
+    ## Get sum of exclusion/inclusion for cassette, alternative donor and
     # acceptor, mutually exclusive and multi cassette from acutal files.
     sumExclusion_Inclusion_counts(all_event_info_str, 
                                   ce2total_counts,
@@ -2463,6 +2463,8 @@ def updateCounts2all_as_events(file_str,
                                norm1, norm2, jcn_seq_len):
 
     """
+    TO DO: Will not perform length normalization anymore
+
     For length normalization this will use the number of junctions and exon
     lengths for the calculation
     """
@@ -5139,7 +5141,7 @@ def printAlternativeDonorsAcceptors(db,
                                     donor_out, afe_out, jcn_only_donor_out,
                                     accept_out, ale_out, jcn_only_accept_out,
                                     all_event_info_out,
-                                    norm1, norm2, jcn_seq_len):
+                                    norm1, norm2):
 
     (all_coord_start2end, 
      all_coord_end2start) = filterOutExclJcns(param_all_coord_start2end,
@@ -7856,6 +7858,8 @@ def sumExclusion_Inclusion_counts(file_str,
                                   norm1, norm2):
     """
     Also serves as a check point.
+
+    For cassette exon events, counts come from previous calculations
 
     For alternative donor an acceptor events, the counts come from previous
     calculations.
