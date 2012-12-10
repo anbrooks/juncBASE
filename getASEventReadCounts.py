@@ -129,20 +129,6 @@ def main():
                           help="""Alignment output of reads to genome only from
                                   the first sample""",
                           default=None)
-    opt_parser.add_option("--paired_genome_reads1",
-                          dest="paired_genome_reads1",
-                          type="string",
-                          help="""Alignment output of paired reads to genome only from
-                                  the first sample.  Alignments reported as
-                                  single reads.""",
-                          default=None)
-    opt_parser.add_option("--paired_genome_reads2",
-                          dest="paired_genome_reads2",
-                          type="string",
-                          help="""Alignment output of paired reads to genome only from
-                                  the second sample.  Alignments reported as
-                                  single reads.""",
-                          default=None)
     opt_parser.add_option("--coord_counts1",
                           dest="coord_counts1",
                           type="string",
@@ -156,62 +142,6 @@ def main():
                           help="""Instead of giving reads as input, can give
                                   precomputed output from coordReadCounts.py    
                                   from the first sample""",
-                          default=None)
-    opt_parser.add_option("--paired_coord_counts1",
-                          dest="paired_coord_counts1",
-                          type="string",
-                          help="""Instead of giving reads as input, can give
-                                  precomputed output from coordReadCounts.py    
-                                  of paired end reads from the first sample""",
-                          default=None)
-    opt_parser.add_option("--paired_coord_counts2",
-                          dest="paired_coord_counts2",
-                          type="string",
-                          help="""Instead of giving reads as input, can give
-                                  precomputed output from coordReadCounts.py    
-                                  of paired end reads from the second sample""",
-                          default=None)
-    opt_parser.add_option("--paired_read_w_coord1",
-                          dest="paired_read_w_coord1",
-                          type="string",
-                          help="""If --paired_coord_counts1 are given as input,
-                                  then the read associatied with each coord
-                                  must also be given from the first sample""",
-                          default=None)
-    opt_parser.add_option("--paired_read_w_coord2",
-                          dest="paired_read_w_coord2",
-                          type="string",
-                          help="""If --paired_coord_counts2 are given as input,
-                                  then the read associatied with each coord
-                                  must also be given from the first sample""",
-                          default=None)
-    opt_parser.add_option("--paired_junctions2qname1",
-                          dest="paired_junctions2qname1",
-                          type="string",
-                          help="""File that associates junction regions with
-                                  read qnames.  Only used if doing paired end
-                                  counting.""",
-                          default=None)
-    opt_parser.add_option("--paired_junctions2qname2",
-                          dest="paired_junctions2qname2",
-                          type="string",
-                          help="""File that associates junction regions with
-                                  read qnames.  Only used if doing paired end
-                                  counting.""",
-                          default=None)
-    opt_parser.add_option("--paired_ie_junctions2qname1",
-                          dest="paired_ie_junctions2qname1",
-                          type="string",
-                          help="""File that associates intron exon junctions
-                                  with read qnames.  Only used if doing paired end
-                                  counting.""",
-                          default=None)
-    opt_parser.add_option("--paired_ie_junctions2qname2",
-                          dest="paired_ie_junctions2qname2",
-                          type="string",
-                          help="""File that associates intron exon junctions
-                                  with read qnames.  Only used if doing paired end
-                                  counting.""",
                           default=None)
     opt_parser.add_option("--ie1",
                           dest="intron_exon1",
@@ -267,24 +197,11 @@ def main():
                                   be fairly clean of fragmented
                                   transcripts.""",
                           default=None)
-# Only used for polyA reads
-#   opt_parser.add_option("-l",
-#                         dest="read_length",
-#                         type="int",
-#                         help="Length of sequencing reads. Def: %d" % READ_LENGTH,
-#                         default=READ_LENGTH)
     opt_parser.add_option("-p",
                           dest="prefix",
                           type="string",
                           help="Prefix string to output files.",
                           default=None)
-# Not an option anymore. All analysis must have annotated exons
-#   opt_parser.add_option("--annotated_exons",
-#                         dest="a_exons",
-#                         action="store_true",
-#                         help="""Specify that only exon coordinates that are
-#                                 annotated should be used.""",
-#                         default=True)
     opt_parser.add_option("--norm1",
                           dest="norm1",
                           type="float",
@@ -447,55 +364,6 @@ def main():
 
     paired_endCounting1 = False
     paired_endCounting2 = False
-    if options.paired_genome_reads1:
-        if options.paired_coord_counts1:
-            print "Must select either paired genome reads or paired coord reads as input."
-            opt_parser.print_help()
-            sys.exit(1) 
-        paired_genome_read_file1 = options.paired_genome_reads1
-        paired_endCounting1 = True
-    elif options.paired_coord_counts1:
-        paired_coord_counts1 = options.paired_coord_counts1
-        if not options.paired_read_w_coord1:
-            print "If giving paired coord counts, also need paired_read_w_coord file."
-            opt_parser.print_help()
-            sys.exit(1)
-        paired_read_w_coord1 = options.paired_read_w_coord1
-        paired_endCounting1 = True
-
-    if options.paired_genome_reads2:
-        if options.paired_coord_counts2:
-            print "Must select either paired genome reads or paired coord reads as input."
-            opt_parser.print_help()
-            sys.exit(1) 
-        paired_genome_read_file2 = options.paired_genome_reads2
-        paired_endCounting2 = True
-    elif options.paired_coord_counts2:
-        paired_coord_counts2 = options.paired_coord_counts2
-        if not options.paired_read_w_coord2:
-            print "If giving paired coord counts, also need paired_read_w_coord file."
-            opt_parser.print_help()
-            sys.exit(1)
-        paired_read_w_coord2 = options.paired_read_w_coord2
-        paired_endCounting2 = True
-
-    if paired_endCounting1:
-        if not options.paired_junctions2qname1 or \
-           not options.paired_ie_junctions2qname1:
-            print "Must associate regions with reads." 
-            opt_parser.print_help()
-            sys.exit(1)
-
-        paired_junctions2qname_file1 = options.paired_junctions2qname1
-        paired_junctions2qname_file2 = options.paired_junctions2qname2
-        paired_ie_junctions2qname_file1 = options.paired_ie_junctions2qname1
-        paired_ie_junctions2qname_file2 = options.paired_ie_junctions2qname2
-
-        paired_junction2qname2count1 = parse_qnamefile(paired_junctions2qname_file1)
-        paired_junction2qname2count2 = parse_qnamefile(paired_junctions2qname_file2)
-
-        paired_ie_junction2qname2count1 = parse_qnamefile(paired_ie_junctions2qname_file1)
-        paired_ie_junction2qname2count2 = parse_qnamefile(paired_ie_junctions2qname_file2)
 
     ie1_file = None
     ie2_file = None
@@ -694,22 +562,6 @@ def main():
                 updateDictOfSets(all_confident_exons_start2end[chr], start, end)
                 updateDictOfSets(all_confident_exons_end2start[chr], end, start)
 
-    # BOOKMARK!!! Will need to add these to full event info file.
-#   print "Alternative PolyA"
-#   if countExonReads:
-#       printAlternativePolyA(db, txt_db,
-#                             annotated_genes,
-#                             full_exon_count_dict,
-#                             full_multi_exon_count_dict,
-#                             printExonCoords,
-#                             exon_coords,
-#                             read_length,
-#                             polya_out,
-#                             norm1, norm2)
-
-#   if countExonReads:
-#       polya_out.close()
-
     # Used to filter junction out of the altDonor/Acceptor events
     # These are all the junctions that skip exons.
     # excl_jcns = {chr:set(start, end)}
@@ -726,12 +578,6 @@ def main():
                                         all_coord_start2end,
                                         all_coord_end2start,
                                         all_jcn2strand,
-#                                        jcn_count_dict,
-#                                        coord_start2end,
-#                                        coord_end2start,
-#                                        pe_jcn_count_dict,
-#                                        pe_coord_start2end,
-#                                        pe_coord_end2start,
                                         full_exon_count_dict,
                                         full_multi_exon_count_dict,
                                         start_multi_exon_count_dict,
@@ -815,8 +661,6 @@ def main():
                                     alt_first_exons_end2start,
                                     alt_last_exons_start2end,
                                     alt_last_exons_end2start,
-#                                    start_exon_count_dict,
-#                                    end_exon_count_dict, 
                                     all_jcn_count_dict,
                                     all_coord_start2end,
                                     all_coord_end2start,
@@ -832,8 +676,6 @@ def main():
                                     printExonCoords,
                                     exon_coords,
                                     excl_jcns,
-                                    paired_endCounting1,
-                                    paired_endCounting2,
                                     donor_out, afe_out, jcn_only_donor_out, 
                                     accept_out, ale_out, jcn_only_accept_out,
                                     all_event_info_out,
@@ -854,8 +696,8 @@ def main():
         printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exons,
                       annotated_exons_by_strand, all_coord_start2end, all_coord_end2start,
                       all_jcn_count_dict, all_jcn2strand, ir_count_dict, 
-                      ir_left_out, ir_right_out, printExonCoords, exon_coords, norm1, norm2, jcn_seq_len,
-                      paired_ie_junction2qname2count1, paired_ie_junction2qname2count2)
+                      ir_left_out, ir_right_out, printExonCoords, exon_coords,
+                      norm1, norm2, jcn_seq_len)
 
     if ie1_file is not None:
         ir_left_out.close()
@@ -875,8 +717,7 @@ def main():
         ale_out_str = prefix + "_alternative_last_exon_counts.txt"
         me_out_str = prefix + "_mutually_exclusive_counts.txt"
         mc_out_str = prefix + "_multi_cassette_counts.txt"
-#       if countExonReads:
-#           polya_out_str = prefix + "_alternative_polyA_counts.txt"
+
         if ie1_file is not None:
             ir_left_out_str = prefix + "_intron_retention_left_counts.txt"
             ir_right_out_str = prefix + "_intron_retention_right_counts.txt"
@@ -893,8 +734,7 @@ def main():
         ale_out_str = "alternative_last_exon_counts.txt"
         me_out_str = "mutually_exclusive_counts.txt"
         mc_out_str = "multi_cassette_counts.txt"
-#       if countExonReads:
-#           polya_out_str = "alternative_polyA_counts.txt"
+
         if ie1_file is not None:
             ir_left_out_str = "intron_retention_left_counts.txt"
             ir_right_out_str = "intron_retention_right_counts.txt"
@@ -948,69 +788,10 @@ def main():
         mapped_file1_counts = parseCoordCounts(mapped_file1_name, norm1)
         mapped_file2_counts = parseCoordCounts(mapped_file2_name, norm2)
 
-        # Map paired end separately and maintain coordinates associated with
-        # q_names of reads
-        paired_mapped_file1_name = None
-        paired_read_w_coord_file1_name = None
-        if paired_genome_read_file1:
-            paired_mapped_file1_name = "tmp_exon_coord_file1_paired_readCounts.txt"
-            paired_read_w_coord_file1_name = "tmp_exon_coords_w_paired_read_file1.txt"
-
-            cmd = "python %s --coords tmp_exon_coord_file.txt " % COORD_COUNT
-
-            # Run paired reads through coord read counts
-            second_cmd = cmd + "--reads %s -o %s --read_assoc %s" % (paired_genome_read_file1,
-                                                                     paired_mapped_file1_name,
-                                                                     paired_read_w_coord_file1_name) 
-
-            print "Running: %s" % second_cmd
-            os.system(second_cmd)
-        elif paired_coord_counts1:
-            paired_mapped_file1_name = paired_coord_counts1
-            paired_read_w_coord_file1_name = paired_read_w_coord1
-
-        paired_mapped_file2_name = None
-        paired_read_w_coord_file2_name = None
-        if paired_genome_read_file2:
-            paired_mapped_file2_name = "tmp_exon_coord_file2_paired_readCounts.txt"
-            paired_read_w_coord_file2_name = "tmp_exon_coords_w_paired_read_file2.txt"
-
-            cmd = "python %s --coords tmp_exon_coord_file.txt " % COORD_COUNT
-
-            # Run paired reads through coord read counts
-            second_cmd = cmd + "--reads %s -o %s --read_assoc %s" % (paired_genome_read_file2,
-                                                                     paired_mapped_file2_name,
-                                                                     paired_read_w_coord_file2_name) 
-
-            print "Running: %s" % second_cmd
-            os.system(second_cmd)
-        elif paired_coord_counts2:
-            paired_mapped_file2_name = paired_coord_counts2
-            paired_read_w_coord_file2_name = paired_read_w_coord2
-
-        # Parse rest of the information if paired end files exist.
-        paired_mapped_file1_counts = None
-        if paired_mapped_file1_name:
-            paired_mapped_file1_counts = parseCoordCounts(paired_mapped_file1_name, norm1)
-            paired_coord2qname2count1 = parseReadAssocFile(paired_read_w_coord_file1_name)
-
-        paired_mapped_file2_counts = None
-        if paired_mapped_file2_name:
-            paired_mapped_file2_counts = parseCoordCounts(paired_mapped_file2_name, norm2)
-            paired_coord2qname2count2 = parseReadAssocFile(paired_read_w_coord_file2_name)
-
-        # Go through files and add to inclusion counts
-#       if countExonReads:
-#           addCoordCount2AltPolyA(polya_out_str, mapped_file1_counts,
-#                                  mapped_file2_counts)
-    
         # Counts calculated here need to be maintained
         # {exon_str: (excl1, incl1, excl2, incl2)}
         ce2total_counts = updateCounts2Cassette(cassette_out_str, 
                               mapped_file1_counts, mapped_file2_counts,
-                              paired_mapped_file1_counts, paired_mapped_file2_counts,
-                              paired_coord2qname2count1, paired_coord2qname2count2,
-                              paired_junction2qname2count1, paired_junction2qname2count2,
                               norm1, norm2, jcn_seq_len)
 
         # Will return a dictionary:
@@ -1018,38 +799,22 @@ def main():
         alt_donor2total_counts = updateCounts2AltDonorAccept(donor_out_str, 
                                     ir_count_dict,
                                     mapped_file1_counts,mapped_file2_counts,
-                                    paired_mapped_file1_counts, paired_mapped_file2_counts,
-                                    paired_coord2qname2count1, paired_coord2qname2count2,
-                                    paired_junction2qname2count1, paired_junction2qname2count2,
-                                    paired_ie_junction2qname2count1, paired_ie_junction2qname2count2,
                                     norm1, norm2, jcn_seq_len)
                                     
         alt_accept2total_counts = updateCounts2AltDonorAccept(accept_out_str, 
                                     ir_count_dict,
                                     mapped_file1_counts,mapped_file2_counts,
-                                    paired_mapped_file1_counts, paired_mapped_file2_counts,
-                                    paired_coord2qname2count1, paired_coord2qname2count2,
-                                    paired_junction2qname2count1, paired_junction2qname2count2,
-                                    paired_ie_junction2qname2count1, paired_ie_junction2qname2count2,
                                     norm1, norm2, jcn_seq_len)
 
         updateCounts2AltDonorAccept(jcn_only_donor_out_str,
                                     ir_count_dict,
                                     mapped_file1_counts,mapped_file2_counts,
-                                    paired_mapped_file1_counts, paired_mapped_file2_counts,
-                                    paired_coord2qname2count1, paired_coord2qname2count2,
-                                    paired_junction2qname2count1, paired_junction2qname2count2,
-                                    paired_ie_junction2qname2count1, paired_ie_junction2qname2count2,
                                     norm1, norm2, jcn_seq_len, True)
 
 
         updateCounts2AltDonorAccept(jcn_only_accept_out_str,
                                     ir_count_dict,
                                     mapped_file1_counts,mapped_file2_counts,
-                                    paired_mapped_file1_counts, paired_mapped_file2_counts,
-                                    paired_coord2qname2count1, paired_coord2qname2count2,
-                                    paired_junction2qname2count1, paired_junction2qname2count2,
-                                    paired_ie_junction2qname2count1, paired_ie_junction2qname2count2,
                                     norm1, norm2, jcn_seq_len, True)
 
         # {(incl_str, excl_str): (excl1, incl1, excl2, incl2)}
@@ -1058,9 +823,6 @@ def main():
                                                 all_coord_start2end,
                                                 all_coord_end2start,
                              mapped_file1_counts, mapped_file2_counts,
-                             paired_mapped_file1_counts, paired_mapped_file2_counts,
-                             paired_coord2qname2count1, paired_coord2qname2count2,
-                             paired_junction2qname2count1, paired_junction2qname2count2,
                              norm1, norm2, jcn_seq_len)
 
         # {(incl_str, excl_str): (excl1, incl1, excl2, incl2)}
@@ -1069,9 +831,6 @@ def main():
                                                 all_coord_start2end,
                                                 all_coord_end2start,
                              mapped_file1_counts, mapped_file2_counts,
-                             paired_mapped_file1_counts, paired_mapped_file2_counts,
-                             paired_coord2qname2count1, paired_coord2qname2count2,
-                             paired_junction2qname2count1, paired_junction2qname2count2,
                              norm1, norm2, jcn_seq_len)
 
         # Will return a dictionary:
@@ -1081,9 +840,6 @@ def main():
                                        all_coord_start2end,
                                        all_coord_end2start,
                                        mapped_file1_counts, mapped_file2_counts,
-                                       paired_mapped_file1_counts, paired_mapped_file2_counts,
-                                       paired_coord2qname2count1, paired_coord2qname2count2,
-                                       paired_junction2qname2count1, paired_junction2qname2count2,
                                        norm1, norm2, jcn_seq_len)
 
         # Will return a dictionary:
@@ -1093,40 +849,11 @@ def main():
                                    all_coord_start2end,
                                    all_coord_end2start,
                                    mapped_file1_counts, mapped_file2_counts,
-                                   paired_mapped_file1_counts, paired_mapped_file2_counts,
-                                   paired_coord2qname2count1, paired_coord2qname2count2,
-                                   paired_junction2qname2count1, paired_junction2qname2count2,
                                    norm1, norm2, jcn_seq_len)
 
         updateCounts2all_as_events(all_event_info_str, 
                                    mapped_file1_counts, mapped_file2_counts,
-                                   paired_mapped_file1_counts, paired_mapped_file2_counts,
-                                   paired_coord2qname2count1, paired_coord2qname2count2,
-                                   paired_junction2qname2count1, paired_junction2qname2count2,
-                                   paired_ie_junction2qname2count1, paired_ie_junction2qname2count2,
                                    norm1, norm2, jcn_seq_len)
-
-    if doFisher:    
-        file_list = [cassette_out_str, donor_out_str, accept_out_str,
-                     jcn_only_donor_out_str, jcn_only_accept_out_str,
-                     afe_out_str, ale_out_str, me_out_str, mc_out_str]
-#       if countExonReads:
-#           file_list.append(polya_out_str)
-        if ie1_file is not None:
-            file_list.append(ir_left_out_str)
-            file_list.append(ir_right_out_str)
-
-        for file_name in file_list:
-            file_prefix = file_name.split(".")[0]
-            cmd = "python %s -f %s --method %s " % (FISHER_SCRIPT, file_name, method)
-
-            # If it is not an intron_retention event,  then filter out zeros.
-            if "intron_retention" not in file_prefix:
-                cmd += "--filter "
-
-            cmd += "> %s_w_p_val.txt" % file_prefix
-
-            os.system(cmd)
 
     # Now do intron retention events
     if ie1_file is not None:
@@ -1167,18 +894,12 @@ def main():
         if printExonCoords:
             updateCounts2all_as_events(ir_file_name, 
                                    mapped_file1_counts, mapped_file2_counts,
-                                   paired_mapped_file1_counts, paired_mapped_file2_counts,
-                                   paired_coord2qname2count1, paired_coord2qname2count2,
-                                   paired_junction2qname2count1, paired_junction2qname2count2,
-                                   paired_ie_junction2qname2count1, paired_ie_junction2qname2count2,
                                    norm1, norm2, jcn_seq_len)
 
         # The exclusion counts in the original files are incorrect because
         # each end of the junction was calculated separately
         fixIRExclusion_count(ir_file_name, all_jcn_count_dict,
-                             norm1, norm2, jcn_seq_len,
-                             paired_junction2qname2count1,
-                             paired_junction2qname2count2)
+                             norm1, norm2, jcn_seq_len)
 
         # Combine irOnly with the rest of all_AS_event_info
         if ie1_file is not None:
@@ -1205,9 +926,6 @@ def main():
                                   mxe2total_counts,
                                   mc2total_counts,
                                   printExonCoords,
-                                  paired_coord2qname2count1, paired_coord2qname2count2,
-                                  paired_junction2qname2count1, paired_junction2qname2count2,
-                                  paired_ie_junction2qname2count1, paired_ie_junction2qname2count2,
                                   norm1, norm2)
 
     ERROR_LOG.close()                                  
@@ -1449,10 +1167,6 @@ def find_exon_clusters(next_or_previous, all_confident_exons,
 def updateCounts2AltDonorAccept(file_out_str, 
                                 ir_count_dict,
                                 mapped_file1_counts,mapped_file2_counts,
-                                paired_mapped_file1_counts, paired_mapped_file2_counts,
-                                paired_coord2qname2count1, paired_coord2qname2count2,
-                                paired_junction2qname2count1, paired_junction2qname2count2,
-                                paired_ie_junction2qname2count1, paired_ie_junction2qname2count2,
                                 norm1, norm2, jcn_seq_len,
                                 jcnOnly=False):
     """
@@ -1533,6 +1247,8 @@ def updateCounts2AltDonorAccept(file_out_str,
                                                            ordered_pos,
                                                            proportions1,
                                                            proportions2)
+
+
             line_list[1] = e_or_i
 
             if hasNegativeVals(excl1, incl1, excl2, incl2):
@@ -1804,68 +1520,6 @@ def updateCounts2AltDonorAccept(file_out_str,
                         excl1 += this_exon_ct1
                         excl2 += this_exon_ct2
     
-#       if incl_add_coord in mapped_file1_counts:
-#           incl1 += mapped_file1_counts[incl_add_coord]
-#       if incl_add_coord in mapped_file2_counts:
-#           incl2 += mapped_file2_counts[incl_add_coord]
-
-        ### BOOKMARK: ALL OF THESE PAIRED END COUNTS ARE WRONG
-        if paired_mapped_file1_counts:
-            if incl_add_coord in paired_mapped_file1_counts:
-                incl1 += paired_mapped_file1_counts[incl_add_coord]
-        if paired_mapped_file2_counts:
-            if incl_add_coord in paired_mapped_file2_counts:
-                incl2 += paired_mapped_file2_counts[incl_add_coord]
-
-        if paired_mapped_file1_counts:
-            # Adjust counts to incl1
-            qname_set_list = []
-            if incl_add_coord in paired_coord2qname2count1:
-                incl1 -= getPairedRegionCoordAdjust(paired_coord2qname2count1,
-                                                    incl_add_coord, norm1) 
-                qname_set_list.append(paired_coord2qname2count1[incl_add_coord].keys())
-            if incl_junction in paired_junction2qname2count1:
-                incl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                    incl_junction, norm1)
-                qname_set_list.append(paired_junction2qname2count1[incl_junction].keys())
-            if ie_junction in paired_ie_junction2qname2count1:
-                incl1 -= getPairedRegionCoordAdjust(paired_ie_junction2qname2count1,
-                                                    ie_junction, norm1)
-                qname_set_list.append(paired_ie_junction2qname2count1[ie_junction].keys())
-
-            # Now adjust for paired reads across regions.
-            incl1 -= getPairedCoordAdjust(qname_set_list, norm1)
-
-            for excl_jcn in excl_jcns:
-                if excl_jcn in paired_junction2qname2count1:
-                    excl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                        excl_jcn, norm1)
-   
-        if paired_mapped_file2_counts:
-            # Adjust counts to incl2 
-            qname_set_list = []
-            if incl_add_coord in paired_coord2qname2count2:
-                incl2 -= getPairedRegionCoordAdjust(paired_coord2qname2count2,
-                                                    incl_add_coord, norm2) 
-                qname_set_list.append(paired_coord2qname2count2[incl_add_coord].keys())
-            if incl_junction in paired_junction2qname2count2:
-                incl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                    incl_junction, norm2)
-                qname_set_list.append(paired_junction2qname2count2[incl_junction].keys())
-            if ie_junction in paired_ie_junction2qname2count2:
-                incl2 -= getPairedRegionCoordAdjust(paired_ie_junction2qname2count2,
-                                                    ie_junction, norm2)
-                qname_set_list.append(paired_ie_junction2qname2count2[ie_junction].keys())
-
-            # Now adjust for paired reads across regions.
-            incl2 -= getPairedCoordAdjust(qname_set_list, norm2)
-
-            for excl_jcn in excl_jcns:
-                if excl_jcn in paired_junction2qname2count2:
-                    excl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                        excl_jcn, norm2)
-
-
         # Create exclusion cts list
         if alt_start_or_end == "alt_start":
             this_incl1_ct = total_ordered_cts1_list.pop(ordered_pos.index(incl_start))
@@ -1949,9 +1603,6 @@ def updateCounts2AFE_ALE(a_out_str,
                          all_coord_start2end,
                          all_coord_end2start,
                          mapped_file1_counts, mapped_file2_counts,
-                         paired_mapped_file1_counts, paired_mapped_file2_counts,
-                         paired_coord2qname2count1, paired_coord2qname2count2,
-                         paired_junction2qname2count1, paired_junction2qname2count2,
                          norm1, norm2, jcn_seq_len):
 
     """
@@ -2062,13 +1713,6 @@ def updateCounts2AFE_ALE(a_out_str,
                 if this_distal_jcn:
                     distal_jcn2totalCounts2[this_distal_jcn] += int(round(mapped_file2_counts[incl_add_coord] * prop2))
 
-            if paired_mapped_file1_counts:
-                if incl_add_coord in paired_mapped_file1_counts:
-                    incl1 += paired_mapped_file1_counts[incl_add_coord]
-            if paired_mapped_file2_counts:
-                if incl_add_coord in paired_mapped_file2_counts:
-                    incl2 += paired_mapped_file2_counts[incl_add_coord]
-
         # Exclusion counts to all other exons
         excl_add_coords = line_list[12]
         excl_add_coord_list = []
@@ -2130,78 +1774,6 @@ def updateCounts2AFE_ALE(a_out_str,
                 if excl_add_coord in mapped_file2_counts:
                     distal_jcn2totalCounts2[this_distal_jcn] += int(round(mapped_file2_counts[excl_add_coord] * prop2))
                     total_excl_cts2_list[this_idx] += int(round(mapped_file2_counts[excl_add_coord] * prop2))
-
-                # BOOKMARK PAIRED END DOES NOT WORK YET
-                # Check paired end counting
-                if paired_mapped_file1_counts:
-                    if excl_add_coord in paired_mapped_file1_counts:
-                        excl1_add += paired_mapped_file1_counts[excl_add_coord]
-                if paired_mapped_file2_counts:
-                    if excl_add_coord in paired_mapped_file2_counts:
-                        excl2_add += paired_mapped_file2_counts[excl_add_coord]
-
-
-        ### BOOKMARK: ALL OF THESE PAIRED END COUNTS ARE WRONG
-        # Now Adjust for multiple counts from the same read if there is paired
-        # end data
-        if paired_mapped_file1_counts:
-            # PAIRED INCLUSION
-            qname_set_list = []
-            if incl_add_coord in paired_coord2qname2count1:
-                incl1 -= getPairedRegionCoordAdjust(paired_coord2qname2count1,
-                                                    incl_add_coord, norm1) 
-                qname_set_list.append(paired_coord2qname2count1[incl_add_coord].keys())
-            if incl_jcn in paired_junction2qname2count1:
-                incl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                    incl_jcn, norm1)
-                qname_set_list.append(paired_junction2qname2count1[incl_jcn].keys())
-
-            incl1 -= getPairedCoordAdjust(qname_set_list, norm1)
-
-            # PAIRED EXCLUSION
-            qname_set_list = []
-            for excl_coord in excl_add_coord_list:
-                if excl_coord in paired_coord2qname2count1:
-                    excl1 -= getPairedRegionCoordAdjust(paired_coord2qname2count1,
-                                                        excl_coord, norm1)
-                    qname_set_list.append(paired_coord2qname2count1[excl_coord].keys())
-            for excl_jcn in excl_jcns:
-                if excl_jcn in paired_junction2qname2count1:
-                    excl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                        excl_jcn, norm1)
-                    qname_set_list.append(paired_junction2qname2count1[excl_jcn].keys())
-
-            excl1 -= getPairedCoordAdjust(qname_set_list, norm1)
-               
-        # Sample 2 
-        if paired_mapped_file2_counts:
-            # PAIRED INCLUSION
-            qname_set_list = []
-            if incl_add_coord in paired_coord2qname2count2:
-                incl2 -= getPairedRegionCoordAdjust(paired_coord2qname2count2,
-                                                    incl_add_coord, norm2) 
-                qname_set_list.append(paired_coord2qname2count2[incl_add_coord].keys())
-            if incl_jcn in paired_junction2qname2count2:
-                incl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                    incl_jcn, norm2)
-                qname_set_list.append(paired_junction2qname2count2[incl_jcn].keys())
-
-            incl2 -= getPairedCoordAdjust(qname_set_list, norm2)
-
-            # PAIRED EXCLUSION
-            qname_set_list = []
-            for excl_coord in excl_add_coord_list:
-                if excl_coord in paired_coord2qname2count2:
-                    excl2 -= getPairedRegionCoordAdjust(paired_coord2qname2count2,
-                                                        excl_coord, norm2)
-                    qname_set_list.append(paired_coord2qname2count2[excl_coord].keys())
-            for excl_jcn in excl_jcns:
-                if excl_jcn in paired_junction2qname2count2:
-                    excl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                        excl_jcn, norm2)
-                    qname_set_list.append(paired_junction2qname2count2[excl_jcn].keys())
-
-            excl2 -= getPairedCoordAdjust(qname_set_list, norm2)
 
         # Length normalize
         incl1 = normalizeByLen(distal_jcn2totalCounts1[distal_jcn],
@@ -2275,60 +1847,9 @@ def findDistalJcn(jcn_list, incl_add_coord):
     # If not returned, could not find adjacent exon
     return None
 
-def addCoordCount2AltPolyA(polya_out_str, mapped_file1_counts,
-                           mapped_file2_counts):
-    file = open(polya_out_str)
-
-    lines = file.readlines()
-
-    file.close()
-
-    file2 = open(polya_out_str, "w")
-
-    for line in lines:
-        line = formatLine(line)
-
-        line_list = line.split("\t")
-
-        excl1 = int(line_list[6])
-        incl1 = int(line_list[7])
-        excl2 = int(line_list[8])
-        incl2 = int(line_list[9])
-
-        # Check for inclusion addition
-        incl_add_coord = line_list[10]
-        if incl_add_coord in mapped_file1_counts:
-            incl1 += mapped_file1_counts[incl_add_coord]
-        if incl_add_coord in mapped_file2_counts:
-            incl2 += mapped_file2_counts[incl_add_coord]
-
-        # Check for exclusion addition
-        excl_add_coord = line_list[11]
-        if excl_add_coord in mapped_file1_counts:
-            excl1 += mapped_file1_counts[excl_add_coord]
-        if excl_add_coord in mapped_file2_counts:
-            excl2 += mapped_file2_counts[excl_add_coord]
-
-        e_or_i = checkExcluionInclusion(excl1,
-                                        incl1,
-                                        excl2,
-                                        incl2) 
-
-        line_list[0] = e_or_i
-
-        out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
-                                            excl1, incl1,
-                                            excl2, incl2)
-        file2.write(out_str)
-
-    file2.close()        
 
 def updateCounts2Cassette(file_out_str, 
                           mapped_file1_counts, mapped_file2_counts,
-                          paired_mapped_file1_counts, paired_mapped_file2_counts,
-                          paired_coord2qname2count1, paired_coord2qname2count2,
-                          paired_junction2qname2count1,
-                          paired_junction2qname2count2,
                           norm1, norm2, jcn_seq_len):
     
     file = open(file_out_str)
@@ -2367,68 +1888,7 @@ def updateCounts2Cassette(file_out_str,
         if incl_add_coord in mapped_file2_counts:
             incl2 += normalizeByLen(mapped_file2_counts[incl_add_coord], incl_len)
 
-        # Check if there is paired end
-        if paired_mapped_file1_counts:
-            if incl_add_coord in paired_mapped_file1_counts:
-                incl1 += paired_mapped_file1_counts[incl_add_coord]
-        if paired_mapped_file2_counts:
-            if incl_add_coord in paired_mapped_file2_counts:
-                incl2 += paired_mapped_file2_counts[incl_add_coord]
-
-        if paired_mapped_file1_counts:
-            qname_set_list = []
-            # Adjust for paired end counts
-            if incl_add_coord in paired_coord2qname2count1:
-                incl1 -= getPairedRegionCoordAdjust(paired_coord2qname2count1,
-                                                    incl_add_coord, norm1) 
-                qname_set_list.append(paired_coord2qname2count1[incl_add_coord].keys())
-            for upstrm_jcn in upstrm_jcns:
-                if upstrm_jcn in paired_junction2qname2count1:
-                    incl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                        upstrm_jcn, norm1)
-                    qname_set_list.append(paired_junction2qname2count1[upstrm_jcn].keys())
-            for dwnstrm_jcn in dwnstrm_jcns:
-                if dwnstrm_jcn in paired_junction2qname2count1:
-                    incl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                        dwnstrm_jcn, norm1)
-                    qname_set_list.append(paired_junction2qname2count1[dwnstrm_jcn].keys())
-
-            incl1 -= getPairedCoordAdjust(qname_set_list, norm1)
-
-            # Adjust exclusion junctions if the same read aligned to the same
-            # junction multiple times
-            for excl_jcn in excl_jcns:
-                if excl_jcn in paired_junction2qname2count1:
-                    excl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                        excl_jcn, norm1)
-
-        if paired_mapped_file2_counts:
-            qname_set_list = []
-            if incl_add_coord in paired_coord2qname2count2:
-                incl2 -= getPairedRegionCoordAdjust(paired_coord2qname2count2,
-                                                    incl_add_coord, norm2) 
-                qname_set_list.append(paired_coord2qname2count2[incl_add_coord].keys())
-            for upstrm_jcn in upstrm_jcns:
-                if upstrm_jcn in paired_junction2qname2count2:
-                    incl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                        upstrm_jcn, norm2)
-                    qname_set_list.append(paired_junction2qname2count2[upstrm_jcn].keys())
-            for dwnstrm_jcn in dwnstrm_jcns:
-                if dwnstrm_jcn in paired_junction2qname2count2:
-                    incl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                        dwnstrm_jcn, norm2)
-                    qname_set_list.append(paired_junction2qname2count2[dwnstrm_jcn].keys())
-
-            incl2 -= getPairedCoordAdjust(qname_set_list, norm2)
-
-            # Adjust exclusion junctions if the same read aligned to the same
-            # junction multiple times
-            for excl_jcn in excl_jcns:
-                if excl_jcn in paired_junction2qname2count2:
-                    excl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                        excl_jcn, norm2)
-
-        e_or_i = checkExcluionInclusion(excl1,
+        e_or_i = checkExclusionInclusion(excl1,
                                         incl1,
                                         excl2,
                                         incl2) 
@@ -2456,10 +1916,6 @@ def updateCounts2Cassette(file_out_str,
 
 def updateCounts2all_as_events(file_str, 
                                mapped_file1_counts, mapped_file2_counts,
-                               paired_mapped_file1_counts, paired_mapped_file2_counts,
-                               paired_coord2qname2count1, paired_coord2qname2count2,
-                               paired_junction2qname2count1, paired_junction2qname2count2,
-                               paired_ie_junction2qname2count1, paired_ie_junction2qname2count2,
                                norm1, norm2, jcn_seq_len):
 
     """
@@ -2489,22 +1945,16 @@ def updateCounts2all_as_events(file_str,
         (excl_ct_str_samp1, excl_ct_str_samp2,
          sum_excl_ct_samp1, sum_excl_ct_samp2) = getCoordCounts4all_as_events(excl_exons, 
                                                                               mapped_file1_counts,
-                                                                              mapped_file2_counts,
-                                                                              paired_mapped_file1_counts,
-                                                                              paired_mapped_file2_counts)
+                                                                              mapped_file2_counts)
         (incl_ct_str_samp1, incl_ct_str_samp2,
          sum_incl_ct_samp1, sum_incl_ct_samp2) = getCoordCounts4all_as_events(incl_exons, 
                                                                               mapped_file1_counts,
-                                                                              mapped_file2_counts,
-                                                                              paired_mapped_file1_counts,
-                                                                              paired_mapped_file2_counts)
+                                                                              mapped_file2_counts)
 
         (const_ct_str_samp1, const_ct_str_samp2,
          sum_const_ct_samp1, sum_const_ct_samp2) = getCoordCounts4all_as_events(const_exons, 
                                                                                 mapped_file1_counts,
-                                                                                mapped_file2_counts,
-                                                                                paired_mapped_file1_counts,
-                                                                                paired_mapped_file2_counts)
+                                                                                mapped_file2_counts)
 
         excl_jcns = parse_all_as_event_regions(line_list[6])
         incl_jcns = parse_all_as_event_regions(line_list[7])
@@ -2513,125 +1963,6 @@ def updateCounts2all_as_events(file_str,
         incl_exons = parse_all_as_event_regions(line_list[9])
 
         ie_jcns = parse_all_as_event_regions(line_list[10])
-
-        # Only adjust if there are counts to adjust
-        if sum_const_ct_samp1: 
-            # Adjust for double counting within the same constitutive region
-            # Adjust counts for constitutive regions given paired counts, because if a read hits the
-            # constituive region AND the other read hits and inclusion or exclusion
-            # region, it is no longer considered a constitutive read.
-            const_exon_list = const_exons.split(";")
-            # Used to remove double counts of both constitutive exons.
-            if paired_coord2qname2count1:
-                const_qname_set_list = []
-                # sample 1
-                # If sample 1 is paired end
-                for const_exon in const_exon_list:
-                    if const_exon in paired_coord2qname2count1:
-                        const_qname_set_list.append(paired_coord2qname2count1[const_exon].keys()) 
-                sum_const_ct_samp1 -= getPairedCoordAdjust(const_qname_set_list, norm1)
-            if paired_coord2qname2count2:
-                const_qname_set_list = []
-                # sample 2
-                for const_exon in const_exon_list:
-                    if const_exon in paired_coord2qname2count2:
-                        const_qname_set_list.append(paired_coord2qname2count2[const_exon].keys()) 
-                sum_const_ct_samp2 -= getPairedCoordAdjust(const_qname_set_list, norm2)
-            
-
-            # Now compare with all other regions.
-            for const_exon in const_exon_list:
-                const_exon_qnames1 = []
-                const_exon_qnames2 = []
-                # Pairwise comparsion with all other regions.
-                if paired_coord2qname2count1:
-                    if const_exon in paired_coord2qname2count1:
-                        sum_const_ct_samp1 -= getPairedRegionCoordAdjust(paired_coord2qname2count1,
-                                                                         const_exon, norm1) 
-                        const_exon_qnames1 = paired_coord2qname2count1[const_exon].keys()
-                if paired_coord2qname2count2:
-                    if const_exon in paired_coord2qname2count2:
-                        sum_const_ct_samp2 -= getPairedRegionCoordAdjust(paired_coord2qname2count2,
-                                                                         const_exon, norm2) 
-                        const_exon_qnames2 = paired_coord2qname2count2[const_exon].keys()
-                       
-                # Exclusion junctions 
-                for excl_jcn in excl_jcns:
-                    if paired_junction2qname2count1:
-                        if excl_jcn in paired_junction2qname2count1:
-                            if const_exon_qnames1 != []:
-                                sum_const_ct_samp1 -= getPairedCoordAdjust([const_exon_qnames1,
-                                                                            paired_junction2qname2count1[excl_jcn].keys()],
-                                                                            norm1)
-                    if paired_junction2qname2count2:
-                        if excl_jcn in paired_junction2qname2count2:
-                            if const_exon_qnames2 != []:
-                                sum_const_ct_samp2 -= getPairedCoordAdjust([const_exon_qnames2,
-                                                                            paired_junction2qname2count2[excl_jcn].keys()],
-                                                                            norm2)
-                # Inclusion junctions
-                for incl_jcn in incl_jcns:
-                    if paired_junction2qname2count1:
-                        if incl_jcn in paired_junction2qname2count1:
-                            if const_exon_qnames1 != []:
-                                sum_const_ct_samp1 -= getPairedCoordAdjust([const_exon_qnames1,
-                                                                            paired_junction2qname2count1[incl_jcn].keys()],
-                                                                            norm1)
-                    if paired_junction2qname2count2:
-                        if incl_jcn in paired_junction2qname2count2:
-                            if const_exon_qnames2 != []:
-                                sum_const_ct_samp2 -= getPairedCoordAdjust([const_exon_qnames2,
-                                                                            paired_junction2qname2count2[incl_jcn].keys()],
-                                                                            norm2)
-                # Exclusion exons
-                for excl_exon in excl_exons:
-                    if paired_coord2qname2count1:
-                        if excl_exon in paired_coord2qname2count1:
-                            if const_exon_qnames1 != []:
-                                sum_const_ct_samp1 -= getPairedCoordAdjust([const_exon_qnames1,
-                                                                            paired_coord2qname2count1[excl_exon].keys()],
-                                                                            norm1)
-
-                    if paired_coord2qname2count2:
-                        if excl_exon in paired_coord2qname2count2:
-                            if const_exon_qnames2 != []:
-                                sum_const_ct_samp2 -= getPairedCoordAdjust([const_exon_qnames2,
-                                                                            paired_coord2qname2count2[excl_exon].keys()],
-                                                                            norm2)
-                # Inclusion exons
-                for incl_exon in incl_exons:
-                    if paired_coord2qname2count1:
-                        if incl_exon in paired_coord2qname2count1:
-                            if const_exon_qnames1 != []:
-                                sum_const_ct_samp1 -= getPairedCoordAdjust([const_exon_qnames1,
-                                                                            paired_coord2qname2count1[incl_exon].keys()],
-                                                                            norm1)
-                    if paired_coord2qname2count2:
-                        if incl_exon in paired_coord2qname2count2:
-                            if const_exon_qnames2 != []:
-                                sum_const_ct_samp2 -= getPairedCoordAdjust([const_exon_qnames2,
-                                                                            paired_coord2qname2count2[incl_exon].keys()],
-                                                                            norm2)
-                # IE junctions
-                for ie_jcn in ie_jcns:
-                    if paired_ie_junction2qname2count1:
-                        if ie_jcn in paired_ie_junction2qname2count1:
-                            if const_exon_qnames1 != []:
-                                sum_const_ct_samp1 -= getPairedCoordAdjust([const_exon_qnames1,
-                                                                            paired_ie_junction2qname2count1[ie_jcn].keys()],
-                                                                            norm1)
-
-                    if paired_ie_junction2qname2count2:
-                        if ie_jcn in paired_ie_junction2qname2count2:
-                            if const_exon_qnames2 != []:
-                                sum_const_ct_samp2 -= getPairedCoordAdjust([const_exon_qnames2,
-                                                                            paired_ie_junction2qname2count2[ie_jcn].keys()],
-                                                                            norm2)
-                            
-            if hasNegativeVals(sum_const_ct_samp1, sum_const_ct_samp2, 0, 0):
-                ERROR_LOG.write("Negative Const Vals: %s\n" % line)
-                sum_const_ct_samp1 = 0
-                sum_const_ct_samp2 = 0
 
         if not sum_excl_ct_samp1:   
             sum_excl_ct_samp1 = 0
@@ -2716,9 +2047,6 @@ def updateCounts2MutuallyExclusive(me_out_str,
                                    all_coord_start2end,
                                    all_coord_end2start,
                                    mapped_file1_counts, mapped_file2_counts,
-                                   paired_mapped_file1_counts, paired_mapped_file2_counts,
-                                   paired_coord2qname2count1, paired_coord2qname2count2,
-                                   paired_junction2qname2count1, paired_junction2qname2count2,
                                    norm1, norm2, jcn_seq_len):
     file = open(me_out_str)
     lines = file.readlines()
@@ -2787,17 +2115,6 @@ def updateCounts2MutuallyExclusive(me_out_str,
             incl2 += normalizeByLen(int(round(mapped_file2_counts[incl_add_coord] * mxe_proportion2)),
                                     incl_isoform_len)
 
-
-        ## PAIRED COUNTS ARE WRONG!!!
-        if paired_mapped_file1_counts:
-            if incl_add_coord in paired_mapped_file1_counts:
-                incl1 += int(round(paired_mapped_file1_counts[incl_add_coord]*
-                                   mxe_proportion1))
-        if paired_mapped_file2_counts:
-            if incl_add_coord in paired_mapped_file2_counts:
-                incl2 += int(round(paired_mapped_file2_counts[incl_add_coord] *
-                                   mxe_proportion2))
-
         # Exclusion counts to all other exons
         excl1_add = 0
         excl2_add = 0
@@ -2821,86 +2138,10 @@ def updateCounts2MutuallyExclusive(me_out_str,
                 excl2_add += normalizeByLen(int(round(mapped_file2_counts[excl_add_coord]* mxe_proportion2)),
                                             this_isoform_len)
 
-            # PAIRED END COUNTS DO NOT WORK YET
-            if paired_mapped_file1_counts:
-                if excl_add_coord in paired_mapped_file1_counts:
-                    excl1_add += int(round(paired_mapped_file1_counts[excl_add_coord] *
-                                           mxe_proportion1))
-
-            if paired_mapped_file2_counts:
-                if excl_add_coord in paired_mapped_file2_counts:
-                    excl2_add += int(round(paired_mapped_file2_counts[excl_add_coord]*
-                                           mxe_proportion2))
-
         excl1 += excl1_add
         excl2 += excl2_add
 
-        # Now adjust for paired end multiple counts.
-
-        # Sample 1
-        # BOOKMARK !!! ADJUSTMENT NOT WORKING FOR PAIRED YET
-        if paired_mapped_file1_counts:
-            # INCLUSION COUNTS
-            qname_set_list = []
-            if incl_add_coord in paired_coord2qname2count1:
-                incl1 -= getPairedRegionCoordAdjust(paired_coord2qname2count1,
-                                                    incl_add_coord, norm1)
-                qname_set_list.append(paired_coord2qname2count1[incl_add_coord].keys())
-            for incl_jcn in incl_jcns:
-                if incl_jcn in paired_junction2qname2count1:
-                    incl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                        incl_jcn, norm1) 
-                    qname_set_list.append(paired_junction2qname2count1[incl_jcn].keys())
-
-            incl1 -= getPairedCoordAdjust(qname_set_list, norm1)
-
-            # EXCLUSION COUNTS
-            qname_set_list = []
-            for excl_add_coord in excl_add_coord_list:
-                if excl_add_coord in paired_coord2qname2count1:
-                    excl1 -= getPairedRegionCoordAdjust(paired_coord2qname2count1,
-                                                        excl_add_coord, norm1)
-                    qname_set_list.append(paired_coord2qname2count1[excl_add_coord].keys())
-            for excl_jcn in excl_jcns:
-                if excl_jcn in paired_junction2qname2count1:
-                    excl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                        excl_jcn, norm1)
-                    qname_set_list.append(paired_junction2qname2count1[excl_jcn].keys())
-
-            excl1 -= getPairedCoordAdjust(qname_set_list, norm1)
-
-        # Sample 2
-        if paired_mapped_file2_counts:
-            # INCLUSION COUNTS
-            qname_set_list = []
-            if incl_add_coord in paired_coord2qname2count2:
-                incl2 -= getPairedRegionCoordAdjust(paired_coord2qname2count2,
-                                                    incl_add_coord, norm2)
-                qname_set_list.append(paired_coord2qname2count2[incl_add_coord].keys())
-            for incl_jcn in incl_jcns:
-                if incl_jcn in paired_junction2qname2count2:
-                    incl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                        incl_jcn, norm2) 
-                    qname_set_list.append(paired_junction2qname2count2[incl_jcn].keys())
-
-            incl2 -= getPairedCoordAdjust(qname_set_list, norm2)
-
-            # EXCLUSION COUNTS
-            qname_set_list = []
-            for excl_add_coord in excl_add_coord_list:
-                if excl_add_coord in paired_coord2qname2count2:
-                    excl2 -= getPairedRegionCoordAdjust(paired_coord2qname2count2,
-                                                        excl_add_coord, norm2)
-                    qname_set_list.append(paired_coord2qname2count2[excl_add_coord].keys())
-            for excl_jcn in excl_jcns:
-                if excl_jcn in paired_junction2qname2count2:
-                    excl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                        excl_jcn, norm2)
-                    qname_set_list.append(paired_junction2qname2count2[excl_jcn].keys())
-
-            excl2 -= getPairedCoordAdjust(qname_set_list, norm2)
-
-        e_or_i = checkExcluionInclusion(excl1,
+        e_or_i = checkExclusionInclusion(excl1,
                                         incl1,
                                         excl2,
                                         incl2) 
@@ -2930,9 +2171,6 @@ def updateCounts2MultiCassette(mc_out_str,
                                all_coord_start2end,
                                all_coord_end2start,
                                mapped_file1_counts, mapped_file2_counts,
-                               paired_mapped_file1_counts, paired_mapped_file2_counts,
-                               paired_coord2qname2count1, paired_coord2qname2count2,
-                               paired_junction2qname2count1, paired_junction2qname2count2,
                                norm1, norm2, jcn_seq_len):
     file = open(mc_out_str)
     lines = file.readlines()
@@ -3010,64 +2248,10 @@ def updateCounts2MultiCassette(mc_out_str,
                 incl2_add += normalizeByLen(int(round(mapped_file2_counts[inferred_exon] * mc_proportion2)),
                                             inclusion_len)
 
-            ### PAIRED DOESN'T WORK
-            # Add paired end counts
-            if paired_mapped_file1_counts:
-                if incl_add_coord in paired_mapped_file1_counts:
-                    incl1_add += paired_mapped_file1_counts[incl_add_coord]
-            if paired_mapped_file2_counts:
-                if incl_add_coord in paired_mapped_file2_counts:
-                    incl2_add += paired_mapped_file2_counts[incl_add_coord]
-
         incl1 += incl1_add
         incl2 += incl2_add
 
-        # BOOKMARK: Paired end is not working yet
-        # Adjust for inclusion paired end counts
-        # Sample 1
-        if paired_mapped_file1_counts:
-            qname_set_list = []
-            for incl_add_coord in incl_add_coord_list:
-                if incl_add_coord in paired_coord2qname2count1:
-                    incl1 -= getPairedRegionCoordAdjust(paired_coord2qname2count1,
-                                                        incl_add_coord, norm1)
-                
-                    qname_set_list.append(paired_coord2qname2count1[incl_add_coord].keys())
-            for incl_jcn in incl_jcns:
-                if incl_jcn in paired_junction2qname2count1:
-                    incl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                        incl_jcn, norm1)
-                    qname_set_list.append(paired_junction2qname2count1[incl_jcn].keys())
-
-            incl1 -= getPairedCoordAdjust(qname_set_list, norm1)
-
-            if excl_jcn in paired_junction2qname2count1:
-                excl1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                    excl_jcn, norm1)
-
-        # Sample 2
-        if paired_mapped_file2_counts:
-            qname_set_list = []
-            for incl_add_coord in incl_add_coord_list:
-                if incl_add_coord in paired_coord2qname2count2:
-                    incl2 -= getPairedRegionCoordAdjust(paired_coord2qname2count2,
-                                                        incl_add_coord, norm2)
-                
-                    qname_set_list.append(paired_coord2qname2count2[incl_add_coord].keys())
-            for incl_jcn in incl_jcns:
-                if incl_jcn in paired_junction2qname2count2:
-                    incl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                        incl_jcn, norm2)
-                    qname_set_list.append(paired_junction2qname2count2[incl_jcn].keys())
-
-            incl2 -= getPairedCoordAdjust(qname_set_list, norm2)
-                 
-            if excl_jcn in paired_junction2qname2count2:
-                excl2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                    excl_jcn, norm2)
-
-
-        e_or_i = checkExcluionInclusion(excl1,
+        e_or_i = checkExclusionInclusion(excl1,
                                         incl1,
                                         excl2,
                                         incl2) 
@@ -3093,40 +2277,20 @@ def updateCounts2MultiCassette(mc_out_str,
     return event2counts
 
 def adjust_all_as_events(jcn_coords_str, exon_coords_str, ie_coords_str,
-                         paired_junction2qname2count,
-                         paired_coord2qname2count, 
-                         paired_ie_junction2qname2count,
                          norm):
 
+    """
+    Remnant function from paired end quant
+    """
+    return 0
+#   jcn_coords = parse_all_as_event_regions(jcn_coords_str)
+#   exon_coords = parse_all_as_event_regions(exon_coords_str)
+#   ie_coords = parse_all_as_event_regions(ie_coords_str)
 
+#   overcounts = 0
+#   qname_set_list = []
 
-    jcn_coords = parse_all_as_event_regions(jcn_coords_str)
-    exon_coords = parse_all_as_event_regions(exon_coords_str)
-    ie_coords = parse_all_as_event_regions(ie_coords_str)
-
-    overcounts = 0
-    qname_set_list = []
-
-    # Remove overcounts from the same region.
-    for jcn_coord in jcn_coords:
-        if jcn_coord in paired_junction2qname2count:
-            overcounts += getPairedRegionCoordAdjust(paired_junction2qname2count,
-                                                     jcn_coord, norm) 
-            qname_set_list.append(paired_junction2qname2count[jcn_coord].keys())
-    for exon_coord in exon_coords:
-        if exon_coord in paired_coord2qname2count:
-            overcounts += getPairedRegionCoordAdjust(paired_coord2qname2count,
-                                                     exon_coord, norm)
-            qname_set_list.append(paired_coord2qname2count[exon_coord].keys())
-    for ie_coord in ie_coords:
-        if ie_coord in paired_ie_junction2qname2count:
-            overcounts += getPairedRegionCoordAdjust(paired_ie_junction2qname2count,
-                                                     ie_coord, norm)
-            qname_set_list.append(paired_ie_junction2qname2count[ie_coord].keys()) 
-    
-    overcounts += getPairedCoordAdjust(qname_set_list, norm)
-
-    return overcounts
+#   return overcounts
 
 def allHaveSameCoord(coord_set, start_or_end):
     """
@@ -3267,7 +2431,7 @@ def buildMutuallyExclusiveDict(chr, coord_start2end, coord_end2start):
 
     return me_dict
 
-def checkExcluionInclusion(excl_file1_count,
+def checkExclusionInclusion(excl_file1_count,
                            incl_file1_count,
                            excl_file2_count,
                            incl_file2_count):
@@ -3279,22 +2443,25 @@ def checkExcluionInclusion(excl_file1_count,
     
     If they are equal, it will return a "?"
     """
-    if excl_file1_count == 0 and incl_file1_count == 0:
-        return "?"
-    if excl_file2_count == 0 and incl_file2_count == 0:
-        return "?"
-
-    perc_excl1 = (excl_file1_count / 
-                  (excl_file1_count + incl_file1_count))
-    perc_excl2 = (excl_file2_count / 
-                  (excl_file2_count + incl_file2_count))
-
-    if perc_excl2 > perc_excl1:
-        return "E"
-    elif perc_excl2 < perc_excl1:
-        return "I"
-
+    # Old variable
     return "?"
+
+#   if excl_file1_count == 0 and incl_file1_count == 0:
+#       return "?"
+#   if excl_file2_count == 0 and incl_file2_count == 0:
+#       return "?"
+
+#   perc_excl1 = (excl_file1_count / 
+#                 (excl_file1_count + incl_file1_count))
+#   perc_excl2 = (excl_file2_count / 
+#                 (excl_file2_count + incl_file2_count))
+
+#   if perc_excl2 > perc_excl1:
+#       return "E"
+#   elif perc_excl2 < perc_excl1:
+#       return "I"
+
+#   return "?"
     
 def checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
                                           inclusion_start, inclusion_end,
@@ -3315,89 +2482,78 @@ def checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
     Similar logic for an inclusion junction that increases or if the
     alternative splice site was an end position.
     """
-    # ordered_pos is an ordered list.  The proportions variables are in the
-    # same order as the ordered list.
-#   (ordered_pos, 
-#    proportions1, 
-#    proportions2) = getSSOrderAndProportions(alt_start_or_end,
-#                                             inclusion_start, inclusion_end,
-#                                             exclusion_str_list,
-#                                             exclusion_cts1_list,
-#                                             inclusion_cts1,
-#                                             exclusion_cts2_list,
-#                                             inclusion_cts2)
+    # An old variable
+    return "?"
 
-    if sum(proportions1) == 0.0 and sum(proportions2) == 0.0:
-        return "?"
+#   if sum(proportions1) == 0.0 and sum(proportions2) == 0.0:
+#       return "?"
 
-    deltaProportions = subtract_vectors(proportions2, proportions1)
+#   deltaProportions = subtract_vectors(proportions2, proportions1)
 
-    if alt_start_or_end == "alt_start":
-        inclusion_idx = ordered_pos.index(inclusion_start)
-    else:
-        inclusion_idx = ordered_pos.index(inclusion_end)
+#   if alt_start_or_end == "alt_start":
+#       inclusion_idx = ordered_pos.index(inclusion_start)
+#   else:
+#       inclusion_idx = ordered_pos.index(inclusion_end)
 
-    if deltaProportions[inclusion_idx] == 0.0:
-        return "?"
-   
-    # When inclusion isoform goes down, check which direction the isoform
-    # increases 
-    if deltaProportions[inclusion_idx] < 0:
-        left_increase = False
-        right_increase = False
-        
-        for i in range(0,inclusion_idx):
-            if deltaProportions[i] > 0:
-                left_increase = True
-        if inclusion_idx != (len(deltaProportions) - 1):
-            for i in range(inclusion_idx+1, len(deltaProportions)):
-                if deltaProportions[i] > 0:
-                    right_increase = True
-        if left_increase and right_increase:
-            return "?"
-        elif left_increase:
-            if alt_start_or_end == "alt_start":
-                return "E"
-            else:
-                return "I"
-        elif right_increase:
-            if alt_start_or_end == "alt_start":
-                return "I"
-            else:
-                return "E"
-        else: # No change in proportions
-            return "?"
+#   if deltaProportions[inclusion_idx] == 0.0:
+#       return "?"
+#  
+#   # When inclusion isoform goes down, check which direction the isoform
+#   # increases 
+#   if deltaProportions[inclusion_idx] < 0:
+#       left_increase = False
+#       right_increase = False
+#       
+#       for i in range(0,inclusion_idx):
+#           if deltaProportions[i] > 0:
+#               left_increase = True
+#       if inclusion_idx != (len(deltaProportions) - 1):
+#           for i in range(inclusion_idx+1, len(deltaProportions)):
+#               if deltaProportions[i] > 0:
+#                   right_increase = True
+#       if left_increase and right_increase:
+#           return "?"
+#       elif left_increase:
+#           if alt_start_or_end == "alt_start":
+#               return "E"
+#           else:
+#               return "I"
+#       elif right_increase:
+#           if alt_start_or_end == "alt_start":
+#               return "I"
+#           else:
+#               return "E"
+#       else: # No change in proportions
+#           return "?"
 
-    # When inclusion isoform goes up, check which direction the isoform
-    # decreases
-    else: # deltaProportions[inclusion_idx] > 0.0
-        left_decrease = False
-        right_decrease = False
-        
-        for i in range(0, inclusion_idx):
-            if deltaProportions[i] < 0:
-                left_decrease = True
-        if inclusion_idx != (len(deltaProportions)-1):
-            for i in range(inclusion_idx+1,len(deltaProportions)):
-                if deltaProportions[i] < 0:
-                    right_decrease = True
+#   # When inclusion isoform goes up, check which direction the isoform
+#   # decreases
+#   else: # deltaProportions[inclusion_idx] > 0.0
+#       left_decrease = False
+#       right_decrease = False
+#       
+#       for i in range(0, inclusion_idx):
+#           if deltaProportions[i] < 0:
+#               left_decrease = True
+#       if inclusion_idx != (len(deltaProportions)-1):
+#           for i in range(inclusion_idx+1,len(deltaProportions)):
+#               if deltaProportions[i] < 0:
+#                   right_decrease = True
 
-        if left_decrease and right_decrease:
-            return "?"
-        elif left_decrease:
-            if alt_start_or_end == "alt_start":
-                return "I"
-            else:
-                return "E"
-        elif right_decrease:
-            if alt_start_or_end == "alt_start":
-                return "E"
-            else:
-                return "I"
-        else: # No change in proportions
-            return "?"
-    
-            
+#       if left_decrease and right_decrease:
+#           return "?"
+#       elif left_decrease:
+#           if alt_start_or_end == "alt_start":
+#               return "I"
+#           else:
+#               return "E"
+#       elif right_decrease:
+#           if alt_start_or_end == "alt_start":
+#               return "E"
+#           else:
+#               return "I"
+#       else: # No change in proportions
+#           return "?"
     
 
 def convertCoordStr(coord_str):
@@ -3628,8 +2784,7 @@ def findNonOverlappingSets(current_pos, coord_list):
     return new_set
 
 def fixIRExclusion_count(ir_file_name, all_jcn_count_dict,
-                         norm1, norm2, jcn_seq_len,
-                         paired_junction2qname2count1, paired_junction2qname2count2):
+                         norm1, norm2, jcn_seq_len):
 
     file = open(ir_file_name)
     lines = file.readlines()
@@ -3654,11 +2809,6 @@ def fixIRExclusion_count(ir_file_name, all_jcn_count_dict,
         jcn_ct1 = normalizeByLen(jcn_ct1, jcn_seq_len)
         jcn_ct2 = normalizeByLen(jcn_ct2, jcn_seq_len)
 
-        if paired_junction2qname2count1:
-            jcn_ct1 -= getPairedRegionCoordAdjust(paired_junction2qname2count1,
-                                                  excl_jcn_str, norm1)
-            jcn_ct2 -= getPairedRegionCoordAdjust(paired_junction2qname2count2,
-                                                  excl_jcn_str, norm2)
         if hasNegativeVals(jcn_ct1, jcn_ct2, 0, 0):
             ERROR_LOG.write("Negative Vals: %s\n" % line)
             jcn_ct1 = 0
@@ -4168,9 +3318,7 @@ def getColSums(cols, line_elems):
     return sum
 
 def getCoordCounts4all_as_events(all_as_exon_str, 
-                                 mapped_file1_counts, mapped_file2_counts,
-                                 paired_mapped_file1_counts,
-                                 paired_mapped_file2_counts):
+                                 mapped_file1_counts, mapped_file2_counts):
     """ 
     Parses the exon string, finds the corresponding counts, then outputs counts
     in proper format
@@ -4197,10 +3345,6 @@ def getCoordCounts4all_as_events(all_as_exon_str,
             samp1_ct = mapped_file1_counts[exon_str]
             samp2_ct = mapped_file2_counts[exon_str]
 
-            if paired_mapped_file1_counts:
-                samp1_ct += paired_mapped_file1_counts[exon_str]
-            if paired_mapped_file2_counts:
-                samp2_ct += paired_mapped_file2_counts[exon_str]
         except:
             ERROR_LOG.write("Could not find counts for %s\n" % exon_str)
             samp1_ct = 0
@@ -5119,8 +4263,6 @@ def printAlternativeDonorsAcceptors(db,
                                     alt_first_exons_end2start,
                                     alt_last_exons_start2end,
                                     alt_last_exons_end2start,
-#                                    start_exon_count_dict,
-#                                    end_exon_count_dict,
                                     all_jcn_count_dict, 
                                     param_all_coord_start2end,
                                     param_all_coord_end2start, 
@@ -5136,8 +4278,6 @@ def printAlternativeDonorsAcceptors(db,
                                     printExonCoord,
                                     exon_coords,
                                     excl_jcns,
-                                    paired_endCounting1,
-                                    paired_endCounting2,
                                     donor_out, afe_out, jcn_only_donor_out,
                                     accept_out, ale_out, jcn_only_accept_out,
                                     all_event_info_out,
@@ -5187,9 +4327,6 @@ def printAlternativeDonorsAcceptors(db,
 
             if strand is "None":
                 continue
-
-#           filtered_cassette_exons = copyCassetteDict(cassette_exons)
-#           removeOverlappingCassetteExons(filtered_cassette_exons, "end")
 
             # Check if the upstream exon is a cassette exon
             if hasAdjExons(chr, filtered_cassette_exons_by_end_end2start, all_coord_end2start[chr][end],"P"):
@@ -5465,7 +4602,6 @@ def printAlternativeDonorsAcceptors(db,
                                                                    proportions2)
 
 
-
                     gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
 
 
@@ -5638,9 +4774,6 @@ def printAlternativeDonorsAcceptors(db,
 
             if strand is "None":
                 continue
-
-#           filtered_cassette_exons = copyCassetteDict(cassette_exons)
-#           removeOverlappingCassetteExons(filtered_cassette_exons, "start")
 
             # Check if the downstream exon is a cassette exon
             if hasAdjExons(chr, filtered_cassette_exons_by_start_start2end,
@@ -5908,7 +5041,6 @@ def printAlternativeDonorsAcceptors(db,
                                                                    ordered_pos,
                                                                    proportions1,
                                                                    proportions2)
-                                                                
                     gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
 
 
@@ -6154,7 +5286,7 @@ def printAlternativePolyA(db, txt_db,
         
             # Add Exclusion or Inclusion Annotation
             # Checks percent exclusion from both files.
-            e_or_i = checkExcluionInclusion(excl_file1_count,
+            e_or_i = checkExclusionInclusion(excl_file1_count,
                                             incl_file1_count,
                                             excl_file2_count,
                                             incl_file2_count) 
@@ -6217,12 +5349,6 @@ def printCassetteExons(db,
                        all_coord_start2end, 
                        all_coord_end2start,
                        all_jcn2strand,
-#                       jcn_count_dict,
-#                       coord_start2end,
-#                       coord_end2start,
-#                       pe_jcn_count_dict,
-#                       pe_coord_start2end,
-#                       pe_coord_end2start,
                        full_exon_count_dict,
                        full_multi_exon_count_dict,
                        start_multi_exon_count_dict,
@@ -6300,12 +5426,6 @@ def printCassetteExons(db,
 
                                         if not exonFound:
                                             continue
-
-#                                    # Check if cassette exon exists
-#                                    if excl_str in known_cassette_jcn_coords:
-#                                        if (left_str, right_str) in known_cassette_jcn_coords[excl_str]:
-#                                            continue
-
 
                                     # Check for internal introns
                                     firstBreakFound = False
@@ -6522,7 +5642,7 @@ def printCassetteExons(db,
 
         # Add Exclusion or Inclusion Annotation
         # Checks percent exclusion from both files.
-        e_or_i = checkExcluionInclusion(excl_file1_count,
+        e_or_i = checkExclusionInclusion(excl_file1_count,
                                         incl_file1_count,
                                         excl_file2_count,
                                         incl_file2_count) 
@@ -6593,8 +5713,8 @@ def printCassetteExons(db,
 def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exons,
                   annotated_exons_by_strand, coord_start2end, coord_end2start,
                   jcn_count_dict, jcn2strand, ir_count_dict, 
-                  ir_left_out, ir_right_out, printExonCoords, exon_coords, norm1, norm2, jcn_seq_len,
-                  paired_ie_junction2qname2count1, paired_ie_junction2qname2count2):
+                  ir_left_out, ir_right_out, printExonCoords, exon_coords,
+                  norm1, norm2, jcn_seq_len):
     """
     Print out all events
     """
@@ -6664,16 +5784,8 @@ def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exon
             incl_file1_count = normalizeByLen(incl_file1_count, jcn_seq_len)
             incl_file2_count = normalizeByLen(incl_file2_count, jcn_seq_len)
 
-            if paired_ie_junction2qname2count1 and good_jcn_str:
-                chr, intron_start, intron_end = convertCoordStr(good_jcn_str)
-                incl_file1_count -= getPairedRegionCoordAdjust(paired_ie_junction2qname2count1,
-                                                               "%s_%d_%d" % (chr, intron_start - 1, intron_start),
-                                                               norm1)
-                incl_file2_count -= getPairedRegionCoordAdjust(paired_ie_junction2qname2count2,
-                                                               "%s_%d_%d" % (chr, intron_start - 1, intron_start),
-                                                               norm2)
             # Checks percent exclusion from both files.
-            e_or_i = checkExcluionInclusion(excl_file1_count,
+            e_or_i = checkExclusionInclusion(excl_file1_count,
                                             incl_file1_count,
                                             excl_file2_count,
                                             incl_file2_count) 
@@ -6771,17 +5883,8 @@ def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exon
             incl_file1_count = normalizeByLen(incl_file1_count, jcn_seq_len)
             incl_file2_count = normalizeByLen(incl_file2_count, jcn_seq_len)
 
-            if paired_ie_junction2qname2count1 and good_jcn_str:
-                chr, intron_start, intron_end = convertCoordStr(good_jcn_str)
-                incl_file1_count -= getPairedRegionCoordAdjust(paired_ie_junction2qname2count1,
-                                                               "%s_%d_%d" % (chr, intron_end, intron_end + 1),
-                                                               norm1)
-                incl_file2_count -= getPairedRegionCoordAdjust(paired_ie_junction2qname2count2,
-                                                               "%s_%d_%d" % (chr, intron_end, intron_end + 1),
-                                                               norm2)
-
             # Checks percent exclusion from both files.
-            e_or_i = checkExcluionInclusion(excl_file1_count,
+            e_or_i = checkExclusionInclusion(excl_file1_count,
                                             incl_file1_count,
                                             excl_file2_count,
                                             incl_file2_count) 
@@ -7180,7 +6283,7 @@ def printMultiCassetteExons(db,
 
                             # Add Exclusion or Inclusion Annotation
                             # Checks percent exclusion from both files.
-                            e_or_i = checkExcluionInclusion(excl_file1_count,
+                            e_or_i = checkExclusionInclusion(excl_file1_count,
                                                             incl_file1_count,
                                                             excl_file2_count,
                                                             incl_file2_count) 
@@ -7595,7 +6698,7 @@ def printMutuallyExclusive(db,
 
                     # Add Exclusion or Inclusion Annotation
                     # Checks percent exclusion from both files.
-                    e_or_i = checkExcluionInclusion(excl_file1_count,
+                    e_or_i = checkExclusionInclusion(excl_file1_count,
                                                     incl_file1_count,
                                                     excl_file2_count,
                                                     incl_file2_count) 
@@ -7852,9 +6955,6 @@ def sumExclusion_Inclusion_counts(file_str,
                                   mxe2total_counts,
                                   mc2total_counts,
                                   printExonCoords,
-                                  paired_coord2qname2count1, paired_coord2qname2count2,
-                                  paired_junction2qname2count1, paired_junction2qname2count2,
-                                  paired_ie_junction2qname2count1, paired_ie_junction2qname2count2,
                                   norm1, norm2):
     """
     Also serves as a check point.
@@ -8014,36 +7114,6 @@ def sumExclusion_Inclusion_counts(file_str,
             sum_incl_samp1 = getColSums(incl_samp1_cols, line_elems)
             sum_excl_samp2 = getColSums(excl_samp2_cols, line_elems)
             sum_incl_samp2 = getColSums(incl_samp2_cols, line_elems)
-
-        if paired_junction2qname2count1:
-            sum_excl_samp1 -= adjust_all_as_events(line_elems[6], line_elems[8], "",
-                                                   paired_junction2qname2count1,
-                                                   paired_coord2qname2count1, 
-                                                   paired_ie_junction2qname2count1,
-                                                   norm1)
-
-            sum_incl_samp1 -= adjust_all_as_events(line_elems[7], line_elems[9],
-                                                   line_elems[10],
-                                                   paired_junction2qname2count1,
-                                                   paired_coord2qname2count1, 
-                                                   paired_ie_junction2qname2count1,
-                                                   norm1)
-
-        if paired_junction2qname2count2:
-
-            sum_excl_samp2 -= adjust_all_as_events(line_elems[6], line_elems[8], "",
-                                                   paired_junction2qname2count2,
-                                                   paired_coord2qname2count2, 
-                                                   paired_ie_junction2qname2count2,
-                                                   norm2)
-
-
-            sum_incl_samp2 -= adjust_all_as_events(line_elems[7], line_elems[9],
-                                                   line_elems[10],
-                                                   paired_junction2qname2count2,
-                                                   paired_coord2qname2count2, 
-                                                   paired_ie_junction2qname2count2,
-                                                   norm2)
 
         if hasNegativeVals(sum_excl_samp1, 
                            sum_incl_samp1, 
