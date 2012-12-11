@@ -926,7 +926,7 @@ def main():
                                   mxe2total_counts,
                                   mc2total_counts,
                                   printExonCoords,
-                                  norm1, norm2)
+                                  norm1, norm2, jcn_seq_len)
 
     ERROR_LOG.close()                                  
 
@@ -6771,7 +6771,7 @@ def sumExclusion_Inclusion_counts(file_str,
                                   mxe2total_counts,
                                   mc2total_counts,
                                   printExonCoords,
-                                  norm1, norm2):
+                                  norm1, norm2, jcn_seq_len):
     """
     Also serves as a check point.
 
@@ -6791,40 +6791,40 @@ def sumExclusion_Inclusion_counts(file_str,
 
         line_elems = line.split("\t") 
 
-        type = line_elems[2]
+        type = line_elems[1]
     
         # Check for required counts
         required_indices = []
         if type == "cassette":
-            required_indices = [16, 17, 18, 19]
+            required_indices = [13,14]
         elif type == "mutually_exclusive":
-            required_indices = [16, 17, 18, 19]
+            required_indices = [13,14]
         elif type == "multi_cassette":
-            required_indices = [16, 17, 18, 19]
+            required_indices = [13,14]
         elif type == "alternative_donor":
-            required_indices = [16, 17, 18, 19]
+            required_indices = [13,14]
         elif type == "alternative_acceptor":
-            required_indices = [16, 17, 18, 19]
+            required_indices = [13,14]
         elif type == "jcn_only_AD":
-            required_indices = [16, 17, 18, 19]
+            required_indices = [13,14]
         elif type == "jcn_only_AA":
-            required_indices = [16, 17, 18, 19]
+            required_indices = [13,14]
         elif type == "alternative_first_exon":
-            required_indices = [16, 17, 18, 19]
+            required_indices = [13,14]
         elif type == "alternative_last_exon":
-            required_indices = [16, 17, 18, 19]
+            required_indices = [13,14]
         elif type == "intron_retention":
-            required_indices = [16, 18, 30, 31]
+            required_indices = [13, 20]
         else:
             print "Unknown type in: %s, %s" % (type, file_str)
 
         if printExonCoords:
             if type == "cassette":
-                required_indices += [25, 27]
+                required_indices += [18]
             elif type == "mutually_exclusive":
-                required_indices += [24, 25, 26, 27]
+                required_indices += [17,18]
             elif type == "multi_cassette":
-                required_indices += [25, 27]
+                required_indices += [18]
 #           elif type == "alternative_donor":
 #               required_indices += [25, 27]
 #           elif type == "alternative_acceptor":
@@ -6844,21 +6844,17 @@ def sumExclusion_Inclusion_counts(file_str,
             
    
         if printExonCoords:
-            excl_raw_cols = [16, 24] 
-            excl_lenNorm_cols = [18, 26]
+            excl_raw_cols = [13, 17] 
 
-            incl_raw_cols = [17, 25, 30]
-            incl_lenNorm_cols = [19, 27, 31]
+            incl_raw_cols = [14, 18, 19]
 
         else:
-            excl_raw_cols = [16] 
-            excl_lenNorm_cols = [18]
+            excl_raw_cols = [13] 
 
-            incl_raw_cols = [17, 30]
-            incl_lenNorm_cols = [19, 31]
+            incl_raw_cols = [14, 19]
 
         if type == "cassette":
-            event_key = line_elems[9]
+            event_key = line_elems[8]
 
             if event_key not in ce2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find CE key. %s\n" % event_key)
@@ -6869,7 +6865,7 @@ def sumExclusion_Inclusion_counts(file_str,
             sum_incl_lenNorm = ce2total_counts[event_key][3]
 
         elif type == "alternative_donor":
-            event_key = (line_elems[7], line_elems[6])
+            event_key = (line_elems[6], line_elems[5])
             if event_key not in alt_donor2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find AD key. %s\n" % event_key)
 
@@ -6878,7 +6874,7 @@ def sumExclusion_Inclusion_counts(file_str,
             sum_excl_lenNorm = alt_donor2total_counts[event_key][2]
             sum_incl_lenNorm = alt_donor2total_counts[event_key][3]
         elif type == "alternative_acceptor":
-            event_key = (line_elems[7], line_elems[6])
+            event_key = (line_elems[6], line_elems[5])
             if event_key not in alt_accept2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find AA key. %s\n" % event_key)
 
@@ -6888,7 +6884,7 @@ def sumExclusion_Inclusion_counts(file_str,
             sum_incl_lenNorm = alt_accept2total_counts[event_key][3]
 
         elif type == "alternative_first_exon":
-            event_key = (line_elems[7], line_elems[6])
+            event_key = (line_elems[6], line_elems[5])
             if event_key not in afe2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find AFE key. %s\n" % event_key)
 
@@ -6898,7 +6894,7 @@ def sumExclusion_Inclusion_counts(file_str,
             sum_incl_lenNorm = afe2total_counts[event_key][3]
 
         elif type == "alternative_last_exon":
-            event_key = (line_elems[7], line_elems[6])
+            event_key = (line_elems[6], line_elems[5])
             if event_key not in ale2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find ALE key. %s\n" % event_key)
 
@@ -6908,7 +6904,7 @@ def sumExclusion_Inclusion_counts(file_str,
             sum_incl_lenNorm = ale2total_counts[event_key][3]
 
         elif type == "mutually_exclusive":
-            event_key = (line_elems[9], line_elems[8])
+            event_key = (line_elems[8], line_elems[7])
             if event_key not in mxe2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find MXE key. %s\n" % event_key)
 
@@ -6917,7 +6913,7 @@ def sumExclusion_Inclusion_counts(file_str,
             sum_excl_lenNorm = mxe2total_counts[event_key][2]
             sum_incl_lenNorm = mxe2total_counts[event_key][3]
         elif type == "multi_cassette":
-            event_key = (line_elems[9], line_elems[6])
+            event_key = (line_elems[8], line_elems[5])
             if event_key not in mc2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find MC key. %s\n" % event_key)
 
@@ -6925,11 +6921,12 @@ def sumExclusion_Inclusion_counts(file_str,
             sum_incl_raw = mc2total_counts[event_key][1]
             sum_excl_lenNorm = mc2total_counts[event_key][2]
             sum_incl_lenNorm = mc2total_counts[event_key][3]
-        else:
+        else: # intron retention
             sum_excl_raw = getColSums(excl_raw_cols, line_elems)
             sum_incl_raw = getColSums(incl_raw_cols, line_elems)
-            sum_excl_lenNorm = getColSums(excl_lenNorm_cols, line_elems)
-            sum_incl_lenNorm = getColSums(incl_lenNorm_cols, line_elems)
+
+            sum_excl_lenNorm = normalizeByLen(sum_excl_raw, jcn_seq_len)
+            sum_incl_lenNorm = normalizeByLen(sum_incl_raw, 2 * jcn_seq_len)
 
         if hasNegativeVals(sum_excl_raw, 
                            sum_incl_raw, 
