@@ -1866,10 +1866,10 @@ def updateCounts2Cassette(file_out_str,
 
         excl_jcns = inferExclusionJunctions(upstrm_jcns, dwnstrm_jcns)
 
-        excl1 = int(line_list[-5])
-        incl1 = int(line_list[-4])
-        excl2 = int(line_list[-3])
-        incl2 = int(line_list[-2])
+        excl_raw = int(line_list[-5])
+        incl_raw = int(line_list[-4])
+        excl_lenNorm = int(line_list[-3])
+        incl_lenNorm = int(line_list[-2])
     
         incl_add_coord = line_list[-1]
 
@@ -1878,19 +1878,16 @@ def updateCounts2Cassette(file_out_str,
         exon_len = ex_end - ex_start + 1
         incl_len = (2 * jcn_seq_len) + exon_len
 
-        if incl_add_coord in mapped_file1_counts:
-            incl1 += normalizeByLen(mapped_file1_counts[incl_add_coord], incl_len)
         if incl_add_coord in mapped_file2_counts:
-            incl2 += normalizeByLen(mapped_file2_counts[incl_add_coord], incl_len)
+            incl_raw += mapped_file2_counts[incl_add_coord]
+            incl_lenNorm += normalizeByLen(mapped_file2_counts[incl_add_coord], incl_len)
 
-        e_or_i = checkExclusionInclusion(excl1,
-                                        incl1,
-                                        excl2,
-                                        incl2) 
+#       e_or_i = checkExclusionInclusion(excl1,
+#                                       incl1,
+#                                       excl2,
+#                                       incl2) 
 
-        line_list[1] = e_or_i
-
-        if hasNegativeVals(excl1, incl1, excl2, incl2):
+        if hasNegativeVals(excl_raw, incl_raw, excl_lenNorm, incl_lenNorm):
             ERROR_LOG.write("Negative Vals: %s\n" % line)
             excl1 = 0
             incl1 = 0
@@ -1898,10 +1895,10 @@ def updateCounts2Cassette(file_out_str,
             incl2 = 0
 
         out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
-                                            excl1, incl1,
-                                            excl2, incl2)
+                                            excl_raw, incl_raw,
+                                            excl_lenNorm, incl_lenNorm)
 
-        ce2total_counts[incl_add_coord] = (excl1, incl1, excl2, incl2)
+        ce2total_counts[incl_add_coord] = (excl_raw, incl_raw, excl_lenNorm, incl_lenNorm)
 
         file2.write(out_str)
 
@@ -5589,7 +5586,7 @@ def printCassetteExons(db,
         # involved in a given inclusion or exclusion event, the normalization
         # factor is only on one junction
         exclusion_len = jcn_seq_len
-        inclusion_len = ( 2* jcn_seq_len) + exon_end - exon_start + 1
+        inclusion_len = (2* jcn_seq_len) + exon_end - exon_start + 1
 
         excl_lenNorm_count = normalizeByLen(excl_raw_count, exclusion_len)
         incl_lenNorm_count = normalizeByLen(incl_raw_count, inclusion_len)
