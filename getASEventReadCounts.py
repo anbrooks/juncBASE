@@ -2743,26 +2743,26 @@ def fixIRExclusion_count(ir_file_name, all_jcn_count_dict,
 
         excl_jcn_str = line_list[6]
 
-        jcn_ct1 = all_jcn_count_dict[excl_jcn_str][0]
-        jcn_ct2 = all_jcn_count_dict[excl_jcn_str][1]
+#        jcn_ct1 = all_jcn_count_dict[excl_jcn_str][0]
+        jcn_ct_raw = all_jcn_count_dict[excl_jcn_str][1]
 
-        if norm1:
-            jcn_ct1 = int(round(jcn_ct1/norm1))
-            jcn_ct2 = int(round(jcn_ct2/norm2))
+        if norm2:
+#            jcn_ct1 = int(round(jcn_ct1/norm1))
+            jcn_ct_raw = int(round(jcn_ct_raw/norm2))
 
-        jcn_ct1 = normalizeByLen(jcn_ct1, jcn_seq_len)
-        jcn_ct2 = normalizeByLen(jcn_ct2, jcn_seq_len)
+#        jcn_ct1 = normalizeByLen(jcn_ct1, jcn_seq_len)
+        jcn_ct_lenNorm = normalizeByLen(jcn_ct_raw, jcn_seq_len)
 
-        if hasNegativeVals(jcn_ct1, jcn_ct2, 0, 0):
+        if hasNegativeVals(jcn_ct_raw, jcn_ct_lenNorm, 0, 0):
             ERROR_LOG.write("Negative Vals: %s\n" % line)
-            jcn_ct1 = 0
-            jcn_ct2 = 0
+            jcn_ct_raw = 0
+            jcn_ct_lenNorm = 0
     
-        line_list[12] = repr(jcn_ct1)
-        line_list[14] = repr(jcn_ct2)
+        line_list[12] = repr(jcn_ct_raw)
+        line_list[14] = repr(jcn_ct_lenNorm)
 
-        line_list[16] = repr(jcn_ct1)
-        line_list[18] = repr(jcn_ct2)
+        line_list[16] = repr(jcn_ct_raw)
+        line_list[18] = repr(jcn_ct_lenNorm)
 
         outline = "\t".join(line_list)
         file2.write(outline + "\n")
