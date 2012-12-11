@@ -1217,8 +1217,8 @@ def updateCounts2AltDonorAccept(file_out_str,
         (ordered_pos, 
          proportions1, 
          proportions2,
-         total_ordered_cts1_list,
-         total_ordered_cts2_list) = getSSOrderAndProportions(alt_start_or_end,
+         total_ordered_raw_list,
+         total_ordered_lenNorm_list) = getSSOrderAndProportions(alt_start_or_end,
                                                   incl_start, incl_end,
                                                   excl_jcns,
                                                   exclusion_raw_list,
@@ -1264,15 +1264,12 @@ def updateCounts2AltDonorAccept(file_out_str,
                 if ir_count_dict:
                     if intron in ir_count_dict:
 
-                        ie_jcn_ct1 = ir_count_dict[intron]["left"][0]
-                        ie_jcn_ct2 = ir_count_dict[intron]["left"][1]
+                        ie_jcn_ct_raw = ir_count_dict[intron]["left"][1]
 
-                        if norm1:
-                            left_ct_raw = int(round(ie_jcn_ct1/norm1))
-                            left_ct_lenNorm = int(round(ie_jcn_ct2/norm2))
+                        if norm2:
+                            ie_jcn_ct_raw = int(round(ie_jcn_ct_raw/norm2))
 
-                ie_jcn_cts1.append(ie_jcn_ct1)
-                ie_jcn_cts2.append(ie_jcn_ct2)
+                ie_jcn_cts_raw.append(ie_jcn_ct_raw)
 
         else: # alt_end
             for i in range(1,len(ordered_pos)):
@@ -1281,21 +1278,16 @@ def updateCounts2AltDonorAccept(file_out_str,
                 ie_jcn = "%s_%d_%d" % (chr, ordered_pos[i],
                                        ordered_pos[i] + 1)
 
-                ie_jcn_ct1 = 0
-                ie_jcn_ct2 = 0
+                ie_jcn_ct_raw = 0
 
                 if ir_count_dict:
                     if intron in ir_count_dict:
-                        ie_jcn_ct1 = ir_count_dict[intron]["right"][0]
-                        ie_jcn_ct2 = ir_count_dict[intron]["right"][1]
+                        ie_jcn_ct_raw = ir_count_dict[intron]["right"][1]
 
-                        if norm1:
-                            ie_jcn_ct1 = int(round(ie_jcn_ct1/norm1))
-                            ie_jcn_ct2 = int(round(ie_jcn_ct2/norm2))
+                        if norm2:
+                            ie_jcn_ct_raw = int(round(ie_jcn_ct_raw/norm2))
 
-                ie_jcn_cts1.append(ie_jcn_ct1)
-                ie_jcn_cts2.append(ie_jcn_ct2)
-
+                ie_jcn_cts_raw.append(ie_jcn_ct_raw)
 
         ### Split IE junction counts by each isoform
         (sub_proportions1,
@@ -1304,8 +1296,8 @@ def updateCounts2AltDonorAccept(file_out_str,
         
         (ie_isoform_cts1,
          ie_isoform_cts2) =  splitSharedRegions(alt_start_or_end,
-                                                ie_jcn_cts1,
-                                                ie_jcn_cts2,
+                                                ie_jcn_cts_raw,
+                                                ie_jcn_cts_raw,
                                                 sub_proportions1,
                                                 sub_proportions2)
 
@@ -1314,10 +1306,10 @@ def updateCounts2AltDonorAccept(file_out_str,
                                                    ordered_pos, jcn_seq_len)
 
         # Add counts
-        incl1 = 0
-        incl2 = 0
-        excl1 = 0
-        excl2 = 0
+        incl_raw = 0
+        incl_lenNorm = 0
+        excl_raw = 0
+        excl_lenNorm = 0
         
         incl_ordered_pos = None
         if alt_start_or_end == "alt_start":
@@ -1327,19 +1319,18 @@ def updateCounts2AltDonorAccept(file_out_str,
 
         # Normalize existing junction counts and add to total
         for i in range(len(ordered_pos)):
-            update_ct1 = normalizeByLen(total_ordered_cts1_list[i], 
+            update_ct_raw = total_ordered_raw_list[i]
+            total_ordered_raw_list[i] = update_ct_raw
+            update_ct_lenNorm = normalizeByLen(total_ordered_raw_list[i], 
                                         isoform_lengths[i])
-            total_ordered_cts1_list[i] = update_ct1
-            update_ct2 = normalizeByLen(total_ordered_cts2_list[i], 
-                                        isoform_lengths[i])
-            total_ordered_cts2_list[i] = update_ct2
+            total_ordered_lenNorm_list[i] = update_ct_lenNorm
 
             if i == incl_ordered_pos_idx:
-                incl1 += update_ct1
-                incl2 += update_ct2
+                incl_raw += update_ct_raw
+                incl_lenNorm += update_ct_lenNorm
             else:
-                excl1 += update_ct1
-                excl2 += update_ct2
+                excl_raw += update_ct_raw
+                excl_lenNorm += update_ct_lenNorm
 
 
         if alt_start_or_end == "alt_start":
@@ -1347,66 +1338,62 @@ def updateCounts2AltDonorAccept(file_out_str,
             # counts are added to the exclusion counts
             if ordered_pos.index(incl_start) == 0:
                 for i in range(len(ie_isoform_cts1)):
-                    this_ie_ct1 = normalizeByLen(ie_isoform_cts1[i],
-                                                 isoform_lengths[i+1])
-                    this_ie_ct2 = normalizeByLen(ie_isoform_cts2[i],
+                    this_ie_ct_raw = ie_isoform_cts2[i]
+                    this_ie_ct_lenNorm = normalizeByLen(ie_isoform_cts2[i],
                                                  isoform_lengths[i+1])
 
-                    total_ordered_cts1_list[i+1] += this_ie_ct1
-                    total_ordered_cts2_list[i+1] += this_ie_ct2
+                    total_ordered_raw_list[i+1] += this_ie_ct_raw
+                    total_ordered_lenNorm_list[i+1] += this_ie_lenNorm
 
-                    excl1 += this_ie_ct1
-                    excl2 += this_ie_ct2
+                    excl_raw += this_ie_ct_raw
+                    excl_lenNorm += this_ie_ct_lenNorm
                                                                    
             else:
-                for i in range(len(ie_isoform_cts1)):
-                    this_ie_ct1 = normalizeByLen(ie_isoform_cts1[i],
-                                                 isoform_lengths[i+1])
-                    this_ie_ct2 = normalizeByLen(ie_isoform_cts2[i],
+                for i in range(len(ie_isoform_cts2)):
+                    this_ie_ct_raw = ie_isoform_cts2[i]
+                    this_ie_ct_lenNorm = normalizeByLen(ie_isoform_cts2[i],
                                                  isoform_lengths[i+1])
                 
-                    total_ordered_cts1_list[i+1] += this_ie_ct1
-                    total_ordered_cts2_list[i+1] += this_ie_ct2
+                    total_ordered_raw_list[i+1] += this_ie_ct_raw
+                    total_ordered_lenNorm_list[i+1] += this_ie_ct_lenNorm
 
                     if i == (ordered_pos.index(incl_start) - 1):
-                        incl1 += this_ie_ct1
-                        incl2 += this_ie_ct2
+                        incl_raw += this_ie_ct_raw
+                        incl_lenNorm += this_ie_ct_lenNorm
                     else:
-                        excl1 += this_ie_ct1
-                        excl2 += this_ie_ct2
+                        excl_raw += this_ie_ct_raw
+                        excl_lenNorm += this_ie_ct_lenNorm
           
         else: # "alt_end"
             # When the longest intron is the "inclusion" isoform, all other
             # counts are added to the exclusion counts
             if ordered_pos.index(incl_end) == (len(ordered_pos) - 1):
-                for i in range(len(ie_isoform_cts1)):
-                    this_ie_ct1 = normalizeByLen(ie_isoform_cts1[i],
-                                                 isoform_lengths[i])
-                    this_ie_ct2 = normalizeByLen(ie_isoform_cts2[i],
+                for i in range(len(ie_isoform_cts2)):
+                    this_ie_ct_raw = ie_isoform_cts2[i]
+                    this_ie_ct_lenNorm = normalizeByLen(ie_isoform_cts2[i],
                                                  isoform_lengths[i])
 
-                    total_ordered_cts1_list[i] += this_ie_ct1
-                    total_ordered_cts2_list[i] += this_ie_ct2
+                    total_ordered_raw_list[i] += this_ie_ct_raw
+                    total_ordered_lenNorm_list[i] += this_ie_ct_lenNorm
                     
-                    excl1 += this_ie_ct1
-                    excl2 += this_ie_ct2
+                    excl_raw += this_ie_ct_raw
+                    excl_lenNorm += this_ie_ct_lenNorm
 
             else:
-                for i in range(len(ie_isoform_cts1)):
-                    this_ie_ct1 = normalizeByLen(ie_isoform_cts1[i],
-                                                 isoform_lengths[i])
-                    this_ie_ct2 = normalizeByLen(ie_isoform_cts2[i],
+                for i in range(len(ie_isoform_cts2)):
+                    this_ie_ct_raw = ie_isoform_cts2[i]
+                    this_ie_ct_lenNorm = normalizeByLen(ie_isoform_cts2[i],
                                                  isoform_lengths[i])
 
-                    total_ordered_cts1_list[i] += this_ie_ct1
-                    total_ordered_cts2_list[i] += this_ie_ct2
+                    total_ordered_raw_list[i] += this_ie_ct_raw
+                    total_ordered_lenNorm_list[i] += this_ie_ct_lenNorm
 
                     if i == ordered_pos.index(incl_end):
-                        incl1 += this_ie_ct1
-                        incl2 += this_ie_ct2
+                        incl_raw += this_ie_ct_raw
+                        incl_lenNorm += this_ie_ct_lenNorm
                     else:
-                        excl1 += this_ie_ct1
-                        excl2 += this_ie_ct2
+                        excl_raw += this_ie_ct_raw
+                        excl_lenNorm += this_ie_ct_lenNorm
 
 
         #### Now split up the inclusion add coords by the proportions.
@@ -1441,100 +1428,98 @@ def updateCounts2AltDonorAccept(file_out_str,
             # If the inclusion isoform is the longest intron, then all counts
             # go to the exclusion isoform
             if ordered_pos.index(incl_start) == 0:
-                for i in range(len(exonic_isoform_cts1)):
-                    this_exon_ct1 = normalizeByLen(exonic_isoform_cts1[i],
-                                                   isoform_lengths[i+1])
-                    this_exon_ct2 = normalizeByLen(exonic_isoform_cts2[i],
+                for i in range(len(exonic_isoform_cts2)):
+                    this_exon_ct_raw = exonic_isoform_cts2[i]
+                    this_exon_ct_lenNorm = normalizeByLen(exonic_isoform_cts2[i],
                                                    isoform_lengths[i+1])
 
-                    total_ordered_cts1_list[i+1] += this_exon_ct1
-                    total_ordered_cts2_list[i+1] += this_exon_ct2
+                    total_ordered_raw_list[i+1] += this_exon_ct_raw
+                    total_ordered_lenNorm_list[i+1] += this_exon_ct_lenNorm
                     
-                    excl1 += this_exon_ct1
-                    excl2 += this_exon_ct2
+                    excl_raw += this_exon_ct_raw
+                    excl_lenNorm += this_exon_ct_lenNorm
             else:
-                for i in range(len(exonic_isoform_cts1)):
-                    this_exon_ct1 = normalizeByLen(exonic_isoform_cts1[i],
+                for i in range(len(exonic_isoform_cts2)):
+                    this_exon_ct_raw = normalizeByLen(exonic_isoform_cts2[i],
                                                    isoform_lengths[i+1])
-                    this_exon_ct2 = normalizeByLen(exonic_isoform_cts2[i],
+                    this_exon_ct_lenNorm = normalizeByLen(exonic_isoform_cts2[i],
                                                    isoform_lengths[i+1])
 
-                    total_ordered_cts1_list[i+1] += this_exon_ct1
-                    total_ordered_cts2_list[i+1] += this_exon_ct2
+                    total_ordered_raw_list[i+1] += this_exon_ct_raw
+                    total_ordered_lenNorm_list[i+1] += this_exon_ct_lenNorm
 
                     if i == (ordered_pos.index(incl_start) - 1):
-                        incl1 += this_exon_ct1
-                        incl2 += this_exon_ct2
+                        incl_raw += this_exon_ct_raw
+                        incl_lenNorm += this_exon_ct_lenNorm
                     else:
-                        excl1 += this_exon_ct1
-                        excl2 += this_exon_ct2
+                        excl_raw += this_exon_ct_raw
+                        excl_lenNorm += this_exon_ct_lenNorm
 
         else: # alt_end
             if ordered_pos.index(incl_end) == (len(ordered_pos) - 1):
-                for i in range(len(exonic_isoform_cts1)):
-                    this_exon_ct1 = normalizeByLen(exonic_isoform_cts1[i],
-                                                    isoform_lengths[i])
-                    this_exon_ct2 = normalizeByLen(exonic_isoform_cts2[i],
+                for i in range(len(exonic_isoform_cts2)):
+                    this_exon_ct_raw = exonic_isoform_cts2[i]
+                    this_exon_ct_lenNorm = normalizeByLen(exonic_isoform_cts2[i],
                                                     isoform_lengths[i])
 
-                    total_ordered_cts1_list[i] += this_exon_ct1
-                    total_ordered_cts2_list[i] += this_exon_ct2
+                    total_ordered_raw_list[i] += this_exon_ct_raw
+                    total_ordered_lenNorm_list[i] += this_exon_ct_lenNorm
 
-                    excl1 += this_exon_ct1
-                    excl2 += this_exon_ct2
+                    excl_raw += this_exon_ct_raw
+                    excl_lenNorm += this_exon_ct_lenNorm
             else:
-                for i in range(len(exonic_isoform_cts1)):
-                    this_exon_ct1 = normalizeByLen(exonic_isoform_cts1[i],
+                for i in range(len(exonic_isoform_cts2)):
+                    this_exon_ct_raw = normalizeByLen(exonic_isoform_cts2[i],
                                                    isoform_lengths[i])            
-                    this_exon_ct2 = normalizeByLen(exonic_isoform_cts2[i],
+                    this_exon_ct_lenNorm = normalizeByLen(exonic_isoform_cts2[i],
                                                    isoform_lengths[i])            
 
-                    total_ordered_cts1_list[i] += this_exon_ct1
-                    total_ordered_cts2_list[i] += this_exon_ct2
+                    total_ordered_raw_list[i] += this_exon_ct_raw
+                    total_ordered_lenNorm_list[i] += this_exon_ct_lenNorm
 
                     if i == ordered_pos.index(incl_end):
-                        incl1 += this_exon_ct1
-                        incl2 += this_exon_ct2
+                        incl_raw += this_exon_ct_raw
+                        incl_lenNorm += this_exon_ct_lenNorm
                     else:
-                        excl1 += this_exon_ct1
-                        excl2 += this_exon_ct2
+                        excl_raw += this_exon_ct_raw
+                        excl_lenNorm += this_exon_ct_lenNorm
     
         # Create exclusion cts list
         if alt_start_or_end == "alt_start":
-            this_incl1_ct = total_ordered_cts1_list.pop(ordered_pos.index(incl_start))
-            this_incl2_ct = total_ordered_cts2_list.pop(ordered_pos.index(incl_start))
+            this_incl_raw_ct = total_ordered_raw_list.pop(ordered_pos.index(incl_start))
+            this_incl_lenNorm_ct = total_ordered_lenNorm_list.pop(ordered_pos.index(incl_start))
         else: # alt_end
-            this_incl1_ct = total_ordered_cts1_list.pop(ordered_pos.index(incl_end))
-            this_incl2_ct = total_ordered_cts2_list.pop(ordered_pos.index(incl_end))
+            this_incl_raw_ct = total_ordered_raw_list.pop(ordered_pos.index(incl_end))
+            this_incl_lenNorm_ct = total_ordered_lenNorm_list.pop(ordered_pos.index(incl_end))
 
-        if this_incl1_ct != incl1:
-            ERROR_LOG.write("updateCounts2AltDonorAccept: inclusion 1 counts do not agree: %s\n" % event_key)
-        if this_incl2_ct != incl2:
-            ERROR_LOG.write("updateCounts2AltDonorAccept: inclusion 2 counts do not agree: %s\n" % event_key)
+        if this_incl_raw_ct != incl_raw:
+            ERROR_LOG.write("updateCounts2AltDonorAccept: inclusion raw counts do not agree: %s\n" % event_key)
+        if this_incl_lenNorm_ct != incl_lenNorm:
+            ERROR_LOG.write("updateCounts2AltDonorAccept: inclusion lenNorm counts do not agree: %s\n" % event_key)
 
-        total_excl_cts1_list = total_ordered_cts1_list
-        total_excl_cts2_list = total_ordered_cts2_list
+        total_excl_raw_list = total_ordered_raw_list
+        total_excl_lenNorm_list = total_ordered_lenNorm_list
 
-        (ordered_pos, 
-         new_proportions1, 
-         new_proportions2,
-         not_used1,
-         not_used2) = getSSOrderAndProportions(alt_start_or_end,
-                                               incl_start, incl_end,
-                                               excl_jcns,
-                                               total_excl_cts1_list,
-                                               incl1,
-                                               total_excl_cts2_list,
-                                               incl2)
+#       (ordered_pos, 
+#        new_proportions1, 
+#        new_proportions2,
+#        not_used1,
+#        not_used2) = getSSOrderAndProportions(alt_start_or_end,
+#                                              incl_start, incl_end,
+#                                              excl_jcns,
+#                                              total_excl_cts1_list,
+#                                              incl1,
+#                                              total_excl_cts2_list,
+#                                              incl2)
 
-        e_or_i = checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
-                                                       incl_start, incl_end,
-                                                       ordered_pos,
-                                                       new_proportions1,
-                                                       new_proportions2)
-        line_list[1] = e_or_i
+#       e_or_i = checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
+#                                                      incl_start, incl_end,
+#                                                      ordered_pos,
+#                                                      new_proportions1,
+#                                                      new_proportions2)
+#       line_list[1] = e_or_i
 
-        if hasNegativeVals(excl1, incl1, excl2, incl2):
+        if hasNegativeVals(excl_raw, incl_raw, excl_lenNorm, incl_lenNorm):
             ERROR_LOG.write("Negative Vals: %s\n" % line)
             excl1 = 0
             incl1 = 0
@@ -1542,12 +1527,12 @@ def updateCounts2AltDonorAccept(file_out_str,
             incl2 = 0
 
         out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
-                                            excl1, incl1,
-                                            excl2, incl2)
+                                            excl_raw, incl_raw,
+                                            excl_lenNorm, incl_lenNorm)
 
         
         # Add counts to event dictionary
-        event2counts[event_key] = (excl1, incl1, excl2, incl2)
+        event2counts[event_key] = (excl_raw, incl_raw, excl_lenNorm, incl_lenNorm)
 
         file2.write(out_str)
 
@@ -4490,7 +4475,7 @@ def printAlternativeDonorsAcceptors(db,
                                                             inclusion_raw)
 
                     ie_jcns = []
-                    ie_jcn_raw = []
+                    ie_jcns_raw = []
 #                    ie_jcn_cts2 = []
                     # Add any intron retention counts associated with the
                     # intron/exon boundaries of the isoforms.
@@ -4511,14 +4496,14 @@ def printAlternativeDonorsAcceptors(db,
                             if ir_count_dict:
                                 if intron in ir_count_dict:
 
-                                    left_ct_raw = ir_count_dict[intron]["left"][1]
+                                    ie_jcn_raw = ir_count_dict[intron]["left"][1]
 
                                     if norm2:
-                                        left_ct_raw = int(round(left_ct_raw/norm2))
+                                        ie_jcn_raw = int(round(ie_ct_raw/norm2))
 
                                     # length normalizing at later step
 
-                                    ie_jcn_raw.append(left_ct_raw)
+                                    ie_jcns_raw.append(left_ct_raw)
 #                                    ie_jcn_cts2.append(left_ct_lenNorm)
             
 
@@ -4658,7 +4643,7 @@ def printAlternativeDonorsAcceptors(db,
                                              repr(inclusion_jcn_raw),
                                              "","",
                                              None, None,
-                                             ";".join(map(repr, ie_jcn_raw)),
+                                             ";".join(map(repr, ie_jcns_raw)),
                                              None,
                                              "",
                                              None)
@@ -4913,7 +4898,7 @@ def printAlternativeDonorsAcceptors(db,
                     # intron/exon boundaries of the isoforms
                     # IE counts are added later if the reads are paired-end
                     ie_jcns = []
-                    ie_jcn_raw = []
+                    ie_jcns_raw = []
                     if isSimple:
                         # Get all IE junctions that correspond to all positions
                         # except the first
@@ -4934,7 +4919,7 @@ def printAlternativeDonorsAcceptors(db,
 
                                     # not length normalizing here, will perform
                                     # normalization later
-                                    ie_jcn_raw.append(ie_jcn_raw)
+                                    ie_jcns_raw.append(ie_jcn_raw)
 
                     # Add Exclusion or Inclusion Annotation
 #                   e_or_i = checkExclusionInclusion_AA_AD_AFE_ALE("alt_end",
