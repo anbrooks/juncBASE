@@ -2758,11 +2758,9 @@ def fixIRExclusion_count(ir_file_name, all_jcn_count_dict,
             jcn_ct_raw = 0
             jcn_ct_lenNorm = 0
     
-        line_list[12] = repr(jcn_ct_raw)
-        line_list[14] = repr(jcn_ct_lenNorm)
+        line_list[11] = repr(jcn_ct_raw)
 
-        line_list[16] = repr(jcn_ct_raw)
-        line_list[18] = repr(jcn_ct_lenNorm)
+        line_list[13] = repr(jcn_ct_raw)
 
         outline = "\t".join(line_list)
         file2.write(outline + "\n")
