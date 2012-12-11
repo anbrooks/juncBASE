@@ -380,7 +380,6 @@ def getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_intron
         label = "N"
 
     out_str = getAllEventStr(label,
-                             e_or_i,
                              "intron_retention",
                              gene_name,
                              chr,
@@ -393,27 +392,15 @@ def getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_intron
                              ";".join(const_regions),
                              excl_cts_raw,
                              "",
-                             excl_cts_lenNorm,
-                             "",
                              excl_cts_raw,
                              None,
-                             excl_cts_lenNorm,
-                             None,
                              "",
                              "",
-                             "",
-                             "",
-                             None,
-                             None,
                              None,
                              None,
                              ie_cts_raw,
-                             ie_cts_lenNorm,   
                              ie_ct_raw,
-                             ie_ct_lenNorm,
                              "",
-                             "",
-                             None,
                              None)
 
     return out_str
@@ -460,19 +447,19 @@ def getEventInfo(combined_line, lengthNorm):
     ie_right_lenNorm = None
 
     if lengthNorm: # Each ie counts need to be renormalized considering both ends
-        ie_left_raw = int(round(float(line_elems[7])/2))
+        ie_left_raw = int(line_elems[7])
 #        ie_right_raw = int(round(float(line_elems[19])/2))
-        ie_right_raw = int(round(float(line_elems[17])/2))
+        ie_right_raw = int(line_elems[17])
         ie_left_lenNorm = int(round(float(line_elems[9])/2))
 #        ie_right_lenNorm = int(round(float(line_elems[21])/2))
         ie_right_lenNorm = int(round(float(line_elems[19])/2))
-    else:
-        ie_left_raw = int(line_elems[7])
+#   else:
+#       ie_left_raw = int(line_elems[7])
 #        ie_right_raw = int(line_elems[19])
-        ie_right_raw = int(line_elems[17])
-        ie_left_lenNorm = int(line_elems[9])
+#       ie_right_raw = int(line_elems[17])
+#       ie_left_lenNorm = int(line_elems[9])
 #        ie_right_lenNorm = int(line_elems[21])
-        ie_right_lenNorm = int(line_elems[19])
+#       ie_right_lenNorm = int(line_elems[19])
 
     ie_cts_raw = "%d;%d" % (ie_left_raw,
                               ie_right_raw)
