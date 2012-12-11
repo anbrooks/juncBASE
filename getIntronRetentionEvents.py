@@ -237,7 +237,7 @@ def main():
             diff_direction_out.write(combined_line + "\t" + intron + "\n")
 
             # Print all events to allEvent file
-            out_str = getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_introns, lengthNorm)
+            out_str = getAllEventInfoLine(combined_line, intron, annotated_exons_by_strand, annotated_introns, lengthNorm)
             all_as_event_file.write(out_str + "\n")
         else:
 #           combined_pval = getCombinedPval(left_line_list[left_intron2line[intron]],
@@ -347,8 +347,8 @@ def formatLine(line):
 def getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_introns, lengthNorm):
     (e_or_i, gene_name, chr, strand,
      left_intron_start, right_intron_end,
-     excl_cts_samp1, excl_cts_samp2,
-     ie_cts_samp1, ie_cts_samp2) = getEventInfo(combined_line, lengthNorm)
+     excl_cts_raw, excl_cts_lenNorm,
+     ie_cts_raw, ie_cts_lenNorm) = getEventInfo(combined_line, lengthNorm)
 
     ie_jcns = ["%s_%d_%d" % (chr, left_intron_start - 1, left_intron_start)]
     ie_jcns.append("%s_%d_%d" % (chr, right_intron_end, right_intron_end + 1))
@@ -363,15 +363,15 @@ def getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_intron
     if const_str:
         const_regions.append(const_str)
 
-    ie_ct_list_samp1 = map(int, ie_cts_samp1.split(";"))
-    ie_ct_list_samp2 = map(int, ie_cts_samp2.split(";"))
+    ie_ct_list_raw = map(int, ie_cts_raw.split(";"))
+    ie_ct_list_lenNorm = map(int, ie_cts_lenNorm.split(";"))
 
-    ie_ct_samp1 = 0
-    for ct in ie_ct_list_samp1:
-        ie_ct_samp1 += ct
-    ie_ct_samp2 = 0
-    for ct in ie_ct_list_samp2:
-        ie_ct_samp2 += ct
+    ie_ct_raw = 0
+    for ct in ie_ct_list_raw:
+        ie_ct_raw += ct
+    ie_ct_lenNorm = 0
+    for ct in ie_ct_list_lenNorm:
+        ie_ct_lenNorm += ct
 
 
     # Now print to all AS Event string
@@ -391,26 +391,26 @@ def getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_intron
                              "", # Inclusion exons
                              ";".join(ie_jcns),
                              ";".join(const_regions),
-                             excl_cts_samp1,
+                             excl_cts_raw,
                              "",
-                             excl_cts_samp2,
+                             excl_cts_lenNorm,
                              "",
-                             excl_cts_samp1,
+                             excl_cts_raw,
                              None,
-                             excl_cts_samp2,
+                             excl_cts_lenNorm,
                              None,
-                             "",
-                             "",
                              "",
                              "",
+                             "",
+                             "",
                              None,
                              None,
                              None,
                              None,
-                             ie_cts_samp1,
-                             ie_cts_samp2,   
-                             ie_ct_samp1,
-                             ie_ct_samp2,
+                             ie_cts_raw,
+                             ie_cts_lenNorm,   
+                             ie_ct_raw,
+                             ie_ct_lenNorm,
                              "",
                              "",
                              None,
@@ -428,8 +428,8 @@ def getEventInfo(combined_line, lengthNorm):
  
                 (e_or_i, gene_name, chr, strand,
                  left_intron_start, right_intron_end,
-                 excl_cts_samp1, excl_cts_samp2,
-                 ie_cts_samp1, ie_cts_samp2) = getEventInfo(combined_line, lengthNorm)
+                 excl_cts_raw, excl_cts_lenNorm,
+                 ie_cts_raw, ie_cts_lenNorm) = getEventInfo(combined_line, lengthNorm)
 
     """
     line_elems = combined_line.split("\t")
@@ -451,37 +451,37 @@ def getEventInfo(combined_line, lengthNorm):
 #    right_intron_end = int(line_elems[16])
     right_intron_end = int(line_elems[14])
 
-    excl_cts_samp1 = int(line_elems[6])
-    excl_cts_samp2 = int(line_elems[8])
+    excl_cts_raw = int(line_elems[6])
+    excl_cts_lenNorm = int(line_elems[8])
 
-    ie_left_samp1 = None
-    ie_right_samp1 = None
-    ie_left_samp2 = None
-    ie_right_samp2 = None
+    ie_left_raw = None
+    ie_right_raw = None
+    ie_left_lenNorm = None
+    ie_right_lenNorm = None
 
     if lengthNorm: # Each ie counts need to be renormalized considering both ends
-        ie_left_samp1 = int(round(float(line_elems[7])/2))
-#        ie_right_samp1 = int(round(float(line_elems[19])/2))
-        ie_right_samp1 = int(round(float(line_elems[17])/2))
-        ie_left_samp2 = int(round(float(line_elems[9])/2))
-#        ie_right_samp2 = int(round(float(line_elems[21])/2))
-        ie_right_samp2 = int(round(float(line_elems[19])/2))
+        ie_left_raw = int(round(float(line_elems[7])/2))
+#        ie_right_raw = int(round(float(line_elems[19])/2))
+        ie_right_raw = int(round(float(line_elems[17])/2))
+        ie_left_lenNorm = int(round(float(line_elems[9])/2))
+#        ie_right_lenNorm = int(round(float(line_elems[21])/2))
+        ie_right_lenNorm = int(round(float(line_elems[19])/2))
     else:
-        ie_left_samp1 = int(line_elems[7])
-#        ie_right_samp1 = int(line_elems[19])
-        ie_right_samp1 = int(line_elems[17])
-        ie_left_samp2 = int(line_elems[9])
-#        ie_right_samp2 = int(line_elems[21])
-        ie_right_samp2 = int(line_elems[19])
+        ie_left_raw = int(line_elems[7])
+#        ie_right_raw = int(line_elems[19])
+        ie_right_raw = int(line_elems[17])
+        ie_left_lenNorm = int(line_elems[9])
+#        ie_right_lenNorm = int(line_elems[21])
+        ie_right_lenNorm = int(line_elems[19])
 
-    ie_cts_samp1 = "%d;%d" % (ie_left_samp1,
-                              ie_right_samp1)
-    ie_cts_samp2 = "%d;%d" % (ie_left_samp2,
-                              ie_right_samp2)
+    ie_cts_raw = "%d;%d" % (ie_left_raw,
+                              ie_right_raw)
+    ie_cts_lenNorm = "%d;%d" % (ie_left_lenNorm,
+                              ie_right_lenNorm)
 
     return (e_or_i, gene_name, chr, strand, left_intron_start,
-            right_intron_end, excl_cts_samp1, excl_cts_samp2,
-            ie_cts_samp1, ie_cts_samp2)
+            right_intron_end, excl_cts_raw, excl_cts_lenNorm,
+            ie_cts_raw, ie_cts_lenNorm)
         
 def getCombinedPval(left_line, right_line):
     left_line = formatLine(left_line)
@@ -518,26 +518,26 @@ def isValidIR(combined_line):
     line_list = combined_line.split("\t")
 
     # Sample 1 exclusion counts
-    samp1_excl = int(line_list[6])
-#    samp1_excl += int(line_list[18])
+    raw_excl = int(line_list[6])
+#    raw_excl += int(line_list[18])
     # No longer doing p-val calculation here.
-    samp1_excl += int(line_list[16])
+    raw_excl += int(line_list[16])
 
-    samp1_incl = int(line_list[7])
-#    samp1_incl += int(line_list[19])
-    samp1_incl += int(line_list[17])
+    raw_incl = int(line_list[7])
+#    raw_incl += int(line_list[19])
+    raw_incl += int(line_list[17])
 
-    samp2_excl = int(line_list[8])
-#    samp2_excl += int(line_list[20])
-    samp2_excl += int(line_list[18])
+    lenNorm_excl = int(line_list[8])
+#    lenNorm_excl += int(line_list[20])
+    lenNorm_excl += int(line_list[18])
     
-    samp2_incl = int(line_list[9])
-#    samp2_incl += int(line_list[21])
-    samp2_incl += int(line_list[19])
+    lenNorm_incl = int(line_list[9])
+#    lenNorm_incl += int(line_list[21])
+    lenNorm_incl += int(line_list[19])
 
-    if samp1_excl == 0 and samp1_incl == 0:
+    if raw_excl == 0 and raw_incl == 0:
         return False
-    if samp2_excl == 0 and samp2_incl == 0:
+    if lenNorm_excl == 0 and lenNorm_incl == 0:
         return False
 
     return True
