@@ -5937,10 +5937,10 @@ def printMultiCassetteExons(db,
                                     cassette_exons[chr] = set([(exon_start,
                                                                 exon_end)])
                             # Multi-cassette event found
-                            excl_file1_count = 0
-                            incl_file1_count = 0
-                            excl_file2_count = 0
-                            incl_file2_count = 0
+                            excl_file_raw_count = 0
+                            incl_file_raw_count = 0
+                            excl_file_lenNorm_count = 0
+                            incl_file_lenNorm_count = 0
     
                             # Add to exclusion junctions
                             if chr in excl_jcns:
@@ -5953,12 +5953,10 @@ def printMultiCassetteExons(db,
                             # Exclusion_count
                             excl_jcn_str = "%s_%d_%d" % (chr, exclusion_start,
                                                          exclusion_end)
-                            excl_file1_count = all_jcn_count_dict[excl_jcn_str][0]
-                            excl_file2_count = all_jcn_count_dict[excl_jcn_str][1]
+                            excl_file_raw_count = all_jcn_count_dict[excl_jcn_str][1]
 
-                            if norm1:
-                                excl_file1_count = int(round(all_jcn_count_dict[excl_jcn_str][0]/norm1))
-                                excl_file2_count = int(round(all_jcn_count_dict[excl_jcn_str][1]/norm2))
+                            if norm2:
+                                excl_file_raw_count = int(round(all_jcn_count_dict[excl_jcn_str][1]/norm2))
 
                             strand = None
                             strand = updateStrand(strand, all_jcn2strand[excl_jcn_str])
@@ -6006,8 +6004,7 @@ def printMultiCassetteExons(db,
                                 last_end = left_inclusion_end
                                 last_jcn = "%s_%d_%d" % (chr, last_start, last_end)
 
-                                incl_file1_count = 0
-                                incl_file2_count = 0
+                                incl_file_raw_count = 0
 
                                 for intron_coord in intron_list:
                                     this_start = intron_coord[0]
@@ -6029,33 +6026,30 @@ def printMultiCassetteExons(db,
                                     # proportions used to estimate junction count for
                                     # mutually exclusive events based on all junctions on
                                     # each side of the exon
-                                    upstrm_jcn_sum1 = 0
-                                    upstrm_jcn_sum2 = 0
+                                    upstrm_jcn_sum_raw = 0
 
                                     for other_start in all_coord_end2start[chr][this_end]:
-                                        upstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
-                                                                                           other_start,
-                                                                                           this_end)][0]
-                                        upstrm_jcn_sum2 += all_jcn_count_dict["%s_%d_%d" % (chr,
+#                                       upstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
+#                                                                                          other_start,
+#                                                                                          this_end)][0]
+                                        upstrm_jcn_sum_raw += all_jcn_count_dict["%s_%d_%d" % (chr,
                                                                                            other_start,
                                                                                            this_end)][1]
                             
-                                    this_incl_file1_count = int(round(upstrm_jcn_sum1 *
-                                                                      mc_proportion1))
+#                                   this_incl_file1_count = int(round(upstrm_jcn_sum1 *
+#                                                                     mc_proportion1))
                                                             
-                                    this_incl_file2_count = int(round(upstrm_jcn_sum2 *
+                                    this_incl_file_raw_count = int(round(upstrm_jcn_sum_raw *
                                                                       mc_proportion2))
 
-                                    if norm1:
-                                        this_incl_file1_count = int(round(this_incl_file1_count/norm1))
-                                        this_incl_file2_count = int(round(this_incl_file2_count/norm2))
+                                    if norm2:
+                                        this_incl_file_raw_count = int(round(this_incl_file_raw_count/norm2))
 
-                                    incl_file1_count += this_incl_file1_count
-                                    incl_file2_count += this_incl_file2_count
+#                                    incl_file1_count += this_incl_file1_count
+                                    incl_file_raw_count += this_incl_file_raw_count
 
                                     inclusion_jcns.append(last_jcn)
-                                    raw_inclusion_cts.append(this_incl_file1_count)
-                                    lenNorm_inclusion_cts.append(this_incl_file2_count)
+                                    raw_inclusion_cts.append(this_incl_file_raw_count)
 
                                     # Now update variables
                                     last_start = this_start
@@ -6083,68 +6077,60 @@ def printMultiCassetteExons(db,
                                 # proportions used to estimate junction count for
                                 # mutually exclusive events based on all junctions on
                                 # each side of the exon
-                                upstrm_jcn_sum1 = 0
-                                upstrm_jcn_sum2 = 0
-                                dwnstrm_jcn_sum1 = 0
-                                dwnstrm_jcn_sum2 = 0
+                                upstrm_jcn_sum_raw = 0
+                                dwnstrm_jcn_sum_raw = 0
 
                                 for other_start in all_coord_end2start[chr][last_end]:
-                                    upstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
-                                                                                       other_start,
-                                                                                       last_end)][0]
-                                    upstrm_jcn_sum2 += all_jcn_count_dict["%s_%d_%d" % (chr,
+#                                   upstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
+#                                                                                      other_start,
+#                                                                                      last_end)][0]
+                                    upstrm_jcn_sum_raw += all_jcn_count_dict["%s_%d_%d" % (chr,
                                                                                        other_start,
                                                                                        last_end)][1]
                                 for other_end in all_coord_start2end[chr][right_inclusion_start]:
-                                    dwnstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
-                                                                                         right_inclusion_start,
-                                                                                         other_end)][0]
-                                    dwnstrm_jcn_sum2 += all_jcn_count_dict["%s_%d_%d" % (chr,
+#                                   dwnstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
+#                                                                                        right_inclusion_start,
+#                                                                                        other_end)][0]
+                                    dwnstrm_jcn_sum_raw += all_jcn_count_dict["%s_%d_%d" % (chr,
                                                                                          right_inclusion_start,
                                                                                          other_end)][1]
 
-                                upstrm_incl_file1_count = int(round(upstrm_jcn_sum1 *
-                                                                    mc_proportion1))
-                                upstrm_incl_file2_count = int(round(upstrm_jcn_sum2 *
+#                               upstrm_incl_file1_count = int(round(upstrm_jcn_sum1 *
+#                                                                   mc_proportion1))
+                                upstrm_incl_file_raw_count = int(round(upstrm_jcn_sum_raw *
                                                                     mc_proportion2))
-                                dwnstrm_incl_file1_count = int(round(dwnstrm_jcn_sum1 *
-                                                                    mc_proportion1))
-                                dwnstrm_incl_file2_count = int(round(dwnstrm_jcn_sum2*
+#                               dwnstrm_incl_file1_count = int(round(dwnstrm_jcn_sum1 *
+#                                                                   mc_proportion1))
+                                dwnstrm_incl_file_raw_count = int(round(dwnstrm_jcn_sum_raw*
                                                                     mc_proportion2))
 
-                                if norm1:
-                                    upstrm_incl_file1_count = int(round(upstrm_incl_file1_count/norm1))
-                                    upstrm_incl_file2_count = int(round(upstrm_incl_file2_count/norm2))
-                                    dwnstrm_incl_file1_count = int(round(dwnstrm_incl_file1_count/norm1))
-                                    dwnstrm_incl_file2_count = int(round(dwnstrm_incl_file2_count/norm2))
+                                if norm2:
+                                    upstrm_incl_file_raw_count = int(round(upstrm_incl_file_raw_count/norm2))
+                                    dwnstrm_incl_file_raw_count = int(round(dwnstrm_incl_file_raw_count/norm2))
 
-                                incl_file1_count += upstrm_incl_file1_count
-                                incl_file2_count += upstrm_incl_file2_count
-                                incl_file1_count += dwnstrm_incl_file1_count
-                                incl_file2_count += dwnstrm_incl_file2_count
+#                                incl_file1_count += upstrm_incl_file1_count
+                                incl_file_raw_count += upstrm_incl_file_raw_count
+#                                incl_file1_count += dwnstrm_incl_file1_count
+                                incl_file_raw_count += dwnstrm_incl_file_raw_count
                 
                                 inclusion_jcns.append(upstrm_jcn)
                                 inclusion_jcns.append(dwnstrm_jcn)
-                                raw_inclusion_cts.append(upstrm_incl_file1_count)
-                                lenNorm_inclusion_cts.append(upstrm_incl_file2_count)
-                                raw_inclusion_cts.append(dwnstrm_incl_file1_count)
-                                lenNorm_inclusion_cts.append(dwnstrm_incl_file2_count)
+                                raw_inclusion_cts.append(upstrm_incl_file_raw_count)
+                                raw_inclusion_cts.append(dwnstrm_incl_file_raw_count)
 
                             # Calculate inclusion length for normalization       
                             incl_length = (len(inclusion_jcns)*jcn_seq_len) + len_of_exons 
  
-                            excl_file1_count = normalizeByLen(excl_file1_count, jcn_seq_len)
-                            excl_file2_count = normalizeByLen(excl_file2_count, jcn_seq_len)
+                            excl_file_lenNorm_count = normalizeByLen(excl_file_raw_count, jcn_seq_len)
 
-                            incl_file1_count = normalizeByLen(incl_file1_count, incl_length)
-                            incl_file2_count = normalizeByLen(incl_file2_count, incl_length)
+                            incl_file_lenNorm_count = normalizeByLen(incl_file_raw_count, incl_length)
 
                             # Add Exclusion or Inclusion Annotation
                             # Checks percent exclusion from both files.
-                            e_or_i = checkExclusionInclusion(excl_file1_count,
-                                                            incl_file1_count,
-                                                            excl_file2_count,
-                                                            incl_file2_count) 
+#                           e_or_i = checkExclusionInclusion(excl_file1_count,
+#                                                           incl_file1_count,
+#                                                           excl_file2_count,
+#                                                           incl_file2_count) 
 
                             label = "K"
                             if isNovel:
@@ -6156,17 +6142,17 @@ def printMultiCassetteExons(db,
 
                             # print
                             out_str = "%s\t%s\t%s\t%s\t%s\t%d\t%d\t%s\t%d\t%d\t%d\t%d" % (label,
-                                                                                    e_or_i,
+                                                                                    "?",
                                                                                     gene_name,
                                                                                     chr,
                                                                                     strand,
                                                                                     exclusion_start,
                                                                                     exclusion_end,
                                                                                     ",".join(exon_strs),
-                                                                                    excl_file1_count,
-                                                                                    incl_file1_count,
-                                                                                    excl_file2_count,
-                                                                                    incl_file2_count)                                                
+                                                                                    excl_file_raw_count,
+                                                                                    incl_file_raw_count,
+                                                                                    excl_file_lenNorm_count,
+                                                                                    incl_file_lenNorm_count)                                                
                             if printExonCoords:
                                 out_str += "\t%s" % ",".join(exon_strs)
             
@@ -6176,23 +6162,20 @@ def printMultiCassetteExons(db,
                             mc_out.write(out_str + "\n")
 
                             # Now print to all event file
-                            out_str = getAllEventStr(label, e_or_i, "multi_cassette", gene_name,  chr, strand, 
+                            out_str = getAllEventStr(label, "multi_cassette", gene_name,  chr, strand, 
                                                      excl_jcn_str, ";".join(inclusion_jcns),
                                                      "", ";".join(exon_strs),
                                                      "",
                                                      ";".join(const_strs),
-                                                     excl_file1_count, ";".join(map(repr,raw_inclusion_cts)),
-                                                     excl_file2_count, ";".join(map(repr,lenNorm_inclusion_cts)),
-                                                     repr(excl_file1_count),
-                                                     repr(incl_file1_count),
-                                                     repr(excl_file2_count),
-                                                     repr(incl_file2_count),
-                                                     "","","","",
-                                                     None,None,None,None,
+                                                     excl_file_raw_count, ";".join(map(repr,raw_inclusion_cts)),
+                                                     repr(excl_file_raw_count),
+                                                     repr(incl_file_raw_count),
                                                      "","",
                                                      None,None,
-                                                     "","",
-                                                     None,None)                                                
+                                                     "",
+                                                     None,
+                                                     "",
+                                                     None)                                                
 
                             all_event_info_out.write(out_str + "\n")
 
