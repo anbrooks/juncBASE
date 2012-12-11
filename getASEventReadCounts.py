@@ -5677,10 +5677,10 @@ def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exon
     for chr in coord_end2start:
         for end in coord_end2start[chr]:
 
-            excl_file1_count = 0
-            incl_file1_count = 0
-            excl_file2_count = 0
-            incl_file2_count = 0
+            excl_file_raw_count = 0
+            incl_file_raw_count = 0
+            excl_file_lenNorm_count = 0
+            incl_file_lenNorm_count = 0
         
             jcn_str_list = []
 
@@ -5702,13 +5702,13 @@ def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exon
                 # Good junction string will exist in the ir dictionary
                 good_jcn_str = jcn_str
 
-                excl_file1_count += jcn_count_dict[jcn_str][0]
-                excl_file2_count += jcn_count_dict[jcn_str][1]
+#                excl_file1_count += jcn_count_dict[jcn_str][0]
+                excl_file_raw_count += jcn_count_dict[jcn_str][1]
 
             if good_jcn_str:
                 # Only need to add inclusion counts from one of the introns
-                incl_file1_count += ir_count_dict[good_jcn_str]["right"][0]
-                incl_file2_count += ir_count_dict[good_jcn_str]["right"][1]
+#                incl_file1_count += ir_count_dict[good_jcn_str]["right"][0]
+                incl_file_raw_count += ir_count_dict[good_jcn_str]["right"][1]
                     
 #            if excl_file1_count == 0 and excl_file2_count == 0 and incl_file1_count == 0 and incl_file2_count == 0:
 #                continue
@@ -5728,41 +5728,41 @@ def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exon
             
             gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
 
-            if norm1:
-                excl_file1_count = int(round(excl_file1_count/norm1))
-                incl_file1_count = int(round(incl_file1_count/norm1))
+            if norm2:
+#               excl_file1_count = int(round(excl_file1_count/norm1))
+#               incl_file1_count = int(round(incl_file1_count/norm1))
             
-                excl_file2_count = int(round(excl_file2_count/norm2))
-                incl_file2_count = int(round(incl_file2_count/norm2))
+                excl_file_raw_count = int(round(excl_file_raw_count/norm2))
+                incl_file_raw_count = int(round(incl_file_raw_count/norm2))
 
-            excl_file1_count = normalizeByLen(excl_file1_count, 
-                                              jcn_seq_len)
-            excl_file2_count = normalizeByLen(excl_file2_count,
+#           excl_file1_count = normalizeByLen(excl_file1_count, 
+#                                             jcn_seq_len)
+            excl_file_lenNorm_count = normalizeByLen(excl_file_raw_count,
                                               jcn_seq_len)
             
-            incl_file1_count = normalizeByLen(incl_file1_count, jcn_seq_len)
-            incl_file2_count = normalizeByLen(incl_file2_count, jcn_seq_len)
+#            incl_file1_count = normalizeByLen(incl_file1_count, jcn_seq_len)
+            incl_file_lenNorm_count = normalizeByLen(incl_file_raw_count, jcn_seq_len)
 
             # Checks percent exclusion from both files.
-            e_or_i = checkExclusionInclusion(excl_file1_count,
-                                            incl_file1_count,
-                                            excl_file2_count,
-                                            incl_file2_count) 
+#           e_or_i = checkExclusionInclusion(excl_file1_count,
+#                                           incl_file1_count,
+#                                           excl_file2_count,
+#                                           incl_file2_count) 
 
-            out_str = "%s\t%s\t%s\t%s\t%d\t%s\t%d\t%d\t%d\t%d\n" % (e_or_i,
+            out_str = "%s\t%s\t%s\t%s\t%d\t%s\t%d\t%d\t%d\t%d\n" % ("?",
                                                             gene_name,
                                                             chr,
                                                             strand,
                                                             end,
                                                             ",".join(jcn_str_list),
-                                                            excl_file1_count,
-                                                            incl_file1_count,
-                                                            excl_file2_count,
-                                                            incl_file2_count)
+                                                            excl_file_raw_count,
+                                                            incl_file_raw_count,
+                                                            excl_file_lenNorm_count,
+                                                            incl_file_lenNorm_count)
 
-            if hasNegativeVals(incl_file1_count, incl_file2_count, 0, 0):
+            if hasNegativeVals(incl_file_raw_count, incl_file_lenNorm_count, 0, 0):
                 ERROR_LOG.write("Negative Vals: %s\n" % out_str)
-                out_str = "%s\t%s\t%s\t%s\t%d\t%s\t%d\t%d\t%d\t%d\n" % (e_or_i,
+                out_str = "%s\t%s\t%s\t%s\t%d\t%s\t%d\t%d\t%d\t%d\n" % ("?",
                                                             gene_name,
                                                             chr,
                                                             strand,
