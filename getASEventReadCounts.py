@@ -968,14 +968,14 @@ def find_AFE_ALE_clusters(events_dictList,
     jcn2jcn_str
     jcn2exon_str
     novel_jcns - str
-    novel_jcn_sum_samp1,
-    novel_jcn_sum_samp2
+    novel_jcn_sum_raw,
+    novel_jcn_sum_lenNorm
     """
     # exon_clusters = [[(jcn,exon), (jcn, exon)],]
     (exon_clusters,
      novel_jcns,
-     novel_jcn_sum_samp1,
-     novel_jcn_sum_samp2) = find_exon_clusters(next_or_previous,
+     novel_jcn_sum_raw,
+     novel_jcn_sum_lenNorm) = find_exon_clusters(next_or_previous,
                                                all_confident_exons,
                                                all_confident_exons_start2end,
                                                all_confident_exons_end2start,
@@ -988,8 +988,8 @@ def find_AFE_ALE_clusters(events_dictList,
                            "all_coord_end2start":{chr:{}},
                            "all_coord_start2end":{chr:{}},
                            "novel_jcns": novel_jcns,
-                           "novel_jcn_sum_samp1": novel_jcn_sum_samp1,
-                           "novel_jcn_sum_samp2": novel_jcn_sum_samp2,
+                           "novel_jcn_sum_raw": novel_jcn_sum_raw,
+                           "novel_jcn_sum_lenNorm": novel_jcn_sum_lenNorm,
                            "jcn_cluster_sum":{},
                            "jcn2jcn_str":{},
                            "jcn2exon_str":{}}
@@ -1095,14 +1095,14 @@ def find_exon_clusters(next_or_previous, all_confident_exons,
     """
     (exon_clusters,
      novel_jcns,
-     novel_jcn_sum_samp1,
-     novel_jcn_sum_samp2)
+     novel_jcn_sum_raw,
+     novel_jcn_sum_lenNorm)
     """
     adjacentConfExons = []
 
     novel_jcns = []
-    novel_jcn_sum_samp1 = 0
-    novel_jcn_sum_samp2 = 0
+    novel_jcn_sum_raw = 0
+    novel_jcn_sum_lenNorm = 0
     # Find all adjacent confident exons
     for jcn_str in event_jcns:
         chr, start, end = convertCoordStr(jcn_str)
@@ -1115,8 +1115,8 @@ def find_exon_clusters(next_or_previous, all_confident_exons,
             adjacentConfExons.append((jcn_str, adjExon))
         else: # this is a novel junction
             novel_jcns.append(jcn_str)
-            novel_jcn_sum_samp1 += all_jcn_count_dict[jcn_str][0] 
-            novel_jcn_sum_samp2 += all_jcn_count_dict[jcn_str][1] 
+            novel_jcn_sum_raw += all_jcn_count_dict[jcn_str][0] 
+            novel_jcn_sum_lenNorm += all_jcn_count_dict[jcn_str][1] 
          
 
     clusters = [[adjacentConfExons.pop()]]
@@ -1161,8 +1161,8 @@ def find_exon_clusters(next_or_previous, all_confident_exons,
             clusters.append([(this_jcn_str, this_exon)])
 
     # Clusters have been found
-    return (clusters, ",".join(novel_jcns), novel_jcn_sum_samp1,
-            novel_jcn_sum_samp2)
+    return (clusters, ",".join(novel_jcns), novel_jcn_sum_raw,
+            novel_jcn_sum_lenNorm)
 
 def updateCounts2AltDonorAccept(file_out_str, 
                                 ir_count_dict,
@@ -1170,10 +1170,6 @@ def updateCounts2AltDonorAccept(file_out_str,
                                 norm1, norm2, jcn_seq_len,
                                 jcnOnly=False):
     """
-    NOTE: BOOKMARK!!! PAIRED-END UPDATE IS INCOMPLETE.  EXONIC AND IE JUNCTION
-    COUNTS ARE NOW REDISTRIBUTED PROPORTIONALLY.  THIS NEEDS TO BE DONE FOR
-    PAIRED-END READS.
-
     There are a lot of updating to total counts, from the ie junctions and
     exonic junctions.  The total counts reported in the all event file will be
     given in this function.
@@ -1288,8 +1284,8 @@ def updateCounts2AltDonorAccept(file_out_str,
                         ie_jcn_ct2 = ir_count_dict[intron]["left"][1]
 
                         if norm1:
-                            left_ct_samp1 = int(round(ie_jcn_ct1/norm1))
-                            left_ct_samp2 = int(round(ie_jcn_ct2/norm2))
+                            left_ct_raw = int(round(ie_jcn_ct1/norm1))
+                            left_ct_lenNorm = int(round(ie_jcn_ct2/norm2))
 
                 ie_jcn_cts1.append(ie_jcn_ct1)
                 ie_jcn_cts2.append(ie_jcn_ct2)
@@ -1428,7 +1424,6 @@ def updateCounts2AltDonorAccept(file_out_str,
                         excl1 += this_ie_ct1
                         excl2 += this_ie_ct2
 
-        # BOOKMARK!!!! use isoform lengths for the normalization factor
 
         #### Now split up the inclusion add coords by the proportions.
         incl_regions = incl_add_coord.split(";")
@@ -1942,17 +1937,17 @@ def updateCounts2all_as_events(file_str,
         const_exons = line_list[11]
     
 
-        (excl_ct_str_samp1, excl_ct_str_samp2,
-         sum_excl_ct_samp1, sum_excl_ct_samp2) = getCoordCounts4all_as_events(excl_exons, 
+        (excl_ct_str_raw, excl_ct_str_lenNorm,
+         sum_excl_ct_raw, sum_excl_ct_lenNorm) = getCoordCounts4all_as_events(excl_exons, 
                                                                               mapped_file1_counts,
                                                                               mapped_file2_counts)
-        (incl_ct_str_samp1, incl_ct_str_samp2,
-         sum_incl_ct_samp1, sum_incl_ct_samp2) = getCoordCounts4all_as_events(incl_exons, 
+        (incl_ct_str_raw, incl_ct_str_lenNorm,
+         sum_incl_ct_raw, sum_incl_ct_lenNorm) = getCoordCounts4all_as_events(incl_exons, 
                                                                               mapped_file1_counts,
                                                                               mapped_file2_counts)
 
-        (const_ct_str_samp1, const_ct_str_samp2,
-         sum_const_ct_samp1, sum_const_ct_samp2) = getCoordCounts4all_as_events(const_exons, 
+        (const_ct_str_raw, const_ct_str_lenNorm,
+         sum_const_ct_raw, sum_const_ct_lenNorm) = getCoordCounts4all_as_events(const_exons, 
                                                                                 mapped_file1_counts,
                                                                                 mapped_file2_counts)
 
@@ -1964,17 +1959,17 @@ def updateCounts2all_as_events(file_str,
 
         ie_jcns = parse_all_as_event_regions(line_list[10])
 
-        if not sum_excl_ct_samp1:   
-            sum_excl_ct_samp1 = 0
-            sum_excl_ct_samp2 = 0
+        if not sum_excl_ct_raw:   
+            sum_excl_ct_raw = 0
+            sum_excl_ct_lenNorm = 0
 
-        if not sum_incl_ct_samp1:
-            sum_incl_ct_samp1 = 0
-            sum_incl_ct_samp2 = 0
+        if not sum_incl_ct_raw:
+            sum_incl_ct_raw = 0
+            sum_incl_ct_lenNorm = 0
 
-        if not sum_const_ct_samp1:
-            sum_const_ct_samp1 = 0
-            sum_const_ct_samp2 = 0
+        if not sum_const_ct_raw:
+            sum_const_ct_raw = 0
+            sum_const_ct_lenNorm = 0
 
         # Length normalize exonic counts constitutive regions are not used in
         # length normalization
@@ -1992,13 +1987,13 @@ def updateCounts2all_as_events(file_str,
                 this_chr, exon_start, exon_end = convertCoordStr(exon_coord)
                 excl_isoform_length += (exon_end - exon_start + 1)
 
-        sum_excl_ct_samp1 = normalizeByLen(sum_excl_ct_samp1,
+        sum_excl_ct_raw = normalizeByLen(sum_excl_ct_raw,
                                            excl_isoform_length)
-        sum_excl_ct_samp2 = normalizeByLen(sum_excl_ct_samp2,
+        sum_excl_ct_lenNorm = normalizeByLen(sum_excl_ct_lenNorm,
                                            excl_isoform_length)
-        sum_incl_ct_samp1 = normalizeByLen(sum_incl_ct_samp1,
+        sum_incl_ct_raw = normalizeByLen(sum_incl_ct_raw,
                                            incl_isoform_length)
-        sum_incl_ct_samp2 = normalizeByLen(sum_incl_ct_samp2,
+        sum_incl_ct_lenNorm = normalizeByLen(sum_incl_ct_lenNorm,
                                            incl_isoform_length)
 
         out_str = getAllEventStr(line_list[0], 
@@ -2021,22 +2016,22 @@ def updateCounts2all_as_events(file_str,
                                  line_list[17],
                                  line_list[18],
                                  line_list[19],
-                                 excl_ct_str_samp1,
-                                 incl_ct_str_samp1,
-                                 excl_ct_str_samp2,
-                                 incl_ct_str_samp2,
-                                 sum_excl_ct_samp1,
-                                 sum_incl_ct_samp1,
-                                 sum_excl_ct_samp2,
-                                 sum_incl_ct_samp2,
+                                 excl_ct_str_raw,
+                                 incl_ct_str_raw,
+                                 excl_ct_str_lenNorm,
+                                 incl_ct_str_lenNorm,
+                                 sum_excl_ct_raw,
+                                 sum_incl_ct_raw,
+                                 sum_excl_ct_lenNorm,
+                                 sum_incl_ct_lenNorm,
                                  line_list[28],
                                  line_list[29],
                                  line_list[30],
                                  line_list[31],
-                                 const_ct_str_samp1,
-                                 const_ct_str_samp2,
-                                 sum_const_ct_samp1,
-                                 sum_const_ct_samp2)
+                                 const_ct_str_raw,
+                                 const_ct_str_lenNorm,
+                                 sum_const_ct_raw,
+                                 sum_const_ct_lenNorm)
 
         file2.write(out_str + "\n")
 
@@ -2845,46 +2840,46 @@ def getAllEventStr(label, e_or_i, type, gene_name, chr, strand,
                    excl_exons, incl_exons,
                    incl_i_e_jcns,
                    const_exons,
-                   excl_jcn_counts_samp1, incl_jcn_counts_samp1,
-                   excl_jcn_counts_samp2, incl_jcn_counts_samp2,
-                   sum_excl_jcns_samp1, sum_incl_jcns_samp1,
-                   sum_excl_jcns_samp2, sum_incl_jcns_samp2,
-                   excl_exon_counts_samp1, incl_exon_counts_samp1,
-                   excl_exon_counts_samp2, incl_exon_counts_samp2,
-                   sum_excl_exon_samp1, sum_incl_exon_samp1,
-                   sum_excl_exon_samp2, sum_incl_exon_samp2,
-                   ie_jcn_cts_samp1, ie_jcn_cts_samp2,
-                   sum_ie_jcn_cts_samp1, sum_ie_jcn_cts_samp2,
-                   const_exon_cts_samp1, const_exon_cts_samp2,
-                   sum_const_exon_cts_samp1, sum_const_exon_cts_samp2):
+                   excl_jcn_counts_raw, incl_jcn_counts_raw,
+                   excl_jcn_counts_lenNorm, incl_jcn_counts_lenNorm,
+                   sum_excl_jcns_raw, sum_incl_jcns_raw,
+                   sum_excl_jcns_lenNorm, sum_incl_jcns_lenNorm,
+                   excl_exon_counts_raw, incl_exon_counts_raw,
+                   excl_exon_counts_lenNorm, incl_exon_counts_lenNorm,
+                   sum_excl_exon_raw, sum_incl_exon_raw,
+                   sum_excl_exon_lenNorm, sum_incl_exon_lenNorm,
+                   ie_jcn_cts_raw, ie_jcn_cts_lenNorm,
+                   sum_ie_jcn_cts_raw, sum_ie_jcn_cts_lenNorm,
+                   const_exon_cts_raw, const_exon_cts_lenNorm,
+                   sum_const_exon_cts_raw, sum_const_exon_cts_lenNorm):
 
-    if sum_excl_jcns_samp1 is None:
-        sum_excl_jcn_samp1 = ""
-    if sum_excl_jcns_samp2 is None:
-        sum_excl_jcn_samp2 = ""
-    if sum_incl_jcns_samp1 is None:
-        sum_incl_jcns_samp1 = ""
-    if sum_incl_jcns_samp2 is None:
-        sum_incl_jcns_samp2 = ""
+    if sum_excl_jcns_raw is None:
+        sum_excl_jcn_raw = ""
+    if sum_excl_jcns_lenNorm is None:
+        sum_excl_jcn_lenNorm = ""
+    if sum_incl_jcns_raw is None:
+        sum_incl_jcns_raw = ""
+    if sum_incl_jcns_lenNorm is None:
+        sum_incl_jcns_lenNorm = ""
 
-    if sum_excl_exon_samp1 is None:
-        sum_excl_exon_samp1 = ""
-    if sum_excl_exon_samp2 is None:
-        sum_excl_exon_samp2 = ""
-    if sum_incl_exon_samp1 is None:
-        sum_incl_exon_samp1 = ""
-    if sum_incl_exon_samp2 is None:
-        sum_incl_exon_samp2 = ""
+    if sum_excl_exon_raw is None:
+        sum_excl_exon_raw = ""
+    if sum_excl_exon_lenNorm is None:
+        sum_excl_exon_lenNorm = ""
+    if sum_incl_exon_raw is None:
+        sum_incl_exon_raw = ""
+    if sum_incl_exon_lenNorm is None:
+        sum_incl_exon_lenNorm = ""
 
-    if sum_ie_jcn_cts_samp1 is None:
-        sum_ie_jcn_cts_samp1 = "" 
-    if sum_ie_jcn_cts_samp2 is None:
-        sum_ie_jcn_cts_samp2 = "" 
+    if sum_ie_jcn_cts_raw is None:
+        sum_ie_jcn_cts_raw = "" 
+    if sum_ie_jcn_cts_lenNorm is None:
+        sum_ie_jcn_cts_lenNorm = "" 
     
-    if sum_const_exon_cts_samp1 is None:
-        sum_const_exon_cts_samp1 = "" 
-    if sum_const_exon_cts_samp2 is None:
-        sum_const_exon_cts_samp2 = "" 
+    if sum_const_exon_cts_raw is None:
+        sum_const_exon_cts_raw = "" 
+    if sum_const_exon_cts_lenNorm is None:
+        sum_const_exon_cts_lenNorm = "" 
                    
     out_str = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t" % (label,
                                                                           e_or_i,
@@ -2896,25 +2891,25 @@ def getAllEventStr(label, e_or_i, type, gene_name, chr, strand,
                                                                           excl_exons, incl_exons,
                                                                           incl_i_e_jcns,
                                                                           const_exons,
-                                                                          excl_jcn_counts_samp1, incl_jcn_counts_samp1,
-                                                                          excl_jcn_counts_samp2, incl_jcn_counts_samp2,
-                                                                          sum_excl_jcns_samp1,
-                                                                          sum_incl_jcns_samp1,
-                                                                          sum_excl_jcns_samp2, 
-                                                                          sum_incl_jcns_samp2)
-    out_str += "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (excl_exon_counts_samp1, 
-                   incl_exon_counts_samp1,
-                   excl_exon_counts_samp2, incl_exon_counts_samp2,
-                   sum_excl_exon_samp1, 
-                   sum_incl_exon_samp1,
-                   sum_excl_exon_samp2, 
-                   sum_incl_exon_samp2,
-                   ie_jcn_cts_samp1, ie_jcn_cts_samp2,
-                   sum_ie_jcn_cts_samp1, 
-                   sum_ie_jcn_cts_samp2,
-                   const_exon_cts_samp1, const_exon_cts_samp2,
-                   sum_const_exon_cts_samp1,
-                   sum_const_exon_cts_samp2)
+                                                                          excl_jcn_counts_raw, incl_jcn_counts_raw,
+                                                                          excl_jcn_counts_lenNorm, incl_jcn_counts_lenNorm,
+                                                                          sum_excl_jcns_raw,
+                                                                          sum_incl_jcns_raw,
+                                                                          sum_excl_jcns_lenNorm, 
+                                                                          sum_incl_jcns_lenNorm)
+    out_str += "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (excl_exon_counts_raw, 
+                   incl_exon_counts_raw,
+                   excl_exon_counts_lenNorm, incl_exon_counts_lenNorm,
+                   sum_excl_exon_raw, 
+                   sum_incl_exon_raw,
+                   sum_excl_exon_lenNorm, 
+                   sum_incl_exon_lenNorm,
+                   ie_jcn_cts_raw, ie_jcn_cts_lenNorm,
+                   sum_ie_jcn_cts_raw, 
+                   sum_ie_jcn_cts_lenNorm,
+                   const_exon_cts_raw, const_exon_cts_lenNorm,
+                   sum_const_exon_cts_raw,
+                   sum_const_exon_cts_lenNorm)
 
     return out_str
 
@@ -3323,8 +3318,8 @@ def getCoordCounts4all_as_events(all_as_exon_str,
     Parses the exon string, finds the corresponding counts, then outputs counts
     in proper format
     Outputs
-    exon_ct_str_samp1, exon_ct_str_samp2,
-    sum_exon_ct_samp1, sum_exon_ct_samp2
+    exon_ct_str_raw, exon_ct_str_lenNorm,
+    sum_exon_ct_raw, sum_exon_ct_lenNorm
     """
     if "," in all_as_exon_str:
         print "Need to account for , in exon_str list"
@@ -3335,29 +3330,29 @@ def getCoordCounts4all_as_events(all_as_exon_str,
 
     exon_list = all_as_exon_str.split(";")
 
-    sum_samp1 = 0
-    samp1_cts = []
-    sum_samp2 = 0
-    samp2_cts = []
+    sum_raw = 0
+    raw_cts = []
+    sum_lenNorm = 0
+    lenNorm_cts = []
 
     for exon_str in exon_list: 
         try:
-            samp1_ct = mapped_file1_counts[exon_str]
-            samp2_ct = mapped_file2_counts[exon_str]
+            raw_ct = mapped_file1_counts[exon_str]
+            lenNorm_ct = mapped_file2_counts[exon_str]
 
         except:
             ERROR_LOG.write("Could not find counts for %s\n" % exon_str)
-            samp1_ct = 0
-            samp2_ct = 0
+            raw_ct = 0
+            lenNorm_ct = 0
 
-        sum_samp1 += samp1_ct
-        samp1_cts.append(samp1_ct)
+        sum_raw += raw_ct
+        raw_cts.append(raw_ct)
 
-        sum_samp2 += samp2_ct
-        samp2_cts.append(samp2_ct)
+        sum_lenNorm += lenNorm_ct
+        lenNorm_cts.append(lenNorm_ct)
 
-    return (";".join(map(repr, samp1_cts)), ";".join(map(repr, samp2_cts)),
-            sum_samp1, sum_samp2)
+    return (";".join(map(repr, raw_cts)), ";".join(map(repr, lenNorm_cts)),
+            sum_raw, sum_lenNorm)
 
 def getExonDistanceDifference(exon_str_list):
     """
@@ -3710,8 +3705,8 @@ def getSSOrderAndProportions(alt_start_or_end, inclusion_start, inclusion_end,
     for excl_cts in exclusion_cts2_list:
         unordered_prop2.append(excl_cts)
 
-    sum_samp1 = sum(unordered_prop1)
-    sum_samp2 = sum(unordered_prop2)
+    sum_raw = sum(unordered_prop1)
+    sum_lenNorm = sum(unordered_prop2)
 
     ordered_pos = list(unordered_pos)
     ordered_pos.sort()
@@ -3726,21 +3721,21 @@ def getSSOrderAndProportions(alt_start_or_end, inclusion_start, inclusion_end,
     for pos in ordered_pos:
         unordered_idx = unordered_pos.index(pos)
 
-        if sum_samp1 == 0:
+        if sum_raw == 0:
             ordered_prop1.append(0.0)
             ordered_cts1.append(0)
         else:
             # Add pseudo count for proportions only, not real counts
-            ordered_prop1.append(float((unordered_prop1[unordered_idx]+1)/(sum_samp1+num_isoforms)))
+            ordered_prop1.append(float((unordered_prop1[unordered_idx]+1)/(sum_raw+num_isoforms)))
             ordered_cts1.append(unordered_prop1[unordered_idx])
             
         
-        if sum_samp2 == 0:
+        if sum_lenNorm == 0:
             ordered_prop2.append(0.0)
             ordered_cts2.append(0)
         else:
             # Add pseudo count for proportions only, not real counts
-            ordered_prop2.append(float((unordered_prop2[unordered_idx]+1)/(sum_samp2+num_isoforms)))
+            ordered_prop2.append(float((unordered_prop2[unordered_idx]+1)/(sum_lenNorm+num_isoforms)))
             ordered_cts2.append(unordered_prop2[unordered_idx])
                
     return (ordered_pos, ordered_prop1, ordered_prop2, ordered_cts1, ordered_cts2)
@@ -4431,7 +4426,7 @@ def printAlternativeDonorsAcceptors(db,
                                 isNovel = True
 
 
-                # Make parallel count dict {start: (count_samp1, count_samp2)}
+                # Make parallel count dict {start: (count_raw, count_lenNorm)}
                 par_jcn_count_dict = {}
                 for start in this_all_coord_end2start[chr][end]:
                     jcn_coord_str = "%s_%d_%d" % (chr, start, end)
@@ -4470,15 +4465,15 @@ def printAlternativeDonorsAcceptors(db,
                             
                             exclusion_distal_list.append(event_dict["novel_jcns"].split(",")[0])
 
-                            novel_sum_samp1 = event_dict["novel_jcn_sum_samp1"]
-                            novel_sum_samp2 = event_dict["novel_jcn_sum_samp2"]
+                            novel_sum_raw = event_dict["novel_jcn_sum_raw"]
+                            novel_sum_lenNorm = event_dict["novel_jcn_sum_lenNorm"]
 
                             if norm1:
-                                novel_sum_samp1 = int(round(novel_sum_samp1/norm1))
-                                novel_sum_samp2 = int(round(novel_sum_samp2/norm1))
+                                novel_sum_raw = int(round(novel_sum_raw/norm1))
+                                novel_sum_lenNorm = int(round(novel_sum_lenNorm/norm1))
 
-                            exclusion_jcn_cts1_list.append(novel_sum_samp1)
-                            exclusion_jcn_cts2_list.append(novel_sum_samp2)
+                            exclusion_jcn_cts1_list.append(novel_sum_raw)
+                            exclusion_jcn_cts2_list.append(novel_sum_lenNorm)
 
                     exclusion_exon_cts1 = 0
                     inclusion_exon_cts1 = 0
@@ -4496,22 +4491,22 @@ def printAlternativeDonorsAcceptors(db,
                     for par_start in par_jcn_count_dict:
                         if par_start == start:
     #                       # No paired end counting yet
-                            this_jcn_samp1 = par_jcn_count_dict[par_start][0]
-                            this_jcn_samp2 = par_jcn_count_dict[par_start][1]
+                            this_jcn_raw = par_jcn_count_dict[par_start][0]
+                            this_jcn_lenNorm = par_jcn_count_dict[par_start][1]
 
                             if norm1:
-                                this_jcn_samp1 = int(round(this_jcn_samp1/norm1))
-                                this_jcn_samp2 = int(round(this_jcn_samp2/norm2))
+                                this_jcn_raw = int(round(this_jcn_raw/norm1))
+                                this_jcn_lenNorm = int(round(this_jcn_lenNorm/norm2))
 
                             # Not normalizing by length here because the
                             # junction counts need to be maintained for
                             # downstream proportional analysis
 
-                            inclusion_cts1 += this_jcn_samp1
-                            inclusion_cts2 += this_jcn_samp2
+                            inclusion_cts1 += this_jcn_raw
+                            inclusion_cts2 += this_jcn_lenNorm
             
-                            inclusion_jcn_ct1 = this_jcn_samp1
-                            inclusion_jcn_ct2 = this_jcn_samp2
+                            inclusion_jcn_ct1 = this_jcn_raw
+                            inclusion_jcn_ct2 = this_jcn_lenNorm
 
                         else:
                             excl_intron = "%s_%d_%d" % (chr,par_start,end)
@@ -4580,17 +4575,17 @@ def printAlternativeDonorsAcceptors(db,
                             if ir_count_dict:
                                 if intron in ir_count_dict:
 
-                                    left_ct_samp1 = ir_count_dict[intron]["left"][0]
-                                    left_ct_samp2 = ir_count_dict[intron]["left"][1]
+                                    left_ct_raw = ir_count_dict[intron]["left"][0]
+                                    left_ct_lenNorm = ir_count_dict[intron]["left"][1]
 
                                     if norm1:
-                                        left_ct_samp1 = int(round(left_ct_samp1/norm1))
-                                        left_ct_samp2 = int(round(left_ct_samp2/norm2))
+                                        left_ct_raw = int(round(left_ct_raw/norm1))
+                                        left_ct_lenNorm = int(round(left_ct_lenNorm/norm2))
 
                                     # length normalizing at later step
 
-                                    ie_jcn_cts1.append(left_ct_samp1)
-                                    ie_jcn_cts2.append(left_ct_samp2)
+                                    ie_jcn_cts1.append(left_ct_raw)
+                                    ie_jcn_cts2.append(left_ct_lenNorm)
             
 
                     # Add Exclusion or Inclusion Annotation
@@ -4877,7 +4872,7 @@ def printAlternativeDonorsAcceptors(db,
                             if (start, end, strand) not in annotated_introns[chr]:
                                 isNovel = True
 
-                # Make parallel count dict {end: (count_samp1, count_samp2)}
+                # Make parallel count dict {end: (count_raw, count_lenNorm)}
                 par_jcn_count_dict = {}
                 for end in this_all_coord_start2end[chr][start]:
                     jcn_coord_str = "%s_%d_%d" % (chr, start, end)
@@ -4916,15 +4911,15 @@ def printAlternativeDonorsAcceptors(db,
 
                             exclusion_distal_list.append(event_dict["novel_jcns"].split(",")[0])
         
-                            novel_sum_samp1 = event_dict["novel_jcn_sum_samp1"]
-                            novel_sum_samp2 = event_dict["novel_jcn_sum_samp2"]
+                            novel_sum_raw = event_dict["novel_jcn_sum_raw"]
+                            novel_sum_lenNorm = event_dict["novel_jcn_sum_lenNorm"]
 
                             if norm1:
-                                novel_sum_samp1 = int(round(novel_sum_samp1/norm1))
-                                novel_sum_samp2 = int(round(novel_sum_samp2/norm1))
+                                novel_sum_raw = int(round(novel_sum_raw/norm1))
+                                novel_sum_lenNorm = int(round(novel_sum_lenNorm/norm1))
 
-                            exclusion_jcn_cts1_list.append(novel_sum_samp1)
-                            exclusion_jcn_cts2_list.append(novel_sum_samp2)
+                            exclusion_jcn_cts1_list.append(novel_sum_raw)
+                            exclusion_jcn_cts2_list.append(novel_sum_lenNorm)
 
                     exclusion_exon_cts1 = 0
                     inclusion_exon_cts1 = 0
@@ -5496,10 +5491,10 @@ def printCassetteExons(db,
         isNovel = False
 
         # Print novel cassette
-        excl_file1_count = 0
-        incl_file1_count = 0
-        excl_file2_count = 0
-        incl_file2_count = 0
+        excl_raw_count = 0
+        incl_raw_count = 0
+        excl_lenNorm_count = 0
+        incl_lenNorm_count = 0
 
         if full_exon_count_dict:
             # Inclusion counts only come from exon counts
@@ -5525,66 +5520,66 @@ def printCassetteExons(db,
 
         else:
             left_jcn_strs = []
-            left_jcn_counts_samp1 = []
-            left_jcn_counts_samp2 = []
+            left_jcn_counts_raw = []
+            left_jcn_counts_lenNorm = []
 
             right_jcn_strs = []
-            right_jcn_counts_samp1 = []
-            right_jcn_counts_samp2 = []
+            right_jcn_counts_raw = []
+            right_jcn_counts_lenNorm = []
 
             for left_str in cassette_exon_dict[exon_coord]["left_set"]:
-                left_str_samp1_ct = all_jcn_count_dict[left_str][0]
-                left_str_samp2_ct = all_jcn_count_dict[left_str][1]
+                left_str_raw_ct = all_jcn_count_dict[left_str][0]
+                left_str_lenNorm_ct = all_jcn_count_dict[left_str][1]
 
                 if norm1:
-                    left_str_samp1_ct = int(round(left_str_samp1_ct/norm1))
-                    left_str_samp2_ct = int(round(left_str_samp2_ct/norm2))
+                    left_str_raw_ct = int(round(left_str_raw_ct/norm1))
+                    left_str_lenNorm_ct = int(round(left_str_lenNorm_ct/norm2))
 
-                incl_file1_count += left_str_samp1_ct
-                incl_file2_count += left_str_samp2_ct
+                incl_file1_count += left_str_raw_ct
+                incl_file2_count += left_str_lenNorm_ct
 
                 if not isAnnotated(left_str, annotated_introns):
                     isNovel = True
 
                 left_jcn_strs.append(left_str)
-                left_jcn_counts_samp1.append(left_str_samp1_ct)
-                left_jcn_counts_samp2.append(left_str_samp2_ct)
+                left_jcn_counts_raw.append(left_str_raw_ct)
+                left_jcn_counts_lenNorm.append(left_str_lenNorm_ct)
 
             for right_str in cassette_exon_dict[exon_coord]["right_set"]:
-                right_str_samp1_ct = all_jcn_count_dict[right_str][0]
-                right_str_samp2_ct = all_jcn_count_dict[right_str][1]
+                right_str_raw_ct = all_jcn_count_dict[right_str][0]
+                right_str_lenNorm_ct = all_jcn_count_dict[right_str][1]
 
                 if norm1:
-                    right_str_samp1_ct = int(round(right_str_samp1_ct/norm1))
-                    right_str_samp2_ct = int(round(right_str_samp2_ct/norm2))
+                    right_str_raw_ct = int(round(right_str_raw_ct/norm1))
+                    right_str_lenNorm_ct = int(round(right_str_lenNorm_ct/norm2))
 
-                incl_file1_count += right_str_samp1_ct
-                incl_file2_count += right_str_samp2_ct
+                incl_file1_count += right_str_raw_ct
+                incl_file2_count += right_str_lenNorm_ct
 
                 if not isAnnotated(right_str, annotated_introns):
                     isNovel = True
 
                 right_jcn_strs.append(right_str)
-                right_jcn_counts_samp1.append(right_str_samp1_ct)
-                right_jcn_counts_samp2.append(right_str_samp2_ct)
+                right_jcn_counts_raw.append(right_str_raw_ct)
+                right_jcn_counts_lenNorm.append(right_str_lenNorm_ct)
 
         excl_jcn_strs = []
-        excl_jcn_counts_samp1 = []
-        excl_jcn_counts_samp2 = []
+        excl_jcn_counts_raw = []
+        excl_jcn_counts_lenNorm = []
         # For both paired-end counting and single end counting, the exclusion
         # counts come from the exclusion junction
         left_most_excl_start = INFINITY
         right_most_excl_end = 0
         for excl_str in cassette_exon_dict[exon_coord]["excl_set"]:
-            excl_str_samp1_ct = all_jcn_count_dict[excl_str][0]
-            excl_str_samp2_ct = all_jcn_count_dict[excl_str][1]
+            excl_str_raw_ct = all_jcn_count_dict[excl_str][0]
+            excl_str_lenNorm_ct = all_jcn_count_dict[excl_str][1]
 
             if norm1:
-                excl_str_samp1_ct = int(round(excl_str_samp1_ct/norm1))
-                excl_str_samp2_ct = int(round(excl_str_samp2_ct/norm2))
+                excl_str_raw_ct = int(round(excl_str_raw_ct/norm1))
+                excl_str_lenNorm_ct = int(round(excl_str_lenNorm_ct/norm2))
 
-            excl_file1_count += excl_str_samp1_ct
-            excl_file2_count += excl_str_samp2_ct
+            excl_file1_count += excl_str_raw_ct
+            excl_file2_count += excl_str_lenNorm_ct
         
             if not isAnnotated(excl_str, annotated_introns):
                 isNovel = True
@@ -5596,8 +5591,8 @@ def printCassetteExons(db,
                 right_most_excl_end = excl_end
 
             excl_jcn_strs.append(excl_str)
-            excl_jcn_counts_samp1.append(excl_str_samp1_ct)
-            excl_jcn_counts_samp2.append(excl_str_samp2_ct)
+            excl_jcn_counts_raw.append(excl_str_raw_ct)
+            excl_jcn_counts_lenNorm.append(excl_str_lenNorm_ct)
 
         # Find flanking constitutive regions
         upstr_const = findAdjacentSharedRegion(chr,
@@ -5691,10 +5686,10 @@ def printCassetteExons(db,
                               "%s_%d_%d" % (chr, exon_start, exon_end), 
                               "",
                               ";".join(const_strs),
-                              ";".join(map(repr,excl_jcn_counts_samp1)), 
-                              ",".join(map(repr,left_jcn_counts_samp1)) + ";" + ",".join(map(repr,right_jcn_counts_samp1)),
-                              ";".join(map(repr,excl_jcn_counts_samp2)), 
-                              ",".join(map(repr,left_jcn_counts_samp2)) + ";" + ",".join(map(repr,right_jcn_counts_samp2)),
+                              ";".join(map(repr,excl_jcn_counts_raw)), 
+                              ",".join(map(repr,left_jcn_counts_raw)) + ";" + ",".join(map(repr,right_jcn_counts_raw)),
+                              ";".join(map(repr,excl_jcn_counts_lenNorm)), 
+                              ",".join(map(repr,left_jcn_counts_lenNorm)) + ";" + ",".join(map(repr,right_jcn_counts_lenNorm)),
                               repr(excl_file1_count),
                               repr(incl_file1_count),
                               repr(excl_file2_count),
@@ -6119,8 +6114,8 @@ def printMultiCassetteExons(db,
                                     exon_coords.add(convertCoordStr(dwnstr_const))
                             
                             inclusion_jcns = [] 
-                            samp1_inclusion_cts = [] # parallel to inclusion_jcns [samp1_ct]
-                            samp2_inclusion_cts = [] # parallel to inclusion_jcns [samp2_ct]
+                            raw_inclusion_cts = [] # parallel to inclusion_jcns [raw_ct]
+                            lenNorm_inclusion_cts = [] # parallel to inclusion_jcns [lenNorm_ct]
 
                             # Paired end counting needs to be added
                             if full_exon_count_dict:
@@ -6196,8 +6191,8 @@ def printMultiCassetteExons(db,
                                     incl_file2_count += this_incl_file2_count
 
                                     inclusion_jcns.append(last_jcn)
-                                    samp1_inclusion_cts.append(this_incl_file1_count)
-                                    samp2_inclusion_cts.append(this_incl_file2_count)
+                                    raw_inclusion_cts.append(this_incl_file1_count)
+                                    lenNorm_inclusion_cts.append(this_incl_file2_count)
 
                                     # Now update variables
                                     last_start = this_start
@@ -6267,10 +6262,10 @@ def printMultiCassetteExons(db,
                 
                                 inclusion_jcns.append(upstrm_jcn)
                                 inclusion_jcns.append(dwnstrm_jcn)
-                                samp1_inclusion_cts.append(upstrm_incl_file1_count)
-                                samp2_inclusion_cts.append(upstrm_incl_file2_count)
-                                samp1_inclusion_cts.append(dwnstrm_incl_file1_count)
-                                samp2_inclusion_cts.append(dwnstrm_incl_file2_count)
+                                raw_inclusion_cts.append(upstrm_incl_file1_count)
+                                lenNorm_inclusion_cts.append(upstrm_incl_file2_count)
+                                raw_inclusion_cts.append(dwnstrm_incl_file1_count)
+                                lenNorm_inclusion_cts.append(dwnstrm_incl_file2_count)
 
                             # Calculate inclusion length for normalization       
                             incl_length = (len(inclusion_jcns)*jcn_seq_len) + len_of_exons 
@@ -6323,8 +6318,8 @@ def printMultiCassetteExons(db,
                                                      "", ";".join(exon_strs),
                                                      "",
                                                      ";".join(const_strs),
-                                                     excl_file1_count, ";".join(map(repr,samp1_inclusion_cts)),
-                                                     excl_file2_count, ";".join(map(repr,samp2_inclusion_cts)),
+                                                     excl_file1_count, ";".join(map(repr,raw_inclusion_cts)),
+                                                     excl_file2_count, ";".join(map(repr,lenNorm_inclusion_cts)),
                                                      repr(excl_file1_count),
                                                      repr(incl_file1_count),
                                                      repr(excl_file2_count),
@@ -6520,7 +6515,7 @@ def printMutuallyExclusive(db,
                 detailed_inclusion_cts = [] # parallel to inclusion_cts but
                                             # gives information for both
                                             # junctions
-                                            # [((left_jcn_samp1, left_jcn_samp2),(right_jcn_samp1, right_jcn_samp2)),]
+                                            # [((left_jcn_raw, left_jcn_lenNorm),(right_jcn_raw, right_jcn_lenNorm)),]
                 isNovel = False # If any of the introns are novel = True
                 # Get inclusion counts for each exon
         
@@ -6548,12 +6543,12 @@ def printMutuallyExclusive(db,
 #                       if full_exon_count_dict is not None:
 #                           if exon_str in full_exon_count_dict:
 #                               exonFound = True
-#                               samp1_ct = full_exon_count_dict[exon_str][0]
-#                               samp2_ct = full_exon_count_dict[exon_str][1]
+#                               raw_ct = full_exon_count_dict[exon_str][0]
+#                               lenNorm_ct = full_exon_count_dict[exon_str][1]
 #                           if exon_str in full_multi_exon_count_dict:
 #                               exonFound = True
-#                               samp1_ct += full_multi_exon_count_dict[exon_str][0]
-#                               samp2_ct += full_multi_exon_count_dict[exon_str][1]
+#                               raw_ct += full_multi_exon_count_dict[exon_str][0]
+#                               lenNorm_ct += full_multi_exon_count_dict[exon_str][1]
 
 #                           if not exonFound:
 #                               print "No counts for mutually exclusive exon: %s" %\
@@ -6598,44 +6593,44 @@ def printMutuallyExclusive(db,
                                                                                 this_end)][1]
                                                                             
 
-                        left_samp1_ct = int(round(upstrm_jcn_sum1 *
+                        left_raw_ct = int(round(upstrm_jcn_sum1 *
                                                   mxe_proportion1))
-                        right_samp1_ct = int(round(dwnstrm_jcn_sum1 *
+                        right_raw_ct = int(round(dwnstrm_jcn_sum1 *
                                                    mxe_proportion1))
 
-                        left_samp2_ct = int(round(upstrm_jcn_sum2 *
+                        left_lenNorm_ct = int(round(upstrm_jcn_sum2 *
                                                   mxe_proportion2))
-                        right_samp2_ct = int(round(dwnstrm_jcn_sum2 *
+                        right_lenNorm_ct = int(round(dwnstrm_jcn_sum2 *
                                                    mxe_proportion2))
 
                         if norm1:
-                            left_samp1_ct = int(round(left_samp1_ct/norm1))
-                            right_samp1_ct = int(round(right_samp1_ct/norm1))
+                            left_raw_ct = int(round(left_raw_ct/norm1))
+                            right_raw_ct = int(round(right_raw_ct/norm1))
 
-                            left_samp2_ct = int(round(left_samp2_ct/norm2))
-                            right_samp2_ct = int(round(right_samp2_ct/norm2))
+                            left_lenNorm_ct = int(round(left_lenNorm_ct/norm2))
+                            right_lenNorm_ct = int(round(right_lenNorm_ct/norm2))
 
                         isoform_len = (2 * jcn_seq_len) + exon_end - exon_start + 1
 
-                        left_samp1_ct = normalizeByLen(left_samp1_ct, isoform_len)
-                        left_samp2_ct = normalizeByLen(left_samp2_ct, isoform_len)
+                        left_raw_ct = normalizeByLen(left_raw_ct, isoform_len)
+                        left_lenNorm_ct = normalizeByLen(left_lenNorm_ct, isoform_len)
 
-                        right_samp1_ct = normalizeByLen(right_samp1_ct, isoform_len)
-                        right_samp2_ct = normalizeByLen(right_samp2_ct, isoform_len)
+                        right_raw_ct = normalizeByLen(right_raw_ct, isoform_len)
+                        right_lenNorm_ct = normalizeByLen(right_lenNorm_ct, isoform_len)
 
-                        samp1_ct = left_samp1_ct + right_samp1_ct
-                        samp2_ct = left_samp2_ct + right_samp2_ct
+                        raw_ct = left_raw_ct + right_raw_ct
+                        lenNorm_ct = left_lenNorm_ct + right_lenNorm_ct
 
                         detailed_jcns.append((left_jcn_str, right_jcn_str))
-                        detailed_inclusion_cts.append(((left_samp1_ct, left_samp2_ct),
-                                                       (right_samp1_ct, right_samp2_ct)))
+                        detailed_inclusion_cts.append(((left_raw_ct, left_lenNorm_ct),
+                                                       (right_raw_ct, right_lenNorm_ct)))
 
-                    exon_cts = (samp1_ct, samp2_ct)
+                    exon_cts = (raw_ct, lenNorm_ct)
                     inclusion_cts.append(exon_cts)
 
                     # Add to total counts
-                    total_me_cts[0] += samp1_ct
-                    total_me_cts[1] += samp2_ct
+                    total_me_cts[0] += raw_ct
+                    total_me_cts[1] += lenNorm_ct
 
                     # Add to cassette exon dict
                     if chr in cassette_exons:
@@ -6742,21 +6737,21 @@ def printMutuallyExclusive(db,
 
                     # Write to all event file
                     excl_jcn_str_list = []
-                    excl_jcn_ct_strs_samp1 = []
-                    excl_jcn_ct_strs_samp2 = []
+                    excl_jcn_ct_strs_raw = []
+                    excl_jcn_ct_strs_lenNorm = []
                     for j in range(len(detailed_jcns)):
                         if i == j:
                             continue
                         jcns_tuple = detailed_jcns[j]
                         excl_jcn_str_list.append(",".join(jcns_tuple))
 
-                        left_jcn_ct_samp1 = detailed_inclusion_cts[j][0][0]
-                        left_jcn_ct_samp2 = detailed_inclusion_cts[j][0][1]
-                        right_jcn_ct_samp1 = detailed_inclusion_cts[j][1][0]
-                        right_jcn_ct_samp2 = detailed_inclusion_cts[j][1][1]
+                        left_jcn_ct_raw = detailed_inclusion_cts[j][0][0]
+                        left_jcn_ct_lenNorm = detailed_inclusion_cts[j][0][1]
+                        right_jcn_ct_raw = detailed_inclusion_cts[j][1][0]
+                        right_jcn_ct_lenNorm = detailed_inclusion_cts[j][1][1]
 
-                        excl_jcn_ct_strs_samp1.append("%d,%d" % (left_jcn_ct_samp1, right_jcn_ct_samp1))
-                        excl_jcn_ct_strs_samp2.append("%d,%d" % (left_jcn_ct_samp2, right_jcn_ct_samp2))
+                        excl_jcn_ct_strs_raw.append("%d,%d" % (left_jcn_ct_raw, right_jcn_ct_raw))
+                        excl_jcn_ct_strs_lenNorm.append("%d,%d" % (left_jcn_ct_lenNorm, right_jcn_ct_lenNorm))
                         
 
                     out_str = getAllEventStr(n_or_k, e_or_i,
@@ -6768,9 +6763,9 @@ def printMutuallyExclusive(db,
                                              exon_strs[i],
                                              "",
                                              ";".join(const_strs),
-                                             ";".join(excl_jcn_ct_strs_samp1),
+                                             ";".join(excl_jcn_ct_strs_raw),
                                              "%d,%d" % (detailed_inclusion_cts[i][0][0],detailed_inclusion_cts[i][1][0]),
-                                             ";".join(excl_jcn_ct_strs_samp2),
+                                             ";".join(excl_jcn_ct_strs_lenNorm),
                                              "%d,%d" % (detailed_inclusion_cts[i][0][1],detailed_inclusion_cts[i][1][1]),
                                              repr(excl_file1_count),
                                              repr(incl_file1_count),
@@ -7021,25 +7016,25 @@ def sumExclusion_Inclusion_counts(file_str,
                 print "Line: %s" % line
                 sys.exit(1)
 
-        sum_excl_samp1 = 0
-        sum_incl_samp1 = 0
-        sum_excl_samp2 = 0
-        sum_incl_samp2 = 0
+        sum_excl_raw = 0
+        sum_incl_raw = 0
+        sum_excl_lenNorm = 0
+        sum_incl_lenNorm = 0
             
    
         if printExonCoords:
-            excl_samp1_cols = [16, 24] 
-            excl_samp2_cols = [18, 26]
+            excl_raw_cols = [16, 24] 
+            excl_lenNorm_cols = [18, 26]
 
-            incl_samp1_cols = [17, 25, 30]
-            incl_samp2_cols = [19, 27, 31]
+            incl_raw_cols = [17, 25, 30]
+            incl_lenNorm_cols = [19, 27, 31]
 
         else:
-            excl_samp1_cols = [16] 
-            excl_samp2_cols = [18]
+            excl_raw_cols = [16] 
+            excl_lenNorm_cols = [18]
 
-            incl_samp1_cols = [17, 30]
-            incl_samp2_cols = [19, 31]
+            incl_raw_cols = [17, 30]
+            incl_lenNorm_cols = [19, 31]
 
         if type == "cassette":
             event_key = line_elems[9]
@@ -7047,88 +7042,88 @@ def sumExclusion_Inclusion_counts(file_str,
             if event_key not in ce2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find CE key. %s\n" % event_key)
 
-            sum_excl_samp1 = ce2total_counts[event_key][0]
-            sum_incl_samp1 = ce2total_counts[event_key][1]
-            sum_excl_samp2 = ce2total_counts[event_key][2]
-            sum_incl_samp2 = ce2total_counts[event_key][3]
+            sum_excl_raw = ce2total_counts[event_key][0]
+            sum_incl_raw = ce2total_counts[event_key][1]
+            sum_excl_lenNorm = ce2total_counts[event_key][2]
+            sum_incl_lenNorm = ce2total_counts[event_key][3]
 
         elif type == "alternative_donor":
             event_key = (line_elems[7], line_elems[6])
             if event_key not in alt_donor2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find AD key. %s\n" % event_key)
 
-            sum_excl_samp1 = alt_donor2total_counts[event_key][0]
-            sum_incl_samp1 = alt_donor2total_counts[event_key][1]
-            sum_excl_samp2 = alt_donor2total_counts[event_key][2]
-            sum_incl_samp2 = alt_donor2total_counts[event_key][3]
+            sum_excl_raw = alt_donor2total_counts[event_key][0]
+            sum_incl_raw = alt_donor2total_counts[event_key][1]
+            sum_excl_lenNorm = alt_donor2total_counts[event_key][2]
+            sum_incl_lenNorm = alt_donor2total_counts[event_key][3]
         elif type == "alternative_acceptor":
             event_key = (line_elems[7], line_elems[6])
             if event_key not in alt_accept2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find AA key. %s\n" % event_key)
 
-            sum_excl_samp1 = alt_accept2total_counts[event_key][0]
-            sum_incl_samp1 = alt_accept2total_counts[event_key][1]
-            sum_excl_samp2 = alt_accept2total_counts[event_key][2]
-            sum_incl_samp2 = alt_accept2total_counts[event_key][3]
+            sum_excl_raw = alt_accept2total_counts[event_key][0]
+            sum_incl_raw = alt_accept2total_counts[event_key][1]
+            sum_excl_lenNorm = alt_accept2total_counts[event_key][2]
+            sum_incl_lenNorm = alt_accept2total_counts[event_key][3]
 
         elif type == "alternative_first_exon":
             event_key = (line_elems[7], line_elems[6])
             if event_key not in afe2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find AFE key. %s\n" % event_key)
 
-            sum_excl_samp1 = afe2total_counts[event_key][0]
-            sum_incl_samp1 = afe2total_counts[event_key][1]
-            sum_excl_samp2 = afe2total_counts[event_key][2]
-            sum_incl_samp2 = afe2total_counts[event_key][3]
+            sum_excl_raw = afe2total_counts[event_key][0]
+            sum_incl_raw = afe2total_counts[event_key][1]
+            sum_excl_lenNorm = afe2total_counts[event_key][2]
+            sum_incl_lenNorm = afe2total_counts[event_key][3]
 
         elif type == "alternative_last_exon":
             event_key = (line_elems[7], line_elems[6])
             if event_key not in ale2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find ALE key. %s\n" % event_key)
 
-            sum_excl_samp1 = ale2total_counts[event_key][0]
-            sum_incl_samp1 = ale2total_counts[event_key][1]
-            sum_excl_samp2 = ale2total_counts[event_key][2]
-            sum_incl_samp2 = ale2total_counts[event_key][3]
+            sum_excl_raw = ale2total_counts[event_key][0]
+            sum_incl_raw = ale2total_counts[event_key][1]
+            sum_excl_lenNorm = ale2total_counts[event_key][2]
+            sum_incl_lenNorm = ale2total_counts[event_key][3]
 
         elif type == "mutually_exclusive":
             event_key = (line_elems[9], line_elems[8])
             if event_key not in mxe2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find MXE key. %s\n" % event_key)
 
-            sum_excl_samp1 = mxe2total_counts[event_key][0]
-            sum_incl_samp1 = mxe2total_counts[event_key][1]
-            sum_excl_samp2 = mxe2total_counts[event_key][2]
-            sum_incl_samp2 = mxe2total_counts[event_key][3]
+            sum_excl_raw = mxe2total_counts[event_key][0]
+            sum_incl_raw = mxe2total_counts[event_key][1]
+            sum_excl_lenNorm = mxe2total_counts[event_key][2]
+            sum_incl_lenNorm = mxe2total_counts[event_key][3]
         elif type == "multi_cassette":
             event_key = (line_elems[9], line_elems[6])
             if event_key not in mc2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find MC key. %s\n" % event_key)
 
-            sum_excl_samp1 = mc2total_counts[event_key][0]
-            sum_incl_samp1 = mc2total_counts[event_key][1]
-            sum_excl_samp2 = mc2total_counts[event_key][2]
-            sum_incl_samp2 = mc2total_counts[event_key][3]
+            sum_excl_raw = mc2total_counts[event_key][0]
+            sum_incl_raw = mc2total_counts[event_key][1]
+            sum_excl_lenNorm = mc2total_counts[event_key][2]
+            sum_incl_lenNorm = mc2total_counts[event_key][3]
         else:
-            sum_excl_samp1 = getColSums(excl_samp1_cols, line_elems)
-            sum_incl_samp1 = getColSums(incl_samp1_cols, line_elems)
-            sum_excl_samp2 = getColSums(excl_samp2_cols, line_elems)
-            sum_incl_samp2 = getColSums(incl_samp2_cols, line_elems)
+            sum_excl_raw = getColSums(excl_raw_cols, line_elems)
+            sum_incl_raw = getColSums(incl_raw_cols, line_elems)
+            sum_excl_lenNorm = getColSums(excl_lenNorm_cols, line_elems)
+            sum_incl_lenNorm = getColSums(incl_lenNorm_cols, line_elems)
 
-        if hasNegativeVals(sum_excl_samp1, 
-                           sum_incl_samp1, 
-                           sum_excl_samp2,
-                           sum_incl_samp2):
+        if hasNegativeVals(sum_excl_raw, 
+                           sum_incl_raw, 
+                           sum_excl_lenNorm,
+                           sum_incl_lenNorm):
             # ERROR WAS ALREADY PRINTED
             excl1 = 0
             incl1 = 0
             excl2 = 0
             incl2 = 0
 
-        line_elems.append(repr(sum_excl_samp1))
-        line_elems.append(repr(sum_incl_samp1))
-        line_elems.append(repr(sum_excl_samp2))
-        line_elems.append(repr(sum_incl_samp2))
+        line_elems.append(repr(sum_excl_raw))
+        line_elems.append(repr(sum_incl_raw))
+        line_elems.append(repr(sum_excl_lenNorm))
+        line_elems.append(repr(sum_incl_lenNorm))
 
         outline = "\t".join(line_elems)
 
