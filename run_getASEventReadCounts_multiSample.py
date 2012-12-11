@@ -333,9 +333,6 @@ def main():
                 cmd += "--fasta %s " % genome_file
                 cmd += "--by_chr %s " % chr
 
-                if options.lengthNorm:
-                    cmd += "--lengthNorm "
-
                 # Now for databases
                 if options.sqlite_db_dir:
                     cmd += "--sqlite_db_dir %s" % options.sqlite_db_dir
@@ -417,9 +414,6 @@ def main():
             cmd += "--method %s " % method
             cmd += "--jcn_seq_len %d " % jcn_seq_len
             cmd += "--fasta %s " % genome_file
-
-            if options.lengthNorm:
-                cmd += "--lengthNorm "
 
             # Now for databases
             if options.sqlite_db_dir:
