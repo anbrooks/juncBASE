@@ -289,9 +289,9 @@ def main():
     method = options.method
 
     jcn_seq_len = options.jcn_seq_len
-    if options.lengthNorm:
-        global DO_LEN_NORM
-        DO_LEN_NORM = True
+#   if options.lengthNorm:
+#       global DO_LEN_NORM
+#       DO_LEN_NORM = True
 
     if method != "BH" and method != "bonferroni":
         print "Wrong method given."
