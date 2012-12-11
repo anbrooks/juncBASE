@@ -2835,54 +2835,37 @@ def formatLine(line):
     line = line.replace("\n","")
     return line
 
-def getAllEventStr(label, e_or_i, type, gene_name, chr, strand, 
+def getAllEventStr(label, type, gene_name, chr, strand, 
                    excl_jcns, incl_jcns,
                    excl_exons, incl_exons,
                    incl_i_e_jcns,
                    const_exons,
                    excl_jcn_counts_raw, incl_jcn_counts_raw,
-                   excl_jcn_counts_lenNorm, incl_jcn_counts_lenNorm,
                    sum_excl_jcns_raw, sum_incl_jcns_raw,
-                   sum_excl_jcns_lenNorm, sum_incl_jcns_lenNorm,
                    excl_exon_counts_raw, incl_exon_counts_raw,
-                   excl_exon_counts_lenNorm, incl_exon_counts_lenNorm,
                    sum_excl_exon_raw, sum_incl_exon_raw,
-                   sum_excl_exon_lenNorm, sum_incl_exon_lenNorm,
-                   ie_jcn_cts_raw, ie_jcn_cts_lenNorm,
-                   sum_ie_jcn_cts_raw, sum_ie_jcn_cts_lenNorm,
-                   const_exon_cts_raw, const_exon_cts_lenNorm,
-                   sum_const_exon_cts_raw, sum_const_exon_cts_lenNorm):
+                   ie_jcn_cts_raw, 
+                   sum_ie_jcn_cts_raw, 
+                   const_exon_cts_raw,
+                   sum_const_exon_cts_raw):
 
     if sum_excl_jcns_raw is None:
         sum_excl_jcn_raw = ""
-    if sum_excl_jcns_lenNorm is None:
-        sum_excl_jcn_lenNorm = ""
     if sum_incl_jcns_raw is None:
         sum_incl_jcns_raw = ""
-    if sum_incl_jcns_lenNorm is None:
-        sum_incl_jcns_lenNorm = ""
 
     if sum_excl_exon_raw is None:
         sum_excl_exon_raw = ""
-    if sum_excl_exon_lenNorm is None:
-        sum_excl_exon_lenNorm = ""
     if sum_incl_exon_raw is None:
         sum_incl_exon_raw = ""
-    if sum_incl_exon_lenNorm is None:
-        sum_incl_exon_lenNorm = ""
 
     if sum_ie_jcn_cts_raw is None:
         sum_ie_jcn_cts_raw = "" 
-    if sum_ie_jcn_cts_lenNorm is None:
-        sum_ie_jcn_cts_lenNorm = "" 
     
     if sum_const_exon_cts_raw is None:
         sum_const_exon_cts_raw = "" 
-    if sum_const_exon_cts_lenNorm is None:
-        sum_const_exon_cts_lenNorm = "" 
                    
-    out_str = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t" % (label,
-                                                                          e_or_i,
+    out_str = "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t" % (label,
                                                                           type,
                                                                           gene_name,
                                                                           chr,
@@ -2892,24 +2875,16 @@ def getAllEventStr(label, e_or_i, type, gene_name, chr, strand,
                                                                           incl_i_e_jcns,
                                                                           const_exons,
                                                                           excl_jcn_counts_raw, incl_jcn_counts_raw,
-                                                                          excl_jcn_counts_lenNorm, incl_jcn_counts_lenNorm,
                                                                           sum_excl_jcns_raw,
-                                                                          sum_incl_jcns_raw,
-                                                                          sum_excl_jcns_lenNorm, 
-                                                                          sum_incl_jcns_lenNorm)
-    out_str += "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (excl_exon_counts_raw, 
+                                                                          sum_incl_jcns_raw)
+    out_str += "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (excl_exon_counts_raw, 
                    incl_exon_counts_raw,
-                   excl_exon_counts_lenNorm, incl_exon_counts_lenNorm,
                    sum_excl_exon_raw, 
                    sum_incl_exon_raw,
-                   sum_excl_exon_lenNorm, 
-                   sum_incl_exon_lenNorm,
-                   ie_jcn_cts_raw, ie_jcn_cts_lenNorm,
+                   ie_jcn_cts_raw, 
                    sum_ie_jcn_cts_raw, 
-                   sum_ie_jcn_cts_lenNorm,
-                   const_exon_cts_raw, const_exon_cts_lenNorm,
-                   sum_const_exon_cts_raw,
-                   sum_const_exon_cts_lenNorm)
+                   const_exon_cts_raw, 
+                   sum_const_exon_cts_raw)
 
     return out_str
 
@@ -5521,65 +5496,53 @@ def printCassetteExons(db,
         else:
             left_jcn_strs = []
             left_jcn_counts_raw = []
-            left_jcn_counts_lenNorm = []
+#            left_jcn_counts_lenNorm = []
 
             right_jcn_strs = []
             right_jcn_counts_raw = []
-            right_jcn_counts_lenNorm = []
+#            right_jcn_counts_lenNorm = []
 
             for left_str in cassette_exon_dict[exon_coord]["left_set"]:
-                left_str_raw_ct = all_jcn_count_dict[left_str][0]
-                left_str_lenNorm_ct = all_jcn_count_dict[left_str][1]
+                left_str_raw_ct = all_jcn_count_dict[left_str][1]
 
                 if norm1:
                     left_str_raw_ct = int(round(left_str_raw_ct/norm1))
-                    left_str_lenNorm_ct = int(round(left_str_lenNorm_ct/norm2))
 
-                incl_file1_count += left_str_raw_ct
-                incl_file2_count += left_str_lenNorm_ct
+                incl_raw_count += left_str_raw_ct
 
                 if not isAnnotated(left_str, annotated_introns):
                     isNovel = True
 
                 left_jcn_strs.append(left_str)
                 left_jcn_counts_raw.append(left_str_raw_ct)
-                left_jcn_counts_lenNorm.append(left_str_lenNorm_ct)
 
             for right_str in cassette_exon_dict[exon_coord]["right_set"]:
-                right_str_raw_ct = all_jcn_count_dict[right_str][0]
-                right_str_lenNorm_ct = all_jcn_count_dict[right_str][1]
+                right_str_raw_ct = all_jcn_count_dict[right_str][1]
 
                 if norm1:
                     right_str_raw_ct = int(round(right_str_raw_ct/norm1))
-                    right_str_lenNorm_ct = int(round(right_str_lenNorm_ct/norm2))
 
-                incl_file1_count += right_str_raw_ct
-                incl_file2_count += right_str_lenNorm_ct
+                incl_raw_count += right_str_raw_ct
 
                 if not isAnnotated(right_str, annotated_introns):
                     isNovel = True
 
                 right_jcn_strs.append(right_str)
                 right_jcn_counts_raw.append(right_str_raw_ct)
-                right_jcn_counts_lenNorm.append(right_str_lenNorm_ct)
 
         excl_jcn_strs = []
         excl_jcn_counts_raw = []
-        excl_jcn_counts_lenNorm = []
         # For both paired-end counting and single end counting, the exclusion
         # counts come from the exclusion junction
         left_most_excl_start = INFINITY
         right_most_excl_end = 0
         for excl_str in cassette_exon_dict[exon_coord]["excl_set"]:
-            excl_str_raw_ct = all_jcn_count_dict[excl_str][0]
-            excl_str_lenNorm_ct = all_jcn_count_dict[excl_str][1]
+            excl_str_raw_ct = all_jcn_count_dict[excl_str][1]
 
             if norm1:
                 excl_str_raw_ct = int(round(excl_str_raw_ct/norm1))
-                excl_str_lenNorm_ct = int(round(excl_str_lenNorm_ct/norm2))
 
-            excl_file1_count += excl_str_raw_ct
-            excl_file2_count += excl_str_lenNorm_ct
+            excl_raw_count += excl_str_raw_ct
         
             if not isAnnotated(excl_str, annotated_introns):
                 isNovel = True
@@ -5592,7 +5555,6 @@ def printCassetteExons(db,
 
             excl_jcn_strs.append(excl_str)
             excl_jcn_counts_raw.append(excl_str_raw_ct)
-            excl_jcn_counts_lenNorm.append(excl_str_lenNorm_ct)
 
         # Find flanking constitutive regions
         upstr_const = findAdjacentSharedRegion(chr,
@@ -5629,18 +5591,15 @@ def printCassetteExons(db,
         exclusion_len = jcn_seq_len
         inclusion_len = ( 2* jcn_seq_len) + exon_end - exon_start + 1
 
-        excl_file1_count = normalizeByLen(excl_file1_count, exclusion_len)
-        excl_file2_count = normalizeByLen(excl_file2_count, exclusion_len)
-        incl_file1_count = normalizeByLen(incl_file1_count, inclusion_len)
-        incl_file2_count = normalizeByLen(incl_file2_count, inclusion_len)
-
+        excl_lenNorm_count = normalizeByLen(excl_raw_count, exclusion_len)
+        incl_lenNorm_count = normalizeByLen(incl_raw_count, inclusion_len)
 
         # Add Exclusion or Inclusion Annotation
         # Checks percent exclusion from both files.
-        e_or_i = checkExclusionInclusion(excl_file1_count,
-                                        incl_file1_count,
-                                        excl_file2_count,
-                                        incl_file2_count) 
+#       e_or_i = checkExclusionInclusion(excl_file1_count,
+#                                       incl_file1_count,
+#                                       excl_file2_count,
+#                                       incl_file2_count) 
 
         gene_name = inferGeneName(annotated_genes_by_strand, chr, exon_start, exon_end,
                                   cassette_exon_dict[exon_coord]["strand"])
@@ -5648,7 +5607,7 @@ def printCassetteExons(db,
 
         # print
         out_str = "%s\t%s\t%s\t%s\t%s\t%s\t%d\t%d\t%s\t%d\t%d\t%d\t%d" % (label,
-                        e_or_i,
+                        "?",
                         gene_name,
                         chr,
                         cassette_exon_dict[exon_coord]["strand"],
@@ -5656,10 +5615,10 @@ def printCassetteExons(db,
                         exon_start,
                         exon_end,
                         ",".join(list(cassette_exon_dict[exon_coord]["right_set"])),
-                        excl_file1_count,
-                        incl_file1_count,
-                        excl_file2_count,
-                        incl_file2_count)                                                
+                        excl_raw_count,
+                        incl_raw_count,
+                        excl_lenNorm_count,
+                        incl_lenNorm_count)                                                
 
         if printExonCoord:
             ce_str = "\t%s_%d_%d" % (chr, exon_start, exon_end)
