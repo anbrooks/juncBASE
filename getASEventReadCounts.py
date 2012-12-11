@@ -4401,18 +4401,18 @@ def printAlternativeDonorsAcceptors(db,
                 
                     this_distal_jcn = "%s_%d_%d" % (chr, start, end)
 
-                    exclusion_cts1 = 0
-                    inclusion_cts1 = 0
-                    exclusion_cts2 = 0
-                    inclusion_cts2 = 0
+                    exclusion_raw = 0
+                    inclusion_raw = 0
+#                   exclusion_lenNorm = 0
+#                   inclusion_lenNorm = 0
 
-                    inclusion_jcn_ct1 = 0
-                    inclusion_jcn_ct2 = 0
+                    inclusion_jcn_raw = 0
+#                    inclusion_jcn_lenNorm = 0
 
                     exclusion_str_list = []
                     exclusion_distal_list = []
-                    exclusion_jcn_cts1_list = []
-                    exclusion_jcn_cts2_list = []
+                    exclusion_jcn_raw_list = []
+#                    exclusion_jcn_lenNorm_list = []
 
                     # Add novel junctions to Alt First and last exons
                     if isAltFirstLast:
@@ -4421,20 +4421,17 @@ def printAlternativeDonorsAcceptors(db,
                             
                             exclusion_distal_list.append(event_dict["novel_jcns"].split(",")[0])
 
-                            novel_sum_raw = event_dict["novel_jcn_sum_raw"]
-                            novel_sum_lenNorm = event_dict["novel_jcn_sum_lenNorm"]
+                            novel_sum_raw = event_dict["novel_jcn_sum_samp2"]
 
-                            if norm1:
-                                novel_sum_raw = int(round(novel_sum_raw/norm1))
-                                novel_sum_lenNorm = int(round(novel_sum_lenNorm/norm1))
+                            if norm2:
+                                novel_sum_raw = int(round(novel_sum_raw/norm2))
 
-                            exclusion_jcn_cts1_list.append(novel_sum_raw)
-                            exclusion_jcn_cts2_list.append(novel_sum_lenNorm)
+                            exclusion_jcn_raw_list.append(novel_sum_raw)
 
-                    exclusion_exon_cts1 = 0
-                    inclusion_exon_cts1 = 0
-                    exclusion_exon_cts2 = 0
-                    inclusion_exon_cts2 = 0
+                    exclusion_exon_raw = 0
+                    inclusion_exon_raw = 0
+#                   exclusion_exon_cts2 = 0
+#                   inclusion_exon_cts2 = 0
                
                     ie_jcn = None 
                     const_regions = []
@@ -4447,22 +4444,21 @@ def printAlternativeDonorsAcceptors(db,
                     for par_start in par_jcn_count_dict:
                         if par_start == start:
     #                       # No paired end counting yet
-                            this_jcn_raw = par_jcn_count_dict[par_start][0]
-                            this_jcn_lenNorm = par_jcn_count_dict[par_start][1]
+#                            this_jcn_raw = par_jcn_count_dict[par_start][0]
+                            this_jcn_raw = par_jcn_count_dict[par_start][1]
 
-                            if norm1:
-                                this_jcn_raw = int(round(this_jcn_raw/norm1))
-                                this_jcn_lenNorm = int(round(this_jcn_lenNorm/norm2))
+                            if norm2:
+                                this_jcn_raw = int(round(this_jcn_raw/norm2))
 
                             # Not normalizing by length here because the
                             # junction counts need to be maintained for
                             # downstream proportional analysis
 
-                            inclusion_cts1 += this_jcn_raw
-                            inclusion_cts2 += this_jcn_lenNorm
+                            inclusion_raw += this_jcn_raw
+#                            inclusion_cts2 += this_jcn_lenNorm
             
-                            inclusion_jcn_ct1 = this_jcn_raw
-                            inclusion_jcn_ct2 = this_jcn_lenNorm
+                            inclusion_jcn_raw = this_jcn_raw
+#                            inclusion_jcn_ct2 = this_jcn_lenNorm
 
                         else:
                             excl_intron = "%s_%d_%d" % (chr,par_start,end)
@@ -4473,21 +4469,21 @@ def printAlternativeDonorsAcceptors(db,
 
                             exclusion_distal_list.append(excl_intron)
 
-                            this_excl_ct1 = par_jcn_count_dict[par_start][0]
-                            this_excl_ct2 = par_jcn_count_dict[par_start][1]
+#                            this_excl_ct1 = par_jcn_count_dict[par_start][0]
+                            this_excl_raw = par_jcn_count_dict[par_start][1]
 
-                            if norm1:
-                                this_excl_ct1 = int(round(this_excl_ct1/norm1))
-                                this_excl_ct2 = int(round(this_excl_ct2/norm2))
+                            if norm2:
+#                                this_excl_ct1 = int(round(this_excl_ct1/norm1))
+                                this_excl_raw = int(round(this_excl_raw/norm2))
 
                             # Not length normalizing here to maintain junction
                             # proportions for later analysis
                             
-                            exclusion_cts1 += this_excl_ct1
-                            exclusion_cts2 += this_excl_ct2
+                            exclusion_raw += this_excl_raw
+#                            exclusion_cts2 += this_excl_ct2
 
-                            exclusion_jcn_cts1_list.append(this_excl_ct1)
-                            exclusion_jcn_cts2_list.append(this_excl_ct2)
+                            exclusion_jcn_raw_list.append(this_excl_raw)
+#                            exclusion_jcn_cts2_list.append(this_excl_ct2)
 
 
                     n_or_k = "K"
@@ -4504,14 +4500,14 @@ def printAlternativeDonorsAcceptors(db,
                      not_used2) = getSSOrderAndProportions("alt_start",
                                                             start, end,
                                                             exclusion_distal_list,
-                                                              exclusion_jcn_cts1_list,
-                                                              inclusion_cts1,
-                                                              exclusion_jcn_cts2_list,
-                                                              inclusion_cts2)
+                                                            exclusion_jcn_raw_list,
+                                                            inclusion_raw,
+                                                            exclusion_jcn_raw_list,
+                                                            inclusion_raw)
 
                     ie_jcns = []
-                    ie_jcn_cts1 = []
-                    ie_jcn_cts2 = []
+                    ie_jcn_raw = []
+#                    ie_jcn_cts2 = []
                     # Add any intron retention counts associated with the
                     # intron/exon boundaries of the isoforms.
                     # If there are paired-end samples, counting does not occur
@@ -4525,42 +4521,39 @@ def printAlternativeDonorsAcceptors(db,
                             ie_jcn = "%s_%d_%d" % (chr, ordered_pos[i] - 1,
                                                    ordered_pos[i]) 
                           
-                            ie_jcn_ct1 = 0
-                            ie_jcn_ct2 = 0
+                            ie_jcn_raw = 0
+#                            ie_jcn_ct2 = 0
 
                             if ir_count_dict:
                                 if intron in ir_count_dict:
 
-                                    left_ct_raw = ir_count_dict[intron]["left"][0]
-                                    left_ct_lenNorm = ir_count_dict[intron]["left"][1]
+                                    left_ct_raw = ir_count_dict[intron]["left"][1]
 
-                                    if norm1:
-                                        left_ct_raw = int(round(left_ct_raw/norm1))
-                                        left_ct_lenNorm = int(round(left_ct_lenNorm/norm2))
+                                    if norm2:
+                                        left_ct_raw = int(round(left_ct_raw/norm2))
 
                                     # length normalizing at later step
 
-                                    ie_jcn_cts1.append(left_ct_raw)
-                                    ie_jcn_cts2.append(left_ct_lenNorm)
+                                    ie_jcn_raw.append(left_ct_raw)
+#                                    ie_jcn_cts2.append(left_ct_lenNorm)
             
 
                     # Add Exclusion or Inclusion Annotation
                     # Checks percent exclusion from both files.
-                    e_or_i = checkExclusionInclusion_AA_AD_AFE_ALE("alt_start",
-                                                                   start, end,
-                                                                   ordered_pos,
-                                                                   proportions1,
-                                                                   proportions2)
+#                   e_or_i = checkExclusionInclusion_AA_AD_AFE_ALE("alt_start",
+#                                                                  start, end,
+#                                                                  ordered_pos,
+#                                                                  proportions1,
+#                                                                  proportions2)
 
 
                     gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
 
 
-                    out_str = "%s\t%s\t%s\t%s\t%s" % (n_or_k,
-                                                      e_or_i,
-                                                      gene_name,
-                                                      chr,
-                                                      strand)
+                    out_str = "%s\t%s\t%s\t%s" % (n_or_k,
+                                                  gene_name,
+                                                  chr,
+                                                  strand)
 
                     if isAltFirstLast:
                         out_str += "\t%s" % event_dict["jcn2jcn_str"][this_distal_jcn]
@@ -4568,10 +4561,10 @@ def printAlternativeDonorsAcceptors(db,
                         out_str += "\t%d\t%d" % (start, end)
                 
                     out_str += "\t%s\t%s\t%d\t%s\t%d" % (";".join(exclusion_str_list),
-                                                         ";".join(map(repr,exclusion_jcn_cts1_list)),
-                                                         inclusion_cts1,
-                                                         ";".join(map(repr,exclusion_jcn_cts2_list)),
-                                                         inclusion_cts2)
+                                                         ";".join(map(repr,exclusion_jcn_raw_list)),
+                                                         inclusion_raw,
+                                                         ";".join(map(repr,exclusion_jcn_raw_list)),
+                                                         inclusion_raw)
                     inclusion_region = None
                     excl_regions = []
 
@@ -4668,27 +4661,22 @@ def printAlternativeDonorsAcceptors(db,
 
                     const_str = ";".join(const_regions)
 
-                    out_str= getAllEventStr(n_or_k, e_or_i, type, gene_name, chr, strand, 
+                    out_str= getAllEventStr(n_or_k, type, gene_name, chr, strand, 
                                              ";".join(exclusion_str_list),
                                              inclusion_str,
                                              ";".join(excl_regions), inclusion_region,
                                              ";".join(ie_jcns),
                                              const_str,
-                                             ";".join(map(repr,exclusion_jcn_cts1_list)),
-                                             repr(inclusion_jcn_ct1),
-                                             ";".join(map(repr,exclusion_jcn_cts2_list)),
-                                             repr(inclusion_jcn_ct2),
-                                             repr(exclusion_cts1),
-                                             repr(inclusion_jcn_ct1),
-                                             repr(exclusion_cts2),
-                                             repr(inclusion_jcn_ct2),
-                                             "","","","",
-                                             None, None, None, None,
-                                             ";".join(map(repr, ie_jcn_cts1)),
-                                             ";".join(map(repr, ie_jcn_cts2)),
-                                             None,None,
-                                             "", "",
-                                             None, None)
+                                             ";".join(map(repr,exclusion_jcn_raw_list)),
+                                             repr(inclusion_jcn_raw),
+                                             repr(exclusion_raw),
+                                             repr(inclusion_jcn_raw),
+                                             "","",
+                                             None, None,
+                                             ";".join(map(repr, ie_jcn_raw)),
+                                             None,
+                                             "",
+                                             None)
                     all_event_info_out.write(out_str + "\n")
 
                     # If the event is an alternative donor or acceptor type, then
@@ -5486,8 +5474,8 @@ def printCassetteExons(db,
             for left_str in cassette_exon_dict[exon_coord]["left_set"]:
                 left_str_raw_ct = all_jcn_count_dict[left_str][1]
 
-                if norm1:
-                    left_str_raw_ct = int(round(left_str_raw_ct/norm1))
+                if norm2:
+                    left_str_raw_ct = int(round(left_str_raw_ct/norm2))
 
                 incl_raw_count += left_str_raw_ct
 
@@ -5500,8 +5488,8 @@ def printCassetteExons(db,
             for right_str in cassette_exon_dict[exon_coord]["right_set"]:
                 right_str_raw_ct = all_jcn_count_dict[right_str][1]
 
-                if norm1:
-                    right_str_raw_ct = int(round(right_str_raw_ct/norm1))
+                if norm2:
+                    right_str_raw_ct = int(round(right_str_raw_ct/norm2))
 
                 incl_raw_count += right_str_raw_ct
 
@@ -5520,8 +5508,8 @@ def printCassetteExons(db,
         for excl_str in cassette_exon_dict[exon_coord]["excl_set"]:
             excl_str_raw_ct = all_jcn_count_dict[excl_str][1]
 
-            if norm1:
-                excl_str_raw_ct = int(round(excl_str_raw_ct/norm1))
+            if norm2:
+                excl_str_raw_ct = int(round(excl_str_raw_ct/norm2))
 
             excl_raw_count += excl_str_raw_ct
         
