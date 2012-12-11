@@ -146,13 +146,13 @@ def main():
                                   used the -a option with something < 6, give
                                   the value (read_length-(anchor length)*2.""",
                           default=None)
-    opt_parser.add_option("--lengthNorm",
-                          dest="lengthNorm",
-                          action="store_true",
-                          help="""Default is to normalize read counts by
-                                 isoform length. This will option will specify
-                                 to not normalize by isoform length.""",
-                          default=False)
+#   opt_parser.add_option("--lengthNorm",
+#                         dest="lengthNorm",
+#                         action="store_true",
+#                         help="""Default is to normalize read counts by
+#                                isoform length. This will option will specify
+#                                to not normalize by isoform length.""",
+#                         default=False)
     opt_parser.add_option("--fasta",
                            dest="genome_file",
                            type="string",
