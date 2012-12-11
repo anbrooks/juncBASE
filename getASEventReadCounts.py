@@ -1193,10 +1193,8 @@ def updateCounts2AltDonorAccept(file_out_str,
 
         chr = line_list[3]
 
-        excl1_str = line_list[-5]
-        jcn_incl1 = int(line_list[-4])
-        excl2_str = line_list[-3]
-        jcn_incl2 = int(line_list[-2])
+        excl_raw_str = line_list[-5]
+        jcn_incl_raw = int(line_list[-4])
    
         incl_add_coord = line_list[-1]
 
@@ -1207,8 +1205,7 @@ def updateCounts2AltDonorAccept(file_out_str,
         incl_end = int(line_list[6]) 
         excl_jcns = line_list[7].split(";")
 
-        exclusion_cts1_list = map(int, excl1_str.split(";"))
-        exclusion_cts2_list = map(int, excl2_str.split(";"))
+        exclusion_raw_list = map(int, excl_raw_str.split(";"))
 
         event_key = (incl_junction,
                      ";".join(excl_jcns))
@@ -1224,30 +1221,19 @@ def updateCounts2AltDonorAccept(file_out_str,
          total_ordered_cts2_list) = getSSOrderAndProportions(alt_start_or_end,
                                                   incl_start, incl_end,
                                                   excl_jcns,
-                                                  exclusion_cts1_list,
-                                                  jcn_incl1,
-                                                  exclusion_cts2_list,
-                                                  jcn_incl2)
+                                                  exclusion_raw_list,
+                                                  jcn_incl_raw,
+                                                  exclusion_raw_list,
+                                                  jcn_incl_raw)
 
 
         if jcnOnly:
-            incl1 = jcn_incl1
-            incl2 = jcn_incl2
+            incl_raw = jcn_incl_raw
 
             # Add the rest of the exclusion junction counts to the total exclusion
-            excl1 = sum(exclusion_cts1_list)
-            excl2 = sum(exclusion_cts2_list)
+            excl_raw = sum(exclusion_raw_list)
 
-            e_or_i = checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
-                                                           incl_start, incl_end,
-                                                           ordered_pos,
-                                                           proportions1,
-                                                           proportions2)
-
-
-            line_list[1] = e_or_i
-
-            if hasNegativeVals(excl1, incl1, excl2, incl2):
+            if hasNegativeVals(excl_raw, incl_raw, excl_raw, incl_raw):
                 ERROR_LOG.write("Negative Vals: %s\n" % line)
                 excl1 = 0
                 incl1 = 0
@@ -1255,8 +1241,8 @@ def updateCounts2AltDonorAccept(file_out_str,
                 incl2 = 0
 
             out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
-                                                excl1, incl1,
-                                                excl2, incl2)
+                                                excl_raw, incl_raw,
+                                                excl_raw, incl_raw)
 
             file2.write(out_str)
             continue
@@ -1264,8 +1250,7 @@ def updateCounts2AltDonorAccept(file_out_str,
 
 
         # Find IE Junction counts
-        ie_jcn_cts1 = []
-        ie_jcn_cts2 = []
+        ie_jcn_cts_raw = []
 
         if alt_start_or_end == "alt_start":
             for i in range(len(ordered_pos)-1):
@@ -1274,8 +1259,7 @@ def updateCounts2AltDonorAccept(file_out_str,
                 ie_jcn = "%s_%d_%d" % (chr, ordered_pos[i] - 1,
                                        ordered_pos[i]) 
 
-                ie_jcn_ct1 = 0
-                ie_jcn_ct2 = 0
+                ie_jcn_ct_raw = 0
 
                 if ir_count_dict:
                     if intron in ir_count_dict:
