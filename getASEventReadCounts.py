@@ -5634,7 +5634,6 @@ def printCassetteExons(db,
 
         # Print to all_event_file
         out_str = getAllEventStr(label,
-                              e_or_i,
                               "cassette",
                               gene_name,
                               chr,
@@ -5647,18 +5646,14 @@ def printCassetteExons(db,
                               ";".join(const_strs),
                               ";".join(map(repr,excl_jcn_counts_raw)), 
                               ",".join(map(repr,left_jcn_counts_raw)) + ";" + ",".join(map(repr,right_jcn_counts_raw)),
-                              ";".join(map(repr,excl_jcn_counts_lenNorm)), 
-                              ",".join(map(repr,left_jcn_counts_lenNorm)) + ";" + ",".join(map(repr,right_jcn_counts_lenNorm)),
-                              repr(excl_file1_count),
-                              repr(incl_file1_count),
-                              repr(excl_file2_count),
-                              repr(incl_file2_count),
-                              "", "", "", "",
-                              None, None, None, None,
-                              "","",
-                              None, None,
-                              "","",
-                              None,None)
+                              repr(excl_raw_count),
+                              repr(incl_raw_count),
+                              "", "", 
+                              None, None, 
+                              "",
+                              None, 
+                              "",
+                              None)
        
         all_event_info_out.write(out_str + "\n")
         
