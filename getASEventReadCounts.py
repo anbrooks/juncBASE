@@ -1911,10 +1911,7 @@ def updateCounts2all_as_events(file_str,
                                norm1, norm2, jcn_seq_len):
 
     """
-    TO DO: Will not perform length normalization anymore
-
-    For length normalization this will use the number of junctions and exon
-    lengths for the calculation
+    Update exon counts
     """
 
     file = open(file_str)
@@ -1928,70 +1925,70 @@ def updateCounts2all_as_events(file_str,
     
         line_list = line.split("\t")
 
-        excl_exons = line_list[8]
-        incl_exons = line_list[9]
+        excl_exons = line_list[7]
+        incl_exons = line_list[8]
 
-        const_exons = line_list[11]
+        const_exons = line_list[10]
     
 
-        (excl_ct_str_raw, excl_ct_str_lenNorm,
-         sum_excl_ct_raw, sum_excl_ct_lenNorm) = getCoordCounts4all_as_events(excl_exons, 
+        (excl_ct_str_samp1, excl_ct_str_samp2,
+         sum_excl_ct_samp1, sum_excl_ct_samp2) = getCoordCounts4all_as_events(excl_exons, 
                                                                               mapped_file1_counts,
                                                                               mapped_file2_counts)
-        (incl_ct_str_raw, incl_ct_str_lenNorm,
-         sum_incl_ct_raw, sum_incl_ct_lenNorm) = getCoordCounts4all_as_events(incl_exons, 
+        (incl_ct_str_samp1, incl_ct_str_samp2,
+         sum_incl_ct_samp1, sum_incl_ct_samp2) = getCoordCounts4all_as_events(incl_exons, 
                                                                               mapped_file1_counts,
                                                                               mapped_file2_counts)
 
-        (const_ct_str_raw, const_ct_str_lenNorm,
-         sum_const_ct_raw, sum_const_ct_lenNorm) = getCoordCounts4all_as_events(const_exons, 
+        (const_ct_str_samp1, const_ct_str_samp2,
+         sum_const_ct_samp1, sum_const_ct_samp2) = getCoordCounts4all_as_events(const_exons, 
                                                                                 mapped_file1_counts,
                                                                                 mapped_file2_counts)
 
-        excl_jcns = parse_all_as_event_regions(line_list[6])
-        incl_jcns = parse_all_as_event_regions(line_list[7])
+#       excl_jcns = parse_all_as_event_regions(line_list[5])
+#       incl_jcns = parse_all_as_event_regions(line_list[6])
 
-        excl_exons = parse_all_as_event_regions(line_list[8])
-        incl_exons = parse_all_as_event_regions(line_list[9])
+#       excl_exons = parse_all_as_event_regions(line_list[7])
+#       incl_exons = parse_all_as_event_regions(line_list[8])
 
-        ie_jcns = parse_all_as_event_regions(line_list[10])
+#       ie_jcns = parse_all_as_event_regions(line_list[9])
 
-        if not sum_excl_ct_raw:   
-            sum_excl_ct_raw = 0
-            sum_excl_ct_lenNorm = 0
+        if not sum_excl_ct_samp1:   
+            sum_excl_ct_samp1 = 0
+            sum_excl_ct_samp2 = 0
 
-        if not sum_incl_ct_raw:
-            sum_incl_ct_raw = 0
-            sum_incl_ct_lenNorm = 0
+        if not sum_incl_ct_samp1:
+            sum_incl_ct_samp1 = 0
+            sum_incl_ct_samp2 = 0
 
-        if not sum_const_ct_raw:
-            sum_const_ct_raw = 0
-            sum_const_ct_lenNorm = 0
+        if not sum_const_ct_samp1:
+            sum_const_ct_samp1 = 0
+            sum_const_ct_samp2 = 0
 
         # Length normalize exonic counts constitutive regions are not used in
         # length normalization
-        # Add jcns first
-        incl_isoform_length = jcn_seq_len * (len(incl_jcns) + len(ie_jcns))
-        excl_isoform_length = jcn_seq_len * len(excl_jcns)
+#       # Add jcns first
+#       incl_isoform_length = jcn_seq_len * (len(incl_jcns) + len(ie_jcns))
+#       excl_isoform_length = jcn_seq_len * len(excl_jcns)
 
-        # Add exon lengths
-        for exon_coord in incl_exons:
-            if exon_coord != "" and exon_coord != "None":
-                this_chr, exon_start, exon_end = convertCoordStr(exon_coord)
-                incl_isoform_length += (exon_end - exon_start + 1)
-        for exon_coord in excl_exons:
-            if exon_coord != "" and exon_coord != "None":
-                this_chr, exon_start, exon_end = convertCoordStr(exon_coord)
-                excl_isoform_length += (exon_end - exon_start + 1)
+#       # Add exon lengths
+#       for exon_coord in incl_exons:
+#           if exon_coord != "" and exon_coord != "None":
+#               this_chr, exon_start, exon_end = convertCoordStr(exon_coord)
+#               incl_isoform_length += (exon_end - exon_start + 1)
+#       for exon_coord in excl_exons:
+#           if exon_coord != "" and exon_coord != "None":
+#               this_chr, exon_start, exon_end = convertCoordStr(exon_coord)
+#               excl_isoform_length += (exon_end - exon_start + 1)
 
-        sum_excl_ct_raw = normalizeByLen(sum_excl_ct_raw,
-                                           excl_isoform_length)
-        sum_excl_ct_lenNorm = normalizeByLen(sum_excl_ct_lenNorm,
-                                           excl_isoform_length)
-        sum_incl_ct_raw = normalizeByLen(sum_incl_ct_raw,
-                                           incl_isoform_length)
-        sum_incl_ct_lenNorm = normalizeByLen(sum_incl_ct_lenNorm,
-                                           incl_isoform_length)
+#       sum_excl_ct_raw = normalizeByLen(sum_excl_ct_raw,
+#                                          excl_isoform_length)
+#       sum_excl_ct_lenNorm = normalizeByLen(sum_excl_ct_lenNorm,
+#                                          excl_isoform_length)
+#       sum_incl_ct_raw = normalizeByLen(sum_incl_ct_raw,
+#                                          incl_isoform_length)
+#       sum_incl_ct_lenNorm = normalizeByLen(sum_incl_ct_lenNorm,
+#                                          incl_isoform_length)
 
         out_str = getAllEventStr(line_list[0], 
                                  line_list[1],
@@ -2008,27 +2005,14 @@ def updateCounts2all_as_events(file_str,
                                  line_list[12],
                                  line_list[13],
                                  line_list[14],
-                                 line_list[15],
-                                 line_list[16],
-                                 line_list[17],
-                                 line_list[18],
+                                 excl_ct_str_samp2,
+                                 incl_ct_str_samp2,
+                                 sum_excl_ct_samp2,
+                                 sum_incl_ct_samp2,
                                  line_list[19],
-                                 excl_ct_str_raw,
-                                 incl_ct_str_raw,
-                                 excl_ct_str_lenNorm,
-                                 incl_ct_str_lenNorm,
-                                 sum_excl_ct_raw,
-                                 sum_incl_ct_raw,
-                                 sum_excl_ct_lenNorm,
-                                 sum_incl_ct_lenNorm,
-                                 line_list[28],
-                                 line_list[29],
-                                 line_list[30],
-                                 line_list[31],
-                                 const_ct_str_raw,
-                                 const_ct_str_lenNorm,
-                                 sum_const_ct_raw,
-                                 sum_const_ct_lenNorm)
+                                 line_list[20],
+                                 const_ct_str_samp2,
+                                 sum_const_ct_samp2)
 
         file2.write(out_str + "\n")
 
