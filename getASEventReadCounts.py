@@ -4517,7 +4517,7 @@ def printAlternativeDonorsAcceptors(db,
 
 
                     out_str = "%s\t%s\t%s\t%s" % (n_or_k,
-                                                  "?"
+                                                  "?",
                                                   gene_name,
                                                   chr,
                                                   strand)
@@ -5661,7 +5661,7 @@ def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exon
 
             if hasNegativeVals(incl_file_raw_count, incl_file_lenNorm_count, 0, 0):
                 ERROR_LOG.write("Negative Vals: %s\n" % out_str)
-                out_str = "%s\t%s\t%s\t%s\t%d\t%s\t%d\t%d\t%d\t%d\n" % ("?"
+                out_str = "%s\t%s\t%s\t%s\t%d\t%s\t%d\t%d\t%d\t%d\n" % ("?",
                                                             gene_name,
                                                             chr,
                                                             strand,
