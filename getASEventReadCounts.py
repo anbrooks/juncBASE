@@ -2130,10 +2130,10 @@ def updateCounts2MultiCassette(mc_out_str,
 
         line_list = line.split("\t")
 
-        excl1 = int(line_list[8])
-        incl1 = int(line_list[9])
-        excl2 = int(line_list[10])
-        incl2 = int(line_list[11])
+        excl_raw = int(line_list[8])
+        incl_raw = int(line_list[9])
+        excl_lenNorm = int(line_list[10])
+        incl_lenNorm = int(line_list[11])
 
         incl_add_coords = line_list[12]
         incl_add_coord_list = incl_add_coords.split(",")
@@ -2184,36 +2184,37 @@ def updateCounts2MultiCassette(mc_out_str,
                                                    all_coord_start2end,
                                                    all_coord_end2start)
 
-            if inferred_exon in mapped_file1_counts:
-                incl1_add += normalizeByLen(int(round(mapped_file1_counts[inferred_exon] * mc_proportion1)),
-                                            inclusion_len)
+#           if inferred_exon in mapped_file1_counts:
+#               incl1_add += normalizeByLen(int(round(mapped_file1_counts[inferred_exon] * mc_proportion1)),
+#                                           inclusion_len)
             if inferred_exon in mapped_file2_counts:
-                incl2_add += normalizeByLen(int(round(mapped_file2_counts[inferred_exon] * mc_proportion2)),
+                incl_raw_add += int(round(mapped_file2_counts[inferred_exon] * mc_proportion2))
+                incl_lenNorm_add += normalizeByLen(int(round(mapped_file2_counts[inferred_exon] * mc_proportion2)),
                                             inclusion_len)
 
-        incl1 += incl1_add
-        incl2 += incl2_add
+        incl_raw += incl_raw_add
+        incl_lenNorm += incl_lenNorm_add
 
-        e_or_i = checkExclusionInclusion(excl1,
-                                        incl1,
-                                        excl2,
-                                        incl2) 
+#       e_or_i = checkExclusionInclusion(excl1,
+#                                       incl1,
+#                                       excl2,
+#                                       incl2) 
 
-        line_list[1] = e_or_i
+#       line_list[1] = e_or_i
 
-        if hasNegativeVals(excl1, incl1, excl2, incl2):
+        if hasNegativeVals(excl_raw, incl_raw, excl_lenNorm, incl_lenNorm):
             ERROR_LOG.write("Negative Vals: %s\n" % line)
-            excl1 = 0
-            incl1 = 0
-            excl2 = 0
-            incl2 = 0
+            excl_raw = 0
+            incl_raw = 0
+            excl_lenNorm = 0
+            incl_lenNorm = 0
 
         out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
-                                            excl1, incl1,
-                                            excl2, incl2)
+                                            excl_raw, incl_raw, 
+                                            excl_lenNorm, incl_lenNorm)
         file2.write(out_str)
 
-        event2counts[event_key] = (excl1, incl1, excl2, incl2)
+        event2counts[event_key] = (excl_raw, incl_raw, excl_lenNorm, incl_lenNorm)
 
     file2.close()
 
