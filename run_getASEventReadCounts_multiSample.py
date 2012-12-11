@@ -474,7 +474,7 @@ def formatLine(line):
 
 def getSampleNames(samples_option):
     if "," in samples_option:
-        return samples_options.split(",")
+        return samples_option.split(",")
 
     if not os.path.exists(samples_option):
         print "Cannot find sample names file: %s" % samples_option
