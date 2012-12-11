@@ -6433,51 +6433,34 @@ def printMutuallyExclusive(db,
                         # proportions used to estimate junction count for
                         # mutually exclusive events based on all junctions on
                         # each side of the exon
-                        upstrm_jcn_sum1 = 0
                         upstrm_jcn_sum2 = 0
-                        dwnstrm_jcn_sum1 = 0
                         dwnstrm_jcn_sum2 = 0
 
                         for this_start in all_coord_end2start[chr][exon_start - 1]:
-                            upstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
-                                                                               this_start,
-                                                                               exon_start - 1)][0]
                             upstrm_jcn_sum2 += all_jcn_count_dict["%s_%d_%d" % (chr,
                                                                                this_start,
                                                                                exon_start - 1)][1]
                         for this_end in all_coord_start2end[chr][exon_end + 1]:
-                            dwnstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr, 
-                                                                                exon_end + 1,   
-                                                                                this_end)][0]
                             dwnstrm_jcn_sum2 += all_jcn_count_dict["%s_%d_%d" % (chr, 
                                                                                 exon_end + 1,   
                                                                                 this_end)][1]
                                                                             
-
-                        left_raw_ct = int(round(upstrm_jcn_sum1 *
-                                                  mxe_proportion1))
-                        right_raw_ct = int(round(dwnstrm_jcn_sum1 *
-                                                   mxe_proportion1))
-
-                        left_lenNorm_ct = int(round(upstrm_jcn_sum2 *
+                        left_samp2_ct = int(round(upstrm_jcn_sum2 *
                                                   mxe_proportion2))
-                        right_lenNorm_ct = int(round(dwnstrm_jcn_sum2 *
+                        right_samp2_ct = int(round(dwnstrm_jcn_sum2 *
                                                    mxe_proportion2))
 
-                        if norm1:
-                            left_raw_ct = int(round(left_raw_ct/norm1))
-                            right_raw_ct = int(round(right_raw_ct/norm1))
-
-                            left_lenNorm_ct = int(round(left_lenNorm_ct/norm2))
-                            right_lenNorm_ct = int(round(right_lenNorm_ct/norm2))
+                        if norm2:
+                            left_samp2_ct = int(round(left_samp2_ct/norm2))
+                            right_samp2_ct = int(round(right_samp2_ct/norm2))
 
                         isoform_len = (2 * jcn_seq_len) + exon_end - exon_start + 1
 
-                        left_raw_ct = normalizeByLen(left_raw_ct, isoform_len)
-                        left_lenNorm_ct = normalizeByLen(left_lenNorm_ct, isoform_len)
+                        left_raw_ct = left_samp2_ct
+                        left_lenNorm_ct = normalizeByLen(left_samp2_ct, isoform_len)
 
-                        right_raw_ct = normalizeByLen(right_raw_ct, isoform_len)
-                        right_lenNorm_ct = normalizeByLen(right_lenNorm_ct, isoform_len)
+                        right_raw_ct = right_samp2_ct
+                        right_lenNorm_ct = normalizeByLen(right_samp2_ct, isoform_len)
 
                         raw_ct = left_raw_ct + right_raw_ct
                         lenNorm_ct = left_lenNorm_ct + right_lenNorm_ct
@@ -6530,15 +6513,15 @@ def printMutuallyExclusive(db,
                     if isNovel:
                         n_or_k = "N"
 
-                    excl_file1_count = 0
-                    incl_file1_count = 0
-                    excl_file2_count = 0
-                    incl_file2_count = 0
+                    excl_file_raw_count = 0
+                    incl_file_raw_count = 0
+                    excl_file_lenNorm_count = 0
+                    incl_file_lenNorm_count = 0
 
-                    incl_file1_count = inclusion_cts[i][0]
-                    excl_file1_count = total_me_cts[0] - incl_file1_count
-                    incl_file2_count = inclusion_cts[i][1]
-                    excl_file2_count = total_me_cts[1] - incl_file2_count
+                    incl_file_raw_count = inclusion_cts[i][0]
+                    excl_file_raw_count = total_me_cts[0] - incl_file_raw_count
+                    incl_file_lenNorm_count = inclusion_cts[i][1]
+                    excl_file_lenNorm_count = total_me_cts[1] - incl_file_lenNorm_count
 
                     # Add exon counts
     #                if full_exon_count_dict is not None:
@@ -6554,10 +6537,10 @@ def printMutuallyExclusive(db,
 
                     # Add Exclusion or Inclusion Annotation
                     # Checks percent exclusion from both files.
-                    e_or_i = checkExclusionInclusion(excl_file1_count,
-                                                    incl_file1_count,
-                                                    excl_file2_count,
-                                                    incl_file2_count) 
+#                   e_or_i = checkExclusionInclusion(excl_file1_count,
+#                                                   incl_file1_count,
+#                                                   excl_file2_count,
+#                                                   incl_file2_count) 
 
                     gene_name = inferGeneName(annotated_genes_by_strand, chr,
                                               upstream_start, downstream_end, strand)
@@ -6565,7 +6548,7 @@ def printMutuallyExclusive(db,
 
                     out_str = "%s\t%s\t%s\t%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%d\t%d" %\
                                                                 (n_or_k,
-                                                                 e_or_i,
+                                                                 "?",
                                                                  gene_name,
                                                                  chr,
                                                                  strand,
@@ -6573,10 +6556,10 @@ def printMutuallyExclusive(db,
                                                                  downstream_end,
                                                                  exon_strs[i],
                                                                  ",".join(exon_strs),
-                                                                 excl_file1_count,
-                                                                 incl_file1_count,
-                                                                 excl_file2_count,
-                                                                 incl_file2_count)
+                                                                 excl_file_raw_count,
+                                                                 incl_file_raw_count,
+                                                                 excl_file_lenNorm_count,
+                                                                 incl_file_lenNorm_count)
 
                     if printExonCoords:
                         out_str += "\t%s\t" % exon_strs[i]
@@ -6599,7 +6582,6 @@ def printMutuallyExclusive(db,
                     # Write to all event file
                     excl_jcn_str_list = []
                     excl_jcn_ct_strs_raw = []
-                    excl_jcn_ct_strs_lenNorm = []
                     for j in range(len(detailed_jcns)):
                         if i == j:
                             continue
@@ -6607,15 +6589,12 @@ def printMutuallyExclusive(db,
                         excl_jcn_str_list.append(",".join(jcns_tuple))
 
                         left_jcn_ct_raw = detailed_inclusion_cts[j][0][0]
-                        left_jcn_ct_lenNorm = detailed_inclusion_cts[j][0][1]
                         right_jcn_ct_raw = detailed_inclusion_cts[j][1][0]
-                        right_jcn_ct_lenNorm = detailed_inclusion_cts[j][1][1]
 
                         excl_jcn_ct_strs_raw.append("%d,%d" % (left_jcn_ct_raw, right_jcn_ct_raw))
-                        excl_jcn_ct_strs_lenNorm.append("%d,%d" % (left_jcn_ct_lenNorm, right_jcn_ct_lenNorm))
                         
 
-                    out_str = getAllEventStr(n_or_k, e_or_i,
+                    out_str = getAllEventStr(n_or_k,
                                              "mutually_exclusive", 
                                              gene_name, chr, strand, 
                                              ";".join(excl_jcn_str_list),
@@ -6626,18 +6605,14 @@ def printMutuallyExclusive(db,
                                              ";".join(const_strs),
                                              ";".join(excl_jcn_ct_strs_raw),
                                              "%d,%d" % (detailed_inclusion_cts[i][0][0],detailed_inclusion_cts[i][1][0]),
-                                             ";".join(excl_jcn_ct_strs_lenNorm),
-                                             "%d,%d" % (detailed_inclusion_cts[i][0][1],detailed_inclusion_cts[i][1][1]),
-                                             repr(excl_file1_count),
-                                             repr(incl_file1_count),
-                                             repr(excl_file2_count),
-                                             repr(incl_file2_count),
-                                             "","","","",
-                                             None, None, None, None,
+                                             repr(excl_raw_count),
+                                             repr(incl_raw_count),
                                              "","",
                                              None, None,
-                                             "","",
-                                             None, None)
+                                             "",
+                                             None,
+                                             "",
+                                             None)
                                              
 
                     all_event_info_out.write(out_str + "\n")
