@@ -1235,10 +1235,10 @@ def updateCounts2AltDonorAccept(file_out_str,
 
             if hasNegativeVals(excl_raw, incl_raw, excl_raw, incl_raw):
                 ERROR_LOG.write("Negative Vals: %s\n" % line)
-                excl1 = 0
-                incl1 = 0
-                excl2 = 0
-                incl2 = 0
+                excl_raw = 0
+                incl_raw = 0
+                excl_lenNorm = 0
+                incl_lenNorm = 0
 
             out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
                                                 excl_raw, incl_raw,
@@ -1521,10 +1521,10 @@ def updateCounts2AltDonorAccept(file_out_str,
 
         if hasNegativeVals(excl_raw, incl_raw, excl_lenNorm, incl_lenNorm):
             ERROR_LOG.write("Negative Vals: %s\n" % line)
-            excl1 = 0
-            incl1 = 0
-            excl2 = 0
-            incl2 = 0
+            excl_raw = 0
+            incl_raw = 0
+            excl_lenNorm = 0
+            incl_lenNorm = 0
 
         out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
                                             excl_raw, incl_raw,
@@ -1776,10 +1776,10 @@ def updateCounts2AFE_ALE(a_out_str,
 
         if hasNegativeVals(excl_raw, incl_raw, excl_lenNorm, incl_lenNorm):
             ERROR_LOG.write("Negative Vals: %s\n" % line)
-            excl1 = 0
-            incl1 = 0
-            excl2 = 0
-            incl2 = 0
+            excl_raw = 0
+            incl_raw = 0
+            excl_lenNorm = 0
+            incl_lenNorm = 0
 
         out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
                                             excl_raw, incl_raw, 
@@ -1854,10 +1854,10 @@ def updateCounts2Cassette(file_out_str,
 
         if hasNegativeVals(excl_raw, incl_raw, excl_lenNorm, incl_lenNorm):
             ERROR_LOG.write("Negative Vals: %s\n" % line)
-            excl1 = 0
-            incl1 = 0
-            excl2 = 0
-            incl2 = 0
+            excl_raw = 0
+            incl_raw = 0
+            excl_lenNorm = 0
+            incl_lenNorm = 0
 
         out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
                                             excl_raw, incl_raw,
@@ -2004,10 +2004,10 @@ def updateCounts2MutuallyExclusive(me_out_str,
 
         line_list = line.split("\t")
 
-        excl1 = int(line_list[9])
-        incl1 = int(line_list[10])
-        excl2 = int(line_list[11])
-        incl2 = int(line_list[12])
+        excl_raw = int(line_list[9])
+        incl_raw = int(line_list[10])
+        excl_lenNorm = int(line_list[11])
+        incl_lenNorm = int(line_list[12])
 
         incl_add_coord = line_list[13]
 
@@ -2049,16 +2049,17 @@ def updateCounts2MutuallyExclusive(me_out_str,
                                              all_coord_start2end,
                                              all_coord_end2start)
 
-        if incl_add_coord in mapped_file1_counts:
-            incl1 += normalizeByLen(int(round(mapped_file1_counts[incl_add_coord] * mxe_proportion1)),
-                                    incl_isoform_len)
+#       if incl_add_coord in mapped_file1_counts:
+#           incl1 += normalizeByLen(int(round(mapped_file1_counts[incl_add_coord] * mxe_proportion1)),
+#                                   incl_isoform_len)
         if incl_add_coord in mapped_file2_counts:
-            incl2 += normalizeByLen(int(round(mapped_file2_counts[incl_add_coord] * mxe_proportion2)),
+            incl_raw += int(round(mapped_file2_counts[incl_add_coord] * mxe_proportion2))
+            incl_lenNorm += normalizeByLen(int(round(mapped_file2_counts[incl_add_coord] * mxe_proportion2)),
                                     incl_isoform_len)
 
         # Exclusion counts to all other exons
-        excl1_add = 0
-        excl2_add = 0
+        excl_raw_add = 0
+        excl_lenNorm_add = 0
         for excl_add_coord in excl_add_coord_list:
 
             this_chr, excl_exon_start, excl_exon_end = convertCoordStr(excl_add_coord)
@@ -2072,36 +2073,37 @@ def updateCounts2MutuallyExclusive(me_out_str,
                                                  all_coord_start2end,
                                                  all_coord_end2start)
 
-            if excl_add_coord in mapped_file1_counts:
-                excl1_add += normalizeByLen(int(round(mapped_file1_counts[excl_add_coord]* mxe_proportion1)),
-                                            this_isoform_len)
+#           if excl_add_coord in mapped_file1_counts:
+#               excl1_add += normalizeByLen(int(round(mapped_file1_counts[excl_add_coord]* mxe_proportion1)),
+#                                           this_isoform_len)
             if excl_add_coord in mapped_file2_counts:
-                excl2_add += normalizeByLen(int(round(mapped_file2_counts[excl_add_coord]* mxe_proportion2)),
+                excl_raw_add += int(round(mapped_file2_counts[excl_add_coord]* mxe_proportion2))
+                excl_lenNorm_add += normalizeByLen(int(round(mapped_file2_counts[excl_add_coord]* mxe_proportion2)),
                                             this_isoform_len)
 
-        excl1 += excl1_add
-        excl2 += excl2_add
+        excl_raw += excl1_raw
+        excl_lenNorm += excl_lenNorm_add
 
-        e_or_i = checkExclusionInclusion(excl1,
-                                        incl1,
-                                        excl2,
-                                        incl2) 
+#       e_or_i = checkExclusionInclusion(excl1,
+#                                       incl1,
+#                                       excl2,
+#                                       incl2) 
 
-        line_list[1] = e_or_i
+#       line_list[1] = e_or_i
 
-        if hasNegativeVals(excl1, incl1, excl2, incl2):
+        if hasNegativeVals(excl_raw, incl_raw, excl_lenNorm, incl_lenNorm):
             ERROR_LOG.write("Negative Vals: %s\n" % line)
-            excl1 = 0
-            incl1 = 0
-            excl2 = 0
-            incl2 = 0
+            excl_raw = 0
+            incl_raw = 0
+            excl_lenNorm = 0
+            incl_lenNorm = 0
 
         out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
-                                            excl1, incl1,
-                                            excl2, incl2)
+                                           excl_raw, incl_raw, 
+                                           excl_lenNorm, incl_lenNorm)
         file2.write(out_str)
 
-        event2counts[event_key] = (excl1, incl1, excl2, incl2)
+        event2counts[event_key] = (excl_raw, incl_raw, excl_lenNorm, incl_lenNorm)
 
     file2.close()
     
@@ -6951,10 +6953,10 @@ def sumExclusion_Inclusion_counts(file_str,
                            sum_excl_lenNorm,
                            sum_incl_lenNorm):
             # ERROR WAS ALREADY PRINTED
-            excl1 = 0
-            incl1 = 0
-            excl2 = 0
-            incl2 = 0
+            sum_excl_raw = 0
+            sum_incl_raw = 0
+            sum_excl_lenNorm = 0
+            sum_incl_lenNorm = 0
 
         line_elems.append(repr(sum_excl_raw))
         line_elems.append(repr(sum_incl_raw))
