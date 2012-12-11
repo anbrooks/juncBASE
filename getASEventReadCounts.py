@@ -1570,7 +1570,6 @@ def updateCounts2AFE_ALE(a_out_str,
                          norm1, norm2, jcn_seq_len):
 
     """
-    BOOKMARK!!!!! 
     For length normalization:
     - Make a dictionary associating distal junction to isoform length
     - build it by associating distal junctions to exonic coords
@@ -1592,22 +1591,22 @@ def updateCounts2AFE_ALE(a_out_str,
         line_list = line.split("\t")
 
         # Used for length normalization
-        distal_jcn2totalCounts1 = {}
-        distal_jcn2totalCounts2 = {}
+        distal_jcn2totalCounts_raw = {}
+#        distal_jcn2totalCounts2 = {}
         distal_jcn2isoform_length = {}
 
         distal_jcn2excl_ct_list_idx = {}
 
         incl_add_coord = line_list[11]
 
-        incl1 = 0
-        incl2 = 0
+        incl_raw = 0
+        incl_lenNorm = 0
 
-        excl1_ct_list = map(int, line_list[7].split(";"))
-        excl2_ct_list = map(int, line_list[9].split(";"))
+        excl_raw_ct_list = map(int, line_list[7].split(";"))
+#        excl2_ct_list = map(int, line_list[9].split(";"))
 
-        excl1 = 0
-        excl2 = 0
+        excl_raw = 0
+        excl_lenNorm = 0
 
         incl_jcns = line_list[5]
         excl_jcns_full = line_list[6].split(";")
@@ -1620,8 +1619,8 @@ def updateCounts2AFE_ALE(a_out_str,
             this_distal = jcns_in_group[0]
 
             excl_jcns.append(this_distal)
-            distal_jcn2totalCounts1[this_distal] = excl1_ct_list[i]
-            distal_jcn2totalCounts2[this_distal] = excl2_ct_list[i]
+            distal_jcn2totalCounts_raw[this_distal] = excl_raw_ct_list[i]
+#            distal_jcn2totalCounts2[this_distal] = excl2_ct_list[i]
             # Working out the math, I only normalize by one junction sequence
             # length
             distal_jcn2isoform_length[this_distal] = jcn_seq_len
@@ -1632,8 +1631,8 @@ def updateCounts2AFE_ALE(a_out_str,
 
         incl_jcns_in_group = incl_jcns.split(",")
         distal_jcn = incl_jcns_in_group[0]
-        distal_jcn2totalCounts1[distal_jcn] = int(line_list[8])
-        distal_jcn2totalCounts2[distal_jcn] = int(line_list[10])
+        distal_jcn2totalCounts_raw[distal_jcn] = int(line_list[8])
+#        distal_jcn2totalCounts2[distal_jcn] = int(line_list[10])
         distal_jcn2isoform_length[distal_jcn] = jcn_seq_len
 
         chr, incl_start, incl_end = convertCoordStr(distal_jcn)
@@ -1669,23 +1668,23 @@ def updateCounts2AFE_ALE(a_out_str,
             else:
                 ERROR_LOG.write("Can't find associated junction for AFE/ALE exon %s\n" % incl_add_coord)
 
-            if incl_add_coord in mapped_file1_counts:
-                if this_distal_jcn:
-                    distal_jcn2totalCounts1[this_distal_jcn] += int(round(mapped_file1_counts[incl_add_coord] * prop1))
-
             if incl_add_coord in mapped_file2_counts:
                 if this_distal_jcn:
-                    distal_jcn2totalCounts2[this_distal_jcn] += int(round(mapped_file2_counts[incl_add_coord] * prop2))
+                    distal_jcn2totalCounts_raw[this_distal_jcn] += int(round(mapped_file2_counts[incl_add_coord] * prop2))
+
+#           if incl_add_coord in mapped_file2_counts:
+#               if this_distal_jcn:
+#                   distal_jcn2totalCounts2[this_distal_jcn] += int(round(mapped_file2_counts[incl_add_coord] * prop2))
 
         # Exclusion counts to all other exons
         excl_add_coords = line_list[12]
         excl_add_coord_list = []
-        total_excl_cts1_list = list(excl1_ct_list)
-        total_excl_cts2_list = list(excl2_ct_list)
+        total_excl_raw_list = list(excl_raw_ct_list)
+#        total_excl_lenNorm_list = list(excl_raw_ct_list)
 
 
-        excl1_add = 0
-        excl2_add = 0
+        excl_raw_add = 0
+#        excl2_add = 0
         if excl_add_coords != "None":
             excl_add_coord_list = excl_add_coords.split(",")
 
@@ -1732,53 +1731,50 @@ def updateCounts2AFE_ALE(a_out_str,
 
                 this_idx = excl_jcns.index(this_distal_jcn)
 
-                if excl_add_coord in mapped_file1_counts:
-                    distal_jcn2totalCounts1[this_distal_jcn] += int(round(mapped_file1_counts[excl_add_coord] * prop1))
-                    total_excl_cts1_list[this_idx] += int(round(mapped_file1_counts[excl_add_coord] * prop1))
+#               if excl_add_coord in mapped_file1_counts:
+#                   distal_jcn2totalCounts1[this_distal_jcn] += int(round(mapped_file1_counts[excl_add_coord] * prop1))
+#                   total_excl_cts1_list[this_idx] += int(round(mapped_file1_counts[excl_add_coord] * prop1))
                 if excl_add_coord in mapped_file2_counts:
-                    distal_jcn2totalCounts2[this_distal_jcn] += int(round(mapped_file2_counts[excl_add_coord] * prop2))
-                    total_excl_cts2_list[this_idx] += int(round(mapped_file2_counts[excl_add_coord] * prop2))
+                    distal_jcn2totalCounts_raw[this_distal_jcn] += int(round(mapped_file2_counts[excl_add_coord] * prop2))
+                    total_excl_raw_list[this_idx] += int(round(mapped_file2_counts[excl_add_coord] * prop2))
 
         # Length normalize
-        incl1 = normalizeByLen(distal_jcn2totalCounts1[distal_jcn],
-                               distal_jcn2isoform_length[distal_jcn])
-        incl2 = normalizeByLen(distal_jcn2totalCounts2[distal_jcn],
+        incl_raw = distal_jcn2totalCounts_raw[distal_jcn]
+        incl_lenNorm = normalizeByLen(distal_jcn2totalCounts_raw[distal_jcn],
                                distal_jcn2isoform_length[distal_jcn])
 
 
         for excl_jcn in distal_jcn2excl_ct_list_idx:
-            excl1 += normalizeByLen(distal_jcn2totalCounts1[excl_jcn],
-                                    distal_jcn2isoform_length[excl_jcn])
-            excl2 += normalizeByLen(distal_jcn2totalCounts2[excl_jcn],
+            excl_raw += distal_jcn2totalCounts_raw[excl_jcn]
+            excl_lenNorm += normalizeByLen(distal_jcn2totalCounts_raw[excl_jcn],
                                     distal_jcn2isoform_length[excl_jcn])
 
-            total_excl_cts1_list[distal_jcn2excl_ct_list_idx[excl_jcn]] = normalizeByLen(distal_jcn2totalCounts1[excl_jcn],
-                                                                                         distal_jcn2isoform_length[excl_jcn])
-            total_excl_cts2_list[distal_jcn2excl_ct_list_idx[excl_jcn]] = normalizeByLen(distal_jcn2totalCounts2[excl_jcn],
+            total_excl_raw_list[distal_jcn2excl_ct_list_idx[excl_jcn]] = distal_jcn2totalCounts_raw[excl_jcn]
+            total_excl_lenNorm_list[distal_jcn2excl_ct_list_idx[excl_jcn]] = normalizeByLen(distal_jcn2totalCounts_raw[excl_jcn],
                                                                                          distal_jcn2isoform_length[excl_jcn])
 
 
-        (ordered_pos, 
-         new_proportions1, 
-         new_proportions2,
-         not_used1,
-         not_used2) = getSSOrderAndProportions(alt_start_or_end,
-                                               incl_start, incl_end,
-                                               excl_jcns,
-                                               total_excl_cts1_list,
-                                               incl1,
-                                               total_excl_cts2_list,
-                                               incl2)
+#       (ordered_pos, 
+#        new_proportions1, 
+#        new_proportions2,
+#        not_used1,
+#        not_used2) = getSSOrderAndProportions(alt_start_or_end,
+#                                              incl_start, incl_end,
+#                                              excl_jcns,
+#                                              total_excl_cts1_list,
+#                                              incl1,
+#                                              total_excl_cts2_list,
+#                                              incl2)
 
-        e_or_i = checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
-                                                       incl_start, incl_end,
-                                                       ordered_pos,
-                                                       new_proportions1,
-                                                       new_proportions2)
+#       e_or_i = checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
+#                                                      incl_start, incl_end,
+#                                                      ordered_pos,
+#                                                      new_proportions1,
+#                                                      new_proportions2)
 
-        line_list[1] = e_or_i
+#       line_list[1] = e_or_i
 
-        if hasNegativeVals(excl1, incl1, excl2, incl2):
+        if hasNegativeVals(excl_raw, incl_raw, excl_lenNorm, incl_lenNorm):
             ERROR_LOG.write("Negative Vals: %s\n" % line)
             excl1 = 0
             incl1 = 0
@@ -1786,10 +1782,10 @@ def updateCounts2AFE_ALE(a_out_str,
             incl2 = 0
 
         out_str = "%s\t%d\t%d\t%d\t%d\n" % ("\t".join(line_list), 
-                                            excl1, incl1,
-                                            excl2, incl2)
+                                            excl_raw, incl_raw, 
+                                            excl_lenNorm, incl_lenNorm)
         # Add counts to even dictionary
-        event2counts[event_key] = (excl1, incl1, excl2, incl2)
+        event2counts[event_key] = (excl_raw, incl_raw, excl_lenNorm, incl_lenNorm)
 
         file2.write(out_str)
 
