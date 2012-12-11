@@ -35,7 +35,7 @@ PASSWD = ""
 
 # This should be a float for easier use in division
 DEF_EXON_LEN_NORM = 100.0
-DO_LEN_NORM = False
+DO_LEN_NORM = True
 
 INFINITY = 10000000000000000000000000000000000000
 NOVEL_DIST = 2000
@@ -216,13 +216,13 @@ def main():
                                   counts by.  Typically, this would be the
                                   total number of reads in the sample.""",
                           default=None)
-    opt_parser.add_option("--lengthNorm",
-                          dest="lengthNorm",
-                          action="store_true",
-                          help="""Default is to not normalize read counts by
-                                 isoform length. This will option will specify
-                                 normalize read counts by isoform length.""",
-                          default=False)
+#   opt_parser.add_option("--lengthNorm",
+#                         dest="lengthNorm",
+#                         action="store_true",
+#                         help="""Default is to not normalize read counts by
+#                                isoform length. This will option will specify
+#                                normalize read counts by isoform length.""",
+#                         default=False)
     opt_parser.add_option("--jcn_seq_len",
                           dest="jcn_seq_len",
                           type="int",
