@@ -4500,7 +4500,7 @@ def printAlternativeDonorsAcceptors(db,
 
                                     # length normalizing at later step
 
-                                    ie_jcns_raw.append(left_ct_raw)
+                                    ie_jcns_raw.append(ie_jcn_raw)
 #                                    ie_jcn_cts2.append(left_ct_lenNorm)
             
 
