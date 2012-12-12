@@ -97,6 +97,11 @@ def main():
                           help="""Will check samples that are not done and print
                                   out which need to still be run""",
                          default=False)
+    opt_parser.add_option("--force",
+                          dest="force",
+                          action="store_true",
+                          help="Force to run jobs that are alreadly completed.",
+                         default=False)
 
     (options, args) = opt_parser.parse_args()
 	
@@ -112,6 +117,7 @@ def main():
     num_processes = options.num_processes
 
     check = options.check
+    force = options.force
 
     ctr = 0
     for line in input_file:
@@ -119,6 +125,10 @@ def main():
 
         samp, bam = line.split("\t")
     
+        check_file = "%s/%s/%s_%s/%s_%s_junctions.bed" % (output_dir,
+                                                          samp,
+                                                          samp, chr,
+                                                          samp, chr)
         if check:
             bam = pysam.Samfile(bam, "rb")
             chr_names_unformatted = getReferences([bam])
@@ -129,10 +139,6 @@ def main():
                 chr_names.append(formatChr(this_chr))
 
             for chr in chr_names:
-                check_file = "%s/%s/%s_%s/%s_%s_junctions.bed" % (output_dir,
-                                                                  samp,
-                                                                  samp, chr,
-                                                                  samp, chr)
                 if not os.path.exists(check_file):
                     print "Cannot find: %s" % check_file 
                     continue
@@ -141,6 +147,12 @@ def main():
                     print "File is empty: %s" % check_file
 
             continue
+
+        if not force:
+            if os.path.exists(check_file):
+                continue
+            if os.path.getsize(check_file): > 0:
+                continue
 
         cmd = ""
         if options.nice:
