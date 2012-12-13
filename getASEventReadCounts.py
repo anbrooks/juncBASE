@@ -1592,7 +1592,7 @@ def updateCounts2AFE_ALE(a_out_str,
 
         # Used for length normalization
         distal_jcn2totalCounts_raw = {}
-#        distal_jcn2totalCounts2 = {}
+        distal_jcn2totalCounts_lenNorm = {}
         distal_jcn2isoform_length = {}
 
         distal_jcn2excl_ct_list_idx = {}
@@ -1603,7 +1603,7 @@ def updateCounts2AFE_ALE(a_out_str,
         incl_lenNorm = 0
 
         excl_raw_ct_list = map(int, line_list[7].split(";"))
-#        excl2_ct_list = map(int, line_list[9].split(";"))
+        excl_lenNorm_ct_list = map(int, line_list[9].split(";"))
 
         excl_raw = 0
         excl_lenNorm = 0
@@ -1620,7 +1620,7 @@ def updateCounts2AFE_ALE(a_out_str,
 
             excl_jcns.append(this_distal)
             distal_jcn2totalCounts_raw[this_distal] = excl_raw_ct_list[i]
-#            distal_jcn2totalCounts2[this_distal] = excl2_ct_list[i]
+            distal_jcn2totalCounts_lenNorm[this_distal] = excl_lenNorm_ct_list[i]
             # Working out the math, I only normalize by one junction sequence
             # length
             distal_jcn2isoform_length[this_distal] = jcn_seq_len
@@ -1632,7 +1632,7 @@ def updateCounts2AFE_ALE(a_out_str,
         incl_jcns_in_group = incl_jcns.split(",")
         distal_jcn = incl_jcns_in_group[0]
         distal_jcn2totalCounts_raw[distal_jcn] = int(line_list[8])
-#        distal_jcn2totalCounts2[distal_jcn] = int(line_list[10])
+        distal_jcn2totalCounts_lenNorm[distal_jcn] = int(line_list[10])
         distal_jcn2isoform_length[distal_jcn] = jcn_seq_len
 
         chr, incl_start, incl_end = convertCoordStr(distal_jcn)
@@ -1680,7 +1680,7 @@ def updateCounts2AFE_ALE(a_out_str,
         excl_add_coords = line_list[12]
         excl_add_coord_list = []
         total_excl_raw_list = list(excl_raw_ct_list)
-#        total_excl_lenNorm_list = list(excl_raw_ct_list)
+        total_excl_lenNorm_list = list(excl_lenNorm_ct_list)
 
 
         excl_raw_add = 0
@@ -1741,7 +1741,7 @@ def updateCounts2AFE_ALE(a_out_str,
         # Length normalize
         incl_raw = distal_jcn2totalCounts_raw[distal_jcn]
         incl_lenNorm = normalizeByLen(distal_jcn2totalCounts_raw[distal_jcn],
-                               distal_jcn2isoform_length[distal_jcn])
+                                      distal_jcn2isoform_length[distal_jcn])
 
 
         for excl_jcn in distal_jcn2excl_ct_list_idx:
@@ -1751,7 +1751,7 @@ def updateCounts2AFE_ALE(a_out_str,
 
             total_excl_raw_list[distal_jcn2excl_ct_list_idx[excl_jcn]] = distal_jcn2totalCounts_raw[excl_jcn]
             total_excl_lenNorm_list[distal_jcn2excl_ct_list_idx[excl_jcn]] = normalizeByLen(distal_jcn2totalCounts_raw[excl_jcn],
-                                                                                         distal_jcn2isoform_length[excl_jcn])
+                                                                                            distal_jcn2isoform_length[excl_jcn])
 
 
 #       (ordered_pos, 
@@ -1894,6 +1894,9 @@ def updateCounts2all_as_events(file_str,
         incl_exons = line_list[8]
 
         const_exons = line_list[10]
+
+        if incl_exons == "chr7_74133198_74133260":
+            pdb.set_trace()
     
 
         (excl_ct_str_samp1, excl_ct_str_samp2,
@@ -1918,15 +1921,15 @@ def updateCounts2all_as_events(file_str,
 
 #       ie_jcns = parse_all_as_event_regions(line_list[9])
 
-        if not sum_excl_ct_samp1:   
+        if sum_excl_ct_samp1 is None:   
             sum_excl_ct_samp1 = 0
             sum_excl_ct_samp2 = 0
 
-        if not sum_incl_ct_samp1:
+        if sum_incl_ct_samp1 is None:
             sum_incl_ct_samp1 = 0
             sum_incl_ct_samp2 = 0
 
-        if not sum_const_ct_samp1:
+        if sum_const_ct_samp1 is None:
             sum_const_ct_samp1 = 0
             sum_const_ct_samp2 = 0
 
@@ -2081,7 +2084,7 @@ def updateCounts2MutuallyExclusive(me_out_str,
                 excl_lenNorm_add += normalizeByLen(int(round(mapped_file2_counts[excl_add_coord]* mxe_proportion2)),
                                             this_isoform_len)
 
-        excl_raw += excl1_raw
+        excl_raw += excl_raw
         excl_lenNorm += excl_lenNorm_add
 
 #       e_or_i = checkExclusionInclusion(excl1,
@@ -2166,8 +2169,8 @@ def updateCounts2MultiCassette(mc_out_str,
         last_start = excl_start
         last_end = incl_jcn_coords[0][1]
 
-        incl1_add = 0
-        incl2_add = 0
+        incl_raw_add = 0
+        incl_lenNorm_add = 0
         for incl_jcn_coord in incl_jcn_coords[1:]:
             this_start = incl_jcn_coord[0]
             this_end = incl_jcn_coord[1]
@@ -2741,7 +2744,7 @@ def fixIRExclusion_count(ir_file_name, all_jcn_count_dict,
 
         line_list = line.split("\t")
 
-        excl_jcn_str = line_list[6]
+        excl_jcn_str = line_list[5]
 
 #        jcn_ct1 = all_jcn_count_dict[excl_jcn_str][0]
         jcn_ct_raw = all_jcn_count_dict[excl_jcn_str][1]
@@ -3240,8 +3243,8 @@ def getCoordCounts4all_as_events(all_as_exon_str,
     Parses the exon string, finds the corresponding counts, then outputs counts
     in proper format
     Outputs
-    exon_ct_str_raw, exon_ct_str_lenNorm,
-    sum_exon_ct_raw, sum_exon_ct_lenNorm
+    exon_ct_str_samp1, exon_ct_str_samp2,
+    sum_exon_ct_samp1, sum_exon_ct_samp2
     """
     if "," in all_as_exon_str:
         print "Need to account for , in exon_str list"
@@ -3252,29 +3255,29 @@ def getCoordCounts4all_as_events(all_as_exon_str,
 
     exon_list = all_as_exon_str.split(";")
 
-    sum_raw = 0
-    raw_cts = []
-    sum_lenNorm = 0
-    lenNorm_cts = []
+    sum_samp1 = 0
+    samp1_cts = []
+    sum_samp2 = 0
+    samp2_cts = []
 
     for exon_str in exon_list: 
         try:
-            raw_ct = mapped_file1_counts[exon_str]
-            lenNorm_ct = mapped_file2_counts[exon_str]
+            samp1_ct = mapped_file1_counts[exon_str]
+            samp2_ct = mapped_file2_counts[exon_str]
 
         except:
             ERROR_LOG.write("Could not find counts for %s\n" % exon_str)
-            raw_ct = 0
-            lenNorm_ct = 0
+            samp1_ct = 0
+            samp2_ct = 0
 
-        sum_raw += raw_ct
-        raw_cts.append(raw_ct)
+        sum_samp1 += samp1_ct
+        samp1_cts.append(samp1_ct)
 
-        sum_lenNorm += lenNorm_ct
-        lenNorm_cts.append(lenNorm_ct)
+        sum_samp2 += samp2_ct
+        samp2_cts.append(samp2_ct)
 
-    return (";".join(map(repr, raw_cts)), ";".join(map(repr, lenNorm_cts)),
-            sum_raw, sum_lenNorm)
+    return (";".join(map(repr, samp1_cts)), ";".join(map(repr, samp2_cts)),
+            sum_samp1, sum_samp2)
 
 def getExonDistanceDifference(exon_str_list):
     """
@@ -6846,12 +6849,12 @@ def sumExclusion_Inclusion_counts(file_str,
         if printExonCoords:
             excl_raw_cols = [13, 17] 
 
-            incl_raw_cols = [14, 18, 19]
+            incl_raw_cols = [14, 18, 20]
 
         else:
             excl_raw_cols = [13] 
 
-            incl_raw_cols = [14, 19]
+            incl_raw_cols = [14, 20]
 
         if type == "cassette":
             event_key = line_elems[8]
