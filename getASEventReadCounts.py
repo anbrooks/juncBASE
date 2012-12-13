@@ -974,8 +974,8 @@ def find_AFE_ALE_clusters(events_dictList,
     # exon_clusters = [[(jcn,exon), (jcn, exon)],]
     (exon_clusters,
      novel_jcns,
-     novel_jcn_sum_raw,
-     novel_jcn_sum_lenNorm) = find_exon_clusters(next_or_previous,
+     novel_jcn_sum_samp1,
+     novel_jcn_sum_samp2) = find_exon_clusters(next_or_previous,
                                                all_confident_exons,
                                                all_confident_exons_start2end,
                                                all_confident_exons_end2start,
@@ -988,8 +988,8 @@ def find_AFE_ALE_clusters(events_dictList,
                            "all_coord_end2start":{chr:{}},
                            "all_coord_start2end":{chr:{}},
                            "novel_jcns": novel_jcns,
-                           "novel_jcn_sum_raw": novel_jcn_sum_raw,
-                           "novel_jcn_sum_lenNorm": novel_jcn_sum_lenNorm,
+                           "novel_jcn_sum_samp1": novel_jcn_sum_samp1,
+                           "novel_jcn_sum_samp2": novel_jcn_sum_samp2,
                            "jcn_cluster_sum":{},
                            "jcn2jcn_str":{},
                            "jcn2exon_str":{}}
@@ -1343,7 +1343,7 @@ def updateCounts2AltDonorAccept(file_out_str,
                                                  isoform_lengths[i+1])
 
                     total_ordered_raw_list[i+1] += this_ie_ct_raw
-                    total_ordered_lenNorm_list[i+1] += this_ie_lenNorm
+                    total_ordered_lenNorm_list[i+1] += this_ie_ct_lenNorm
 
                     excl_raw += this_ie_ct_raw
                     excl_lenNorm += this_ie_ct_lenNorm
@@ -4516,7 +4516,7 @@ def printAlternativeDonorsAcceptors(db,
                     gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
 
 
-                    out_str = "%s\t%s\t%s\t%s" % (n_or_k,
+                    out_str = "%s\t%s\t%s\t%s\t%s" % (n_or_k,
                                                   "?",
                                                   gene_name,
                                                   chr,
@@ -5052,7 +5052,7 @@ def printAlternativeDonorsAcceptors(db,
                                              repr(inclusion_jcn_raw),
                                              "","",
                                              None,None,
-                                             ";".join(map(repr, ie_jcn_raw)),
+                                             ";".join(map(repr, ie_jcns_raw)),
                                              None, 
                                              "",
                                              None)
