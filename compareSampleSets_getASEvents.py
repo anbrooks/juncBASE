@@ -29,7 +29,7 @@ SIGN_CUTOFF = 0.05
 DEF_THRESH = 25
 DEF_DPSI_THRESH = 5.0
 
-#SAMP_SET_THRESH = 3
+PROP_NON_NA = 0.666
 
 DEF_TEST = "Wilcoxon"
 #################
@@ -206,8 +206,8 @@ def main():
 
     # The threshold for the number of samples that need to have expressed AS
     # events in order to consider testing
-    samp_set_thresh1 = float(len(sample_set1)) / 2
-    samp_set_thresh2 = float(len(sample_set2)) / 2
+    samp_set_thresh1 = float(len(sample_set1)) * PROP_NON_NA
+    samp_set_thresh2 = float(len(sample_set2)) * PROP_NON_NA
 
     idx2sample = {}
 
@@ -260,7 +260,8 @@ def main():
         max_psi = -1
         set1_psis = []        
         set2_psis = []
-        for i in range(len(counts)):
+        na_count = 0
+        for i in range(total_samples):
             (psi, sum_ct) = getPSI_sample_sum(counts[i], sum_thresh)
             if psi != NA:
                 psi_val = float(psi)
@@ -268,6 +269,8 @@ def main():
                     min_psi = psi_val
                 if psi_val > max_psi:
                     max_psi = psi_val
+            else:
+                na_count += 1
             if event in event2col2psi:
                 event2col2psi[event][i] = psi
                 event2col2sum[event][i] = sum_ct
@@ -290,7 +293,10 @@ def main():
                     set2_psis.append(event2col2psi[event][i])
 
 
-        if not as_only:
+        if as_only:
+            if (float(total_samples - na_count)/total_samples) < PROP_NON_NA:
+                continue 
+        else:
             if len(set1_psis) <= samp_set_thresh1 or len(set2_psis) <= samp_set_thresh2:
                 continue
 
@@ -439,7 +445,11 @@ def main():
                                                                            method) 
     
     # Now go through all events and print out pvals
-    all_psi_output.write(header + "\tset1_med_psi\tset2_med_psi\tdeltaPSI\traw_pval\tcorrected_pval\n")
+    all_psi_output.write(header)
+    if as_only:
+        all_psi_output.write("\n")
+    else:
+        all_psi_output.write("\tset1_med_psi\tset2_med_psi\tdeltaPSI\traw_pval\tcorrected_pval\n")
 
     for event in event2idx:
         event_type = getEventType(event)
@@ -462,6 +472,11 @@ def main():
 
         outline = "%s\t%s" % (event, 
                                 "\t".join(psi_vals))
+
+        if as_only:
+            outline += "\n"
+            all_psi_output.write(outline)
+            continue
 
         # Add median PSI and delta PSI values
         outline += "\t%.2f\t%.2f\t%.2f" % (event_type2PSI_vals_4_set[event_type][this_idx][0],
