@@ -14,6 +14,7 @@
 import sys
 import optparse 
 import pdb
+import os
 
 import rpy2.robjects as robjects
 from helperFunctions import updateDictOfLists
@@ -29,9 +30,13 @@ SIGN_CUTOFF = 0.05
 DEF_THRESH = 25
 DEF_DPSI_THRESH = 5.0
 
+DEF_START_IDX =  11
+
 PROP_NON_NA = 0.666
 
 DEF_TEST = "Wilcoxon"
+
+INFINITY = 100000000000000000000000000000000000000000000
 #################
 # END CONSTANTS #
 #################
@@ -70,6 +75,15 @@ def main():
                           dest="input_file",
                           type="string",
                           help="Resulting file from clusterASExons2.py",
+                          default=None)
+    opt_parser.add_option("--generic",
+                          dest="samp_start_idx",
+                          type="int",
+                          help="""Run statistical tests on a generic table. The
+                                  samp_start_idx gives the 0-based index of the
+                                  column containing the sample value. The first
+                                  line is a header that should start with the #
+                                  symbol.""",
                           default=None)
     opt_parser.add_option("--left_intron",
                           dest="left_input",
@@ -114,13 +128,13 @@ def main():
                           help="""Which test to use. Either "t-test" or
                                   "Wilcoxon". Default=%s""" % DEF_TEST,
                           default=DEF_TEST)
-    opt_parser.add_option("--as_dPSI_thresh",
-                          dest="as_dPSI_thresh",
+    opt_parser.add_option("--delta_thresh",
+                          dest="delta_thresh",
                           type="float",
-                          help="""Minimum PSI difference between the maximum
-                                  and minimum PSI values for a given event to be
-                                  called an alternatively spliced event. This
-                                  should probably be less than the dPSI
+                          help="""Minimum PSI(or generic value) difference between the maximum
+                                  and minimum values for a given event to be
+                                  considered a change. This
+                                  should probably be less than the delta
                                   threshold used to filter significantly
                                   associated events. Default=%s""" % DEF_DPSI_THRESH,
                           default=DEF_DPSI_THRESH)
@@ -168,9 +182,16 @@ def main():
     right_input_file_name = options.right_input
     sum_thresh = options.threshold
 
-    as_dPSI_thresh = options.as_dPSI_thresh
+    delta_thresh = options.delta_thresh
 
     as_only = options.as_only
+    
+    # JuncBASE table default
+    samp_start_idx = 11
+    isGeneric = False
+    if options.samp_start_idx:
+        samp_start_idx = options.samp_start_idx
+        isGeneric = True
 
     left_input_file = None
     right_input_file = None
@@ -226,7 +247,6 @@ def main():
     event2col2psi = {}
 
     # {event:{col:sum_counts}}
-    event2col2sum = {}
 
     header = None
     total_samples = None
@@ -236,7 +256,7 @@ def main():
         if line.startswith("#"):
             header = line
             headerList = header.split("\t")
-            sampleList = headerList[11:]
+            sampleList = headerList[samp_start_idx:]
             # Get sample idx
             for i in range(len(sampleList)):
                 idx2sample[i] = sampleList[i]
@@ -248,23 +268,32 @@ def main():
 
         line_list = line.split("\t")
 
-        event = "\t".join(line_list[0:11])
-        counts = line_list[11:]
+        event = "\t".join(line_list[0:samp_start_idx])
+        counts = line_list[samp_start_idx:]
 
-        event_type = getEventType(event)
+        if isGeneric:
+            event_type = "generic"
+        else:
+            event_type = getEventType(event)
+
         if event_type not in event_type2pvals:
             event_type2pvals[event_type] = []
             event_type2PSI_vals_4_set[event_type] = []
+
         total_samples = len(counts)
 
         # Fill PSI dict
-        min_psi = 200
-        max_psi = -1
+        min_psi = INFINITY
+        max_psi = -INFINITY
         set1_psis = []        
         set2_psis = []
         na_count = 0
         for i in range(total_samples):
-            (psi, sum_ct) = getPSI_sample_sum(counts[i], sum_thresh)
+            if isGeneric:
+                # psi is actually a generic value that is in the table
+                psi = counts[i] 
+            else:
+                (psi, sum_ct) = getPSI_sample_sum(counts[i], sum_thresh)
             if psi != NA:
                 psi_val = float(psi)
                 if psi_val < min_psi:
@@ -275,17 +304,19 @@ def main():
                 na_count += 1
             if event in event2col2psi:
                 event2col2psi[event][i] = psi
-                event2col2sum[event][i] = sum_ct
             else:
                 event2col2psi[event] = {i:psi}
-                event2col2sum[event] = {i:sum_ct}
 
-            # Compare samples groups together in a wilcoxon rank sum test
-            [col_excl, col_incl] = map(int,counts[i].split(";"))
+            if isGeneric:
+                if psi < sum_thresh:
+                    continue
+            else:
+                # Compare samples groups together in a wilcoxon rank sum test
+                [col_excl, col_incl] = map(int,counts[i].split(";"))
 
-            # Both samples have to be non-zero
-            if belowThreshold(sum_thresh, col_excl, col_incl):
-                continue
+                # Both samples have to be non-zero
+                if belowThreshold(sum_thresh, col_excl, col_incl):
+                    continue
 
             if idx2sample[i] in sample_set1:
                 if event2col2psi[event][i] != NA:
@@ -302,7 +333,7 @@ def main():
             if len(set1_psis) <= samp_set_thresh1 or len(set2_psis) <= samp_set_thresh2:
                 continue
 
-        if (max_psi - min_psi) < as_dPSI_thresh:
+        if (max_psi - min_psi) < delta_thresh:
             continue
 
         if as_only:
@@ -347,7 +378,7 @@ def main():
         event2idx[event] = cur_len
 
     # Now calculate intron retention
-    if not as_only:
+    if (not as_only) and (not isGeneric):
         if left_input_file:
             left_events2counts = getIntronLeftRightCounts(left_input_file)
             right_events2counts = getIntronLeftRightCounts(right_input_file)
@@ -410,9 +441,9 @@ def main():
                 or len(set2_psis_left) <= samp_set_thresh2 or len(set2_psis_right) <= samp_set_thresh2:
                 continue
 
-            if (left_max_psi - left_min_psi) < as_dPSI_thresh:
+            if (left_max_psi - left_min_psi) < delta_thresh:
                 continue
-            if (right_max_psi - right_min_psi) < as_dPSI_thresh:
+            if (right_max_psi - right_min_psi) < delta_thresh:
                 continue
 
             cur_len = len(event_type2pvals["intron_retention"])
@@ -451,7 +482,7 @@ def main():
     if as_only:
         all_psi_output.write("\n")
     else:
-        all_psi_output.write("\tset1_med_psi\tset2_med_psi\tdeltaPSI\traw_pval\tcorrected_pval\n")
+        all_psi_output.write("\tset1_med\tset2_med\tdelta_val\traw_pval\tcorrected_pval\n")
 
     for event in event2idx:
         event_type = getEventType(event)
@@ -560,8 +591,8 @@ def getIntronLeftRightCounts(file):
 
         line_list = line.split("\t")
 
-        event = "\t".join(line_list[0:11])
-        counts = line_list[11:]
+        event = "\t".join(line_list[0:samp_start_idx])
+        counts = line_list[samp_start_idx:]
 
         # If the reference is NA, then do not calculate
         if counts[0] == NA:
