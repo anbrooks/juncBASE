@@ -127,14 +127,16 @@ def main():
     opt_parser.add_option("--sample_set1",
                           dest="sample_set1",
                           type="string",
-                          help="""Comma delimited list of samples in set 1.
+                          help="""Comma delimited list of samples in set 1
+                                  or a file with a list of names, one per line. 
                                   Names must be in header columns of input
                                   files.""",
                           default=None)
     opt_parser.add_option("--sample_set2",
                           dest="sample_set2",
                           type="string",
-                          help="""Comma delimited list of samples in set 2.
+                          help="""Comma delimited list of samples in set 2
+                                  or a file with a list of names, one per line.
                                   Names must be in header columns of input
                                   files.""",
                           default=None)
@@ -158,8 +160,8 @@ def main():
     opt_parser.check_required("-i")
     opt_parser.check_required("--all_psi_output")
     opt_parser.check_required("--mt_correction")
-    opt_parser.check_required("--sample_set1")
-    opt_parser.check_required("--sample_set2")
+#   opt_parser.check_required("--sample_set1")
+#   opt_parser.check_required("--sample_set2")
 
     input_file = open(options.input_file)
     left_input_file_name = options.left_input
@@ -201,8 +203,8 @@ def main():
     if which_test == "t-test":
         which_test = "t.test"
 
-    sample_set1 = options.sample_set1.split(",")
-    sample_set2 = options.sample_set2.split(",")
+    sample_set1 = getSamples(options.sample_set1)
+    sample_set2 = getSamples(options.sample_set2)
 
     # The threshold for the number of samples that need to have expressed AS
     # events in order to consider testing
@@ -569,6 +571,28 @@ def getIntronLeftRightCounts(file):
 
     return intron_event2counts
         
+def getSamples(sample_set):
+
+    samples = []
+    # Check if it is a file
+    if os.path.exists(sample_set):
+        sample_file = open(sample_set)
+
+        for line in sample_file:
+            line = formatLine(line)
+            samples.append(line)
+
+        sample_file.close()
+    else:
+        if "," not in sample_set:
+            print "Error in processing sample_set option: %s" % sample_set
+            sys.exit(1)
+
+        samples = sample_set.split(",")
+
+    return samples
+        
+
 #################
 # END FUNCTIONS #	
 #################	
