@@ -111,7 +111,7 @@ def main():
                           default=None)
     opt_parser.add_option("--thresh",
                           dest="threshold",
-                          type="int",
+                          type="float",
                           help="""Threshold for minimum number of total reads
                                   in an event. Default=%d""" % DEF_THRESH,
                           default=DEF_THRESH)
@@ -485,7 +485,10 @@ def main():
         all_psi_output.write("\tset1_med\tset2_med\tdelta_val\traw_pval\tcorrected_pval\n")
 
     for event in event2idx:
-        event_type = getEventType(event)
+        if isGeneric:
+            event_type = "generic"
+        else:
+            event_type = getEventType(event)
 
         this_idx = event2idx[event]
         if this_idx == NA:
@@ -615,10 +618,6 @@ def getSamples(sample_set):
 
         sample_file.close()
     else:
-        if "," not in sample_set:
-            print "Error in processing sample_set option: %s" % sample_set
-            sys.exit(1)
-
         samples = sample_set.split(",")
 
     return samples
