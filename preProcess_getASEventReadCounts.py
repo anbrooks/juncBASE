@@ -249,12 +249,6 @@ def main():
                           type="string",
                           help="Directory to place all output files.",
                           default=None)
-    opt_parser.add_option("--by_chr",
-                          dest="by_chr",
-                          action="store_true",
-                          help="""The resulting files will be organized by
-                                  chromosome in the output_dir""",
-                          default=False)
 #   opt_parser.add_option("-p",
 #                         dest="paired_end_exists",
 #                         action="store_true",
@@ -289,8 +283,6 @@ def main():
 
     out_dir = options.output_dir
 
-    by_chr = options.by_chr
-
 #    paired_end_exists = options.paired_end_exists
     # Still working on the paired end version
     paired_end_exists = False
@@ -309,63 +301,21 @@ def main():
     forced_jcns = None
     if options.forced_junctions:
         forced_jcns = getForcedJunctions(options.forced_junctions) 
+		
+    # Creating output files.
+    junction_bed_file_name = "%s%s_junctions.bed" % (out_dir, name)
+    junction_bed_file = open(junction_bed_file_name, "w")
+    genome_file_name = "%s%s_genome_reads.txt.gz" % (out_dir, name)
+    genome_file = gzip.open(genome_file_name, "wb")
 
-    chr_names = None
-    
-    samp_dir = None 
-    if by_chr:
-        samp_dir = "%s%s" % (out_dir, name)
-        chr_names_unformatted = getReferences(sam_files)
-       
-        chr_names = [] 
-        for this_chr in chr_names_unformatted:
-            chr_names.append(formatChr(this_chr))
+    # Paired-end reads exist.
+    if paired_end_exists:
+        jcn2qname_file_name = "%s%s_paired_end_junctions2qname.txt" % (out_dir, name)
+        jcn2qname_file = open(jcn2qname_file_name, "w")
 
-        # Make sample sub directory
-        if not os.path.exists(samp_dir):
-            os.mkdir(samp_dir)
-
-        # Now make subdirectory for sample name and chr
-        for this_chr in chr_names:
-            if not os.path.exists("%s/%s_%s" % (samp_dir,
-                                                name, 
-                                                this_chr)):
-                os.mkdir("%s/%s_%s" % (samp_dir, name, this_chr))
-
-    if by_chr:
-        chr2junction_bed_file = {}
-        chr2genome_file = {}
-        for this_chr in chr_names:
-            junction_bed_file_name = "%s/%s_%s/%s_%s_junctions.bed" % (samp_dir,
-                                                                         name,
-                                                                         this_chr,
-                                                                         name,
-                                                                         this_chr) 
-            chr2junction_bed_file[this_chr] = open(junction_bed_file_name, "w")
-
-            genome_file_name = "%s/%s_%s/%s_%s_genome_reads.txt.gz" % (samp_dir,
-                                                                         name,
-                                                                         this_chr,
-                                                                         name,
-                                                                         this_chr)
-            chr2genome_file[this_chr] = gzip.open(genome_file_name, "wb")
-
-            
-    else:	
-        # Creating output files.
-        junction_bed_file_name = "%s%s_junctions.bed" % (out_dir, name)
-        junction_bed_file = open(junction_bed_file_name, "w")
-        genome_file_name = "%s%s_genome_reads.txt.gz" % (out_dir, name)
-        genome_file = gzip.open(genome_file_name, "wb")
-
-        # Paired-end reads exist.
-        if paired_end_exists:
-            jcn2qname_file_name = "%s%s_paired_end_junctions2qname.txt" % (out_dir, name)
-            jcn2qname_file = open(jcn2qname_file_name, "w")
-
-            paired_end_genome_file_name = "%s%s_paired_end_as_single_genome.txt" % (out_dir, name)
-            paired_end_genome_file = open(paired_end_genome_file_name, "w")
-            
+        paired_end_genome_file_name = "%s%s_paired_end_as_single_genome.txt" % (out_dir, name)
+        paired_end_genome_file = open(paired_end_genome_file_name, "w")
+        
     # Creating names of files for intron/exon junction counts.
 #   ie_coord_filename = "%s%s_intron_exon_junction_coords.out" % (out_dir, name)
 #   ie_read_assoc_filename = "%s%s_intron_exon_junction_coords_w_read.out" % (out_dir, name)
@@ -413,7 +363,8 @@ def main():
             if chr == "*":
                 continue
 
-            chr = formatChr(chr)
+            if not chr.startswith("chr"):
+                chr = "chr" + chr
 
             chr_start = int(sam_elems[3])
             
@@ -481,15 +432,9 @@ def main():
                     if isPairedRead(flag):
                         paired_end_genome_file.write(genome_line)
                     else:
-                        if by_chr:
-                            chr2genome_file[chr].write(genome_line)
-                        else:
-                            genome_file.write(genome_line)
-                else:
-                    if by_chr:
-                        chr2genome_file[chr].write(genome_line)
-                    else:
                         genome_file.write(genome_line)
+                else:
+                    genome_file.write(genome_line)
 
             else: # A JUNCTION READ 
                 n_count = cigar.count("N")
@@ -610,24 +555,14 @@ def main():
                 
 
     # Close the genome file:
-    if by_chr:
-        for this_chr in chr2genome_file:
-            chr2genome_file[this_chr].close()
-    else:
-        genome_file.close()
+    genome_file.close()
     if paired_end_exists:
         paired_end_genome_file.close()
 
     # Done processing all SAM lines, now make junction BED file
     print "Making Junction BED File"
-    if by_chr:
-        for this_chr in chr_names:
-            bed_header = "track name=\"%s_%s_jcn_counts\" itemRgb=\"On\" useScore=1\n" % (name, this_chr)
-            chr2junction_bed_file[this_chr].write(bed_header)
-    else:
-        bed_header = "track name=\"%s_jcn_counts\" itemRgb=\"On\" useScore=1\n" % name
-        junction_bed_file.write(bed_header)
-
+    bed_header = "track name=\"%s_jcn_counts\" itemRgb=\"On\" useScore=1\n" % name
+    junction_bed_file.write(bed_header)
     confident_jcns = set([])
     for jcn_str in jcn2JcnInfo:
         if isConfidentJunction(jcn2JcnInfo[jcn_str].block_list, 
@@ -660,16 +595,9 @@ def main():
                                                                                       repr(jcn2JcnInfo[jcn_str].longest_second_block)]),
                                                                             ",".join(["0",repr(jcn2JcnInfo[jcn_str].second_block_start)]))
 
-            if by_chr:
-                chr2junction_bed_file[jcn2JcnInfo[jcn_str].chr].write(bed_line)
-            else:
-                junction_bed_file.write(bed_line)
+            junction_bed_file.write(bed_line)
 
-    if by_chr:
-        for this_chr in chr2junction_bed_file:
-            chr2junction_bed_file[this_chr].close()
-    else:
-        junction_bed_file.close()
+    junction_bed_file.close()
 
     # Print out junction to read file for paired end reads
     if paired_end_exists:
@@ -753,11 +681,6 @@ def convertFlag(flag):
         return "-"
     else:
         return "+"
-
-def formatChr(chr):
-    if not chr.startswith("chr"):
-        chr = "chr" + chr
-    return chr
             
 def formatLine(line):
     line = line.replace("\r","")
@@ -811,13 +734,6 @@ def getPos2Count(blocklist):
             pos2count[block] = 1
 
     return pos2count
-
-def getReferences(sam_files):
-    reference_set = set([])
-    for sam_file in sam_files:
-        reference_set.update(set(sam_file.references))
-
-    return reference_set
 
 def getShannonIndex(pos2countDict, totalCount):
     """

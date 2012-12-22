@@ -12,9 +12,11 @@
 import sys
 import optparse 
 import os
+import pdb
 
 from subprocess import Popen
 from helperFunctions import runCmd
+from getASEventReadCounts import convertCoordStr
 #############
 # CONSTANTS #
 #############
@@ -185,7 +187,7 @@ def getJunctionStrs(bed_file):
         intron_start = chrStart + blocks[0] + 1
         intron_end = chrStart + block_starts[1]
 
-        jcn_str = "%s_%d_%d" % (chr, intron_start, intron_end)
+        jcn_str = "%s:%d-%d" % (chr, intron_start, intron_end)
 
         jcn2strand[jcn_str] = strand
 
@@ -198,7 +200,7 @@ def parse_jcn_str(jcn_str):
         (chr, chrStart, chrEnd, strand, blockLens,
          secondBlockStart) = 
     """
-    (chr, intron_start_str, intron_end_str) = jcn_str.split("_")
+    (chr, intron_start_str, intron_end_str) = convertCoordStr(jcn_str)
 
     intron_start = int(intron_start_str)
     intron_end = int(intron_end_str)
