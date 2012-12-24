@@ -104,25 +104,25 @@ def main():
                                   has to have in order to be considered
                                   confident. Default=%s""" % DEF_CONFIDENCE,
                           default=DEF_CONFIDENCE)
-    opt_parser.add_option("--single",
-                          dest="single_reads",
-                          action="store_true",
-                          help="""Flag to indicate that there are single reads.
-                                  If no flag is given, it defaults to single
-                                  reads.""",
-                          default=False)
-    opt_parser.add_option("--paired",
-                          dest="paired_reads",
-                          action="store_true",
-                          help="""Flag to indicate that there are paired-end
-                                  reads.""",
-                          default=False)
-    opt_parser.add_option("--mixed",
-                          dest="mixed_reads",
-                          action="store_true",
-                          help="""Flag to indicate that there are both paired-end
-                                  and single reads.""",
-                          default=False)
+#   opt_parser.add_option("--single",
+#                         dest="single_reads",
+#                         action="store_true",
+#                         help="""Flag to indicate that there are single reads.
+#                                 If no flag is given, it defaults to single
+#                                 reads.""",
+#                         default=False)
+#   opt_parser.add_option("--paired",
+#                         dest="paired_reads",
+#                         action="store_true",
+#                         help="""Flag to indicate that there are paired-end
+#                                 reads.""",
+#                         default=False)
+#   opt_parser.add_option("--mixed",
+#                         dest="mixed_reads",
+#                         action="store_true",
+#                         help="""Flag to indicate that there are both paired-end
+#                                 and single reads.""",
+#                         default=False)
 
 
     (options, args) = opt_parser.parse_args()
@@ -141,16 +141,19 @@ def main():
     confidence_score = options.confidence_score 
     samp = options.name
 
-    single_reads = options.single_reads
-    paired_reads = options.paired_reads
-    mixed_reads = options.mixed_reads
+    single_reads = True
+    paired_reads = False
+    mixed_reads = False
+#   single_reads = options.single_reads
+#   paired_reads = options.paired_reads
+#   mixed_reads = options.mixed_reads
 
-    if mixed_reads:
-        single_reads = True
-        paired_reads = True
-    elif ((not mixed_reads) and (not paired_reads) and
-          (not single_reads)):
-        single_reads = True
+#   if mixed_reads:
+#       single_reads = True
+#       paired_reads = True
+#   elif ((not mixed_reads) and (not paired_reads) and
+#         (not single_reads)):
+#       single_reads = True
 
 
     tmp_jcn_file = options.tmp_jcn_file
