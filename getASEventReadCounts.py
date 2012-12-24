@@ -1226,6 +1226,9 @@ def updateCounts2AltDonorAccept(file_out_str,
                                                   exclusion_raw_list,
                                                   jcn_incl_raw)
 
+        # Reset values of total_ordered_lenNorm_list
+        for i in range(len(total_ordered_lenNorm_list)):
+            total_ordered_lenNorm_list[i] = 0
 
         if jcnOnly:
             incl_raw = jcn_incl_raw
@@ -1337,7 +1340,7 @@ def updateCounts2AltDonorAccept(file_out_str,
             # When the longest intron is the "inclusion" isoform, all other
             # counts are added to the exclusion counts
             if ordered_pos.index(incl_start) == 0:
-                for i in range(len(ie_isoform_cts1)):
+                for i in range(len(ie_isoform_cts2)):
                     this_ie_ct_raw = ie_isoform_cts2[i]
                     this_ie_ct_lenNorm = normalizeByLen(ie_isoform_cts2[i],
                                                  isoform_lengths[i+1])
@@ -1440,8 +1443,7 @@ def updateCounts2AltDonorAccept(file_out_str,
                     excl_lenNorm += this_exon_ct_lenNorm
             else:
                 for i in range(len(exonic_isoform_cts2)):
-                    this_exon_ct_raw = normalizeByLen(exonic_isoform_cts2[i],
-                                                   isoform_lengths[i+1])
+                    this_exon_ct_raw = exonic_isoform_cts2[i]
                     this_exon_ct_lenNorm = normalizeByLen(exonic_isoform_cts2[i],
                                                    isoform_lengths[i+1])
 
@@ -1469,8 +1471,7 @@ def updateCounts2AltDonorAccept(file_out_str,
                     excl_lenNorm += this_exon_ct_lenNorm
             else:
                 for i in range(len(exonic_isoform_cts2)):
-                    this_exon_ct_raw = normalizeByLen(exonic_isoform_cts2[i],
-                                                   isoform_lengths[i])            
+                    this_exon_ct_raw = exonic_isoform_cts2[i]
                     this_exon_ct_lenNorm = normalizeByLen(exonic_isoform_cts2[i],
                                                    isoform_lengths[i])            
 
@@ -1894,10 +1895,6 @@ def updateCounts2all_as_events(file_str,
         incl_exons = line_list[8]
 
         const_exons = line_list[10]
-
-        if incl_exons == "chr7_74133198_74133260":
-            pdb.set_trace()
-    
 
         (excl_ct_str_samp1, excl_ct_str_samp2,
          sum_excl_ct_samp1, sum_excl_ct_samp2) = getCoordCounts4all_as_events(excl_exons, 
@@ -2504,7 +2501,9 @@ def checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
     
 
 def convertCoordStr(coord_str):
-    chr, start_str, end_str = coord_str.split("_")
+#    chr, start_str, end_str = coord_str.split("_")
+    chr, start_end = coord_str.split(":")
+    start, end = start_end.split("-")
 
     return (chr, int(start_str), int(end_str))
 
@@ -4489,6 +4488,7 @@ def printAlternativeDonorsAcceptors(db,
                
                             ie_jcn = "%s_%d_%d" % (chr, ordered_pos[i] - 1,
                                                    ordered_pos[i]) 
+                            ie_jcns.append(ie_jcn)
                           
                             ie_jcn_raw = 0
 #                            ie_jcn_ct2 = 0
@@ -4543,10 +4543,13 @@ def printAlternativeDonorsAcceptors(db,
                                                                  chr,
                                                                  ordered_pos)
 
+                        inclusion_region = ";".join(inclusion_regions)
+
                         if printExonCoord:
-                            out_str += "\t%s" % ";".join(inclusion_regions)
+                            out_str += "\t%s" % inclusion_region
                             for incl_reg in inclusion_regions:
                                 exon_coords.add(convertCoordStr(incl_reg))
+
 
                         # Add an additional constitutive region
                         const_str = findAdjacentSharedRegion(chr, strand, annotated_exons_by_strand, longest_start - 1, "P")
@@ -4630,7 +4633,7 @@ def printAlternativeDonorsAcceptors(db,
                         inclusion_str = this_distal_jcn
 
                     const_str = ";".join(const_regions)
-
+    
                     out_str= getAllEventStr(n_or_k, type, gene_name, chr, strand, 
                                              ";".join(exclusion_str_list),
                                              inclusion_str,
@@ -4907,6 +4910,7 @@ def printAlternativeDonorsAcceptors(db,
 
                             ie_jcn = "%s_%d_%d" % (chr, ordered_pos[i],
                                                    ordered_pos[i] + 1)
+                            ie_jcns.append(ie_jcn)
 
                             ie_jcn_raw = 0
 
@@ -4954,8 +4958,11 @@ def printAlternativeDonorsAcceptors(db,
                         inclusion_regions = breakInclusionRegion("alt_end",
                                                                  chr,
                                                                  ordered_pos)
+
+                        inclusion_region = ";".join(inclusion_regions)
+
                         if printExonCoord:
-                            out_str += "\t%s" % ";".join(inclusion_regions)
+                            out_str += "\t%s" % inclusion_region
                
                             for incl_reg in inclusion_regions: 
                                 exon_coords.add(convertCoordStr(incl_reg))
