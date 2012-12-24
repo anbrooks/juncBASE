@@ -2503,7 +2503,7 @@ def checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
 def convertCoordStr(coord_str):
 #    chr, start_str, end_str = coord_str.split("_")
     chr, start_end = coord_str.split(":")
-    start, end = start_end.split("-")
+    start_str, end_str = start_end.split("-")
 
     return (chr, int(start_str), int(end_str))
 
