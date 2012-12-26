@@ -179,7 +179,7 @@ def main():
             cmd += "-n %s_%s " % (sample_dir, this_chr)
             cmd += "-t %s/tmp_%s_preProcess_getASEventReadCounts_step2.bed " % (input_dir,
                                                                                 this_chr)
-            cmd += "--single --min_overhang %d" % options.min_overhang
+            cmd += "--min_overhang %d" % options.min_overhang
 
             if num_processes:
                 if ctr % num_processes == 0:

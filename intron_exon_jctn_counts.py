@@ -15,6 +15,7 @@ import pdb
 import random
 
 from helperFunctions import runCmd,updateDictOfLists
+from getASEventReadCounts import convertCoordStr
 #############
 # CONSTANTS #
 #############
@@ -197,7 +198,7 @@ def main():
         if chr.startswith("chr"):
             chr = chr.replace("chr", "")
 
-        intron_coord_str = "%s_%s_%s" % (chr, start_str, end_str)
+        intron_coord_str = "%s:%s-%s" % (chr, start_str, end_str)
 
         if intron_coord_str not in intron_dict:
             intron_dict[intron_coord_str] = {"left": {},
@@ -290,14 +291,15 @@ def main():
     # Print output
     confident_ie_set = set([])
     for intron_str in intron_dict:
-        chr, intron_start_str, intron_end_str = intron_str.split("_")
-        intron_start = int(intron_start_str)
-        intron_end = int(intron_end_str) 
+#       chr, intron_start_str, intron_end_str = intron_str.split("_")
+#       intron_start = int(intron_start_str)
+#       intron_end = int(intron_end_str) 
+        chr, intron_start, intron_end = convertCoordStr(intron_str)
 
         # Get left_counts
         if len(intron_dict[intron_str]["left"]) >= offsets:
             left_count = getTotalCounts(intron_dict[intron_str]["left"])
-            confident_ie = "%s_%d_%d" % (chr, intron_start - 1, intron_start)
+            confident_ie = "%s:%d-%d" % (chr, intron_start - 1, intron_start)
             confident_ie_set.add(confident_ie)
         else:
             left_count = 0
@@ -305,7 +307,7 @@ def main():
         # Get right counts
         if len(intron_dict[intron_str]["right"]) >= offsets:
             right_count = getTotalCounts(intron_dict[intron_str]["right"])
-            confident_ie = "%s_%d_%d" % (chr, intron_end, intron_end + 1)
+            confident_ie = "%s:%d-%d" % (chr, intron_end, intron_end + 1)
             confident_ie_set.add(confident_ie)
         else:
             right_count = 0
@@ -355,15 +357,17 @@ def getReadStartEnd(read_str):
     """
     Returns the start and end position
     """
-    elems = read_str.split("_")
+#    elems = read_str.split("_")
+    elems = convertCoordStr(read_str)
 
-    return int(elems[1]), int(elems[2])
+    return elems[1], elems[2]
 
 def getRegionCoord(region_coord_str):
-    region_coord_str_elems = region_coord_str.split("_")
-    region_coord = (region_coord_str_elems[0],
-                    int(region_coord_str_elems[1]),    
-                    int(region_coord_str_elems[2]))
+    region_coord = convertCoordStr(region_coord_str)
+#   region_coord_str_elems = region_coord_str.split("_")
+#   region_coord = (region_coord_str_elems[0],
+#                   int(region_coord_str_elems[1]),    
+#                   int(region_coord_str_elems[2]))
 
     return region_coord
 
