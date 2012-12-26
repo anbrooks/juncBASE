@@ -1199,7 +1199,8 @@ def updateCounts2AltDonorAccept(file_out_str,
         incl_add_coord = line_list[-1]
 
         # Find all inclusion regions
-        incl_junction = "_".join([line_list[3], line_list[5], line_list[6]])
+#        incl_junction = .join([line_list[3], line_list[5], line_list[6]])
+        incl_junction = formatCoordStr(line_list[3], line_list[5], line_list[6])
 
         incl_start = int(line_list[5])
         incl_end = int(line_list[6]) 
@@ -2501,8 +2502,11 @@ def checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
     
 
 def convertCoordStr(coord_str):
-#    chr, start_str, end_str = coord_str.split("_")
-    chr, start_end = coord_str.split(":")
+#    chr, start_str, end_str = coord_str.split()
+    try:
+        chr, start_end = coord_str.split(":")
+    except:
+        pdb.set_trace()
     start_str, end_str = start_end.split("-")
 
     return (chr, int(start_str), int(end_str))
@@ -2777,6 +2781,9 @@ def formatChr(chr):
         return "chr" + chr
     
     return chr
+
+def formatCoordStr(chr, start, end):
+    return "%s:%d-%d" % (chr, int(start), int(end))
 
 def formatLine(line):
     line = line.strip()
@@ -3289,10 +3296,11 @@ def getExonDistanceDifference(exon_str_list):
     shortest_exon_str = ""
 
     for exon_str in exon_str_list:
-        chr, start_str, end_str = exon_str.split("_")
+        chr, start, end = convertCoordStr(exon_str)
+#       chr, start_str, end_str = exon_str.split()
 
-        start = int(start_str)
-        end = int(end_str)
+#       start = int(start_str)
+#       end = int(end_str)
         
         exon_len = end - start + 1
 
@@ -3310,16 +3318,18 @@ def getInclusionPortion(inclusion_exon, other_exon_list):
     Input is an inclusion exon, and a list of other related exons.
     Returns inclusion_start, inclusion_end
     """
-    chr, inclusion_start_str, inclusion_end_str = inclusion_exon.split("_")
+    chr, inclusion_start, inclusion_end = convertCoordStr(inclusion_exon)
+#   chr, inclusion_start_str, inclusion_end_str = inclusion_exon.split()
 
-    inclusion_start = int(inclusion_start_str)
-    inclusion_end = int(inclusion_end_str)
+#   inclusion_start = int(inclusion_start_str)
+#   inclusion_end = int(inclusion_end_str)
 
     for exon_str in other_exon_list:
-        chr, other_start_str, other_end_str = exon_str.split("_")
-   
-        other_start = int(other_start_str)
-        other_end = int(other_end_str) 
+        chr, other_start_str, other_end_str = convertCoordStr(exon_str)
+#       chr, other_start_str, other_end_str = exon_str.split)
+#  
+#       other_start = int(other_start_str)
+#       other_end = int(other_end_str) 
    
         if inclusion_start < other_end < inclusion_end: 
             inclusion_start = other_end + 1
@@ -3750,10 +3760,11 @@ def hasOtherOverlappingGene(annotated_genes, alt_polyA_dict, chr, sgid, anchor):
     dict_key = (chr, sgid, anchor) 
    
     for exon_str in alt_polyA_dict[dict_key]:
-        exon_chr, start_str, end_str = exon_str.split("_") 
+        exon_chr, start_str, end_str = convertCoordStr(exon_str)
+#       exon_chr, start_str, end_str = exon_str.split() 
 
-        start = int(start_str)
-        end = int(end_str)
+#       start = int(start_str)
+#       end = int(end_str)
 
         if start < left_most_coord:
             left_most_coord = start
@@ -3922,10 +3933,14 @@ def parse_qnamefile(region2qname_file_name):
 
         lineList = line.split("\t")
 
-        region_list = lineList[0].split("_")
+#        region_list = lineList[0].split()
+        region_list = list(convertCoordStr(lineList[0]))
         region_list[0] = formatChr(region_list[0])
 
-        region = "_".join(region_list)
+#        region = .join(region_list)
+        region = "%s:%d-%d" % (region_list[0],
+                               region_list[1],
+                               region_list[2])
 
         if region in region2qname2count:
             # Debugging...this shouldn't happen
@@ -3985,9 +4000,11 @@ def parseIEJcnFiles(ie1_file, ie2_file):
 
         jcn_str, left_count_str, right_count_str = line.split("\t")
 
-        chr, start, end = jcn_str.split("_")
+#        chr, start, end = jcn_str.split()
+        (chr, start, end) = convertCoordStr(jcn_str)
         chr = formatChr(chr)
-        jcn_str = "_".join([chr, start,end])
+#        jcn_str = .join([chr, start,end])
+        jcn_str = formatCoordStr(chr, start, end)
         
         left_count = int(left_count_str)
         right_count = int(right_count_str) 
@@ -4000,9 +4017,11 @@ def parseIEJcnFiles(ie1_file, ie2_file):
 
         jcn_str, left_count_str, right_count_str = line.split("\t")
 
-        chr, start, end = jcn_str.split("_")
+#        chr, start, end = jcn_str.split()
+        chr, start, end = convertCoordStr(jcn_str)
         chr = formatChr(chr)
-        jcn_str = "_".join([chr,start,end])
+#        jcn_str = .join([chr,start,end])
+        jcn_str = formatCoordStr(chr, start, end)
 
         left_count = int(left_count_str)
         right_count = int(right_count_str)
@@ -4051,7 +4070,7 @@ def parseJcns(jcn_file1, jcn_file2, genome_file, disambiguate_jcn_strand):
         # Initializing count dictionary
         jcn_count_dict[coord_str] = [int(count), 0]
 
-        (chr, start, end) = coord_str.split("_")
+        (chr, start, end) = convertCoordStr(coord_str)
 
         chr = formatChr(chr)
 
@@ -4095,7 +4114,7 @@ def parseJcns(jcn_file1, jcn_file2, genome_file, disambiguate_jcn_strand):
         else:
             jcn_count_dict[coord_str] = [0, int(count)]
             
-            (chr, start, end) = coord_str.split("_")
+            (chr, start, end) = convertCoordStr(coord_str)
 
             chr = formatChr(chr)
 
@@ -4153,11 +4172,15 @@ def parseReadAssocFile(paired_read_w_coord_file_name):
         line = formatLine(line)
         lineList = line.split("\t")
 
-        coord_comp = lineList[-1].split("_")
+#        coord_comp = lineList[-1].split()
+        coord_comp = convertCoordStr(lineList[-1])
 
         coord_comp[0] = formatChr(coord_comp[0])
 
-        coord = "_".join(coord_comp)
+#        coord = .join(coord_comp)
+        coord = formatCoordStr(coord_comp[0],
+                               coord_comp[1],
+                               coord_comp[2])
 
         qname = lineList[0]
 
@@ -5180,9 +5203,10 @@ def printAlternativePolyA(db, txt_db,
                                             incl_file2_count) 
 
            
-            exon_chr, exon_start, exon_end = exon_str.split("_") 
-            gene_name = inferGeneName(annotated_genes_by_strand, chr, int(exon_start),
-                        int(exon_end), ".")
+#            exon_chr, exon_start, exon_end = convertCoordStr(exon_str.split(
+            exon_chr, exon_start, exon_end = convertCoordStr(exon_str)
+            gene_name = inferGeneName(annotated_genes_by_strand, chr, exon_start,
+                        exon_end, ".")
 
 
             if norm1:
@@ -5279,17 +5303,15 @@ def printCassetteExons(db,
                         for greater_start in all_coord_end2start[chr][end]:
                             for left_end in possible_left_ends:
                                 if greater_start > left_end:
-                                    excl_str = chr + "_" + repr(start) +\
-                                               "_" + repr(end)
+                                    excl_str = formatCoordStr(chr, start, end)
                                     strand = updateStrand(strand,
                                                           all_jcn2strand[excl_str])
-                                    left_str = chr + "_" + repr(start) +\
-                                               "_" + repr(left_end)
+                                    left_str = formatCoordStr(chr, start, left_end)
                                     strand = updateStrand(strand,
                                                           all_jcn2strand[left_str])
-                                    right_str = chr + "_" +\
-                                                repr(greater_start) +\
-                                               "_" + repr(end)
+                                    right_str = formatCoordStr(chr,
+                                                               greater_start,
+                                                               end)
                                     strand = updateStrand(strand,
                                                           all_jcn2strand[right_str])
 
@@ -6983,8 +7005,8 @@ def translateInput(bed_line):
 
     if not chr.startswith("chr"):
         chr = "chr" + chr
-    if "_" in chr:
-        chr = chr.replace("_","-")
+#   if "" in chr:
+#       chr = chr.replace("","-")
 
     chromStart = int(input_list[1])
 
