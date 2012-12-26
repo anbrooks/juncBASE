@@ -1058,7 +1058,7 @@ def find_AFE_ALE_clusters(events_dictList,
                 if right_most_start == -1 or left_most_end < right_most_start:
                     events_dictList[0]["jcn2exon_str"][longest_jcn] = "None"
                 else:
-                    events_dictList[0]["jcn2exon_str"][longest_jcn] = "%s_%d_%d" % (chr, 
+                    events_dictList[0]["jcn2exon_str"][longest_jcn] = formatCoordStr(chr, 
                                                                                      right_most_start,
                                                                                      left_most_end)
     else: # Need to remove existing dictionary at first position if there are
@@ -1258,9 +1258,9 @@ def updateCounts2AltDonorAccept(file_out_str,
 
         if alt_start_or_end == "alt_start":
             for i in range(len(ordered_pos)-1):
-                intron = "%s_%d_%d" % (chr, ordered_pos[i], incl_end)
+                intron = formatCoordStr(chr, ordered_pos[i], incl_end)
            
-                ie_jcn = "%s_%d_%d" % (chr, ordered_pos[i] - 1,
+                ie_jcn = formatCoordStr(chr, ordered_pos[i] - 1,
                                        ordered_pos[i]) 
 
                 ie_jcn_ct_raw = 0
@@ -1277,9 +1277,9 @@ def updateCounts2AltDonorAccept(file_out_str,
 
         else: # alt_end
             for i in range(1,len(ordered_pos)):
-                intron = "%s_%d_%d" % (chr, incl_start, ordered_pos[i])
+                intron = formatCoordStr(chr, incl_start, ordered_pos[i])
 
-                ie_jcn = "%s_%d_%d" % (chr, ordered_pos[i],
+                ie_jcn = formatCoordStr(chr, ordered_pos[i],
                                        ordered_pos[i] + 1)
 
                 ie_jcn_ct_raw = 0
@@ -2018,9 +2018,9 @@ def updateCounts2MutuallyExclusive(me_out_str,
         upstrm_jcn_start = int(line_list[5])
         dwnstrm_jcn_end = int(line_list[6])
 
-        first_incl_jcn = "%s_%d_%d" % (chr, upstrm_jcn_start, 
+        first_incl_jcn = formatCoordStr(chr, upstrm_jcn_start, 
                                             incl_exon_start - 1)
-        second_incl_jcn = "%s_%d_%d" % (chr, incl_exon_end + 1,
+        second_incl_jcn = formatCoordStr(chr, incl_exon_end + 1,
                                         dwnstrm_jcn_end)
         incl_jcns = [first_incl_jcn, second_incl_jcn]
         
@@ -2033,9 +2033,9 @@ def updateCounts2MutuallyExclusive(me_out_str,
         excl_jcns = []
         for excl_add_coord in excl_add_coord_list:
             chr, excl_exon_start, excl_exon_end = convertCoordStr(excl_add_coord)
-            first_excl_jcn = "%s_%d_%d" % (chr, upstrm_jcn_start,
+            first_excl_jcn = formatCoordStr(chr, upstrm_jcn_start,
                                            excl_exon_start - 1)
-            second_excl_jcn = "%s_%d_%d" % (chr, excl_exon_end + 1,
+            second_excl_jcn = formatCoordStr(chr, excl_exon_end + 1,
                                             dwnstrm_jcn_end)
 
             excl_jcns.append(first_excl_jcn)
@@ -2152,7 +2152,7 @@ def updateCounts2MultiCassette(mc_out_str,
         # Add the number of jcn sequence to inclusion isoform length
         inclusion_len += (len(incl_jcns) * jcn_seq_len)
         
-        excl_jcn = "%s_%d_%d" % (chr, excl_start, excl_end)
+        excl_jcn = formatCoordStr(chr, excl_start, excl_end)
 
         event_key = (incl_add_coords.replace(",",";"), excl_jcn)
 
@@ -2173,7 +2173,7 @@ def updateCounts2MultiCassette(mc_out_str,
             this_start = incl_jcn_coord[0]
             this_end = incl_jcn_coord[1]
 
-            inferred_exon = "%s_%d_%d" % (chr,
+            inferred_exon = formatCoordStr(chr,
                                           last_end + 1,
                                           this_start - 1)
 
@@ -2267,14 +2267,14 @@ def breakInclusionRegion(alt_start_or_end, chr, ordered_pos):
     last_pos = positions.pop(0)
     if alt_start_or_end == "alt_start":
         for pos in positions:
-            region = "%s_%d_%d" % (chr,
+            region = formatCoordStr(chr,
                                    last_pos,
                                    pos - 1)
             excl_regions.append(region)
             last_pos = pos
     else:
         for pos in positions:
-            region = "%s_%d_%d" % (chr,
+            region = formatCoordStr(chr,
                                    last_pos + 1,
                                    pos)
             excl_regions.append(region)
@@ -2687,9 +2687,9 @@ def findAdjacentSharedRegion(chr, strand, annotated_exon_dict, pos, n_or_p):
         return None
 
     if n_or_p == "N":
-        return "%s_%d_%d" % (chr, pos, region_start_or_end)
+        return formatCoordStr(chr, pos, region_start_or_end)
 
-    return "%s_%d_%d" % (chr, region_start_or_end, pos)
+    return formatCoordStr(chr, region_start_or_end, pos)
 
 
 def findExclSet(prox_excl_jcn, excl_jcns_full):
@@ -2783,7 +2783,14 @@ def formatChr(chr):
     return chr
 
 def formatCoordStr(chr, start, end):
-    return "%s:%d-%d" % (chr, int(start), int(end))
+    try:
+        return "%s:%d-%d" % (chr, start, end)
+    except:
+        pass
+        
+    return "%s:%d-%d" % (chr,int(start), int(end))
+
+    
 
 def formatLine(line):
     line = line.strip()
@@ -3397,7 +3404,7 @@ def getJcnStrandInfo(jcn2strand, genome_file):
         if file_chr in chr2jcns:
             for (chr, start, end) in chr2jcns[file_chr]:
 
-                jcn_str = "%s_%d_%d" % (chr, start, end)
+                jcn_str = formatCoordStr(chr, start, end)
                 intron_seq = chr_seq[start-1:end]
 
                 if intron_seq.startswith("GT") and intron_seq.endswith("AG"):
@@ -3444,9 +3451,9 @@ def getJunctionProportion(chr, isoform_jcn,
     for other_pos in jcn_end_dict[chr][anchor_pos]:
 
         if anchor_type == "start":
-            this_jcn = "%s_%d_%d" % (chr, anchor_pos, other_pos)
+            this_jcn = formatCoordStr(chr, anchor_pos, other_pos)
         else: # anchor_type == end
-            this_jcn = "%s_%d_%d" % (chr, other_pos, anchor_pos)
+            this_jcn = formatCoordStr(chr, other_pos, anchor_pos)
 
         total_ct1 += all_jcn_count_dict[this_jcn][0] + 1 
         total_ct2 += all_jcn_count_dict[this_jcn][1] + 1 
@@ -3487,9 +3494,9 @@ def getJunctionProportion_AFE_ALE(chr, isoform_jcns,
         for other_pos in jcn_end_dict[chr][anchor_pos]:
 
             if anchor_type == "start":
-                this_jcn = "%s_%d_%d" % (chr, anchor_pos, other_pos)
+                this_jcn = formatCoordStr(chr, anchor_pos, other_pos)
             else: # anchor_type == end
-                this_jcn = "%s_%d_%d" % (chr, other_pos, anchor_pos)
+                this_jcn = formatCoordStr(chr, other_pos, anchor_pos)
 
             total_ct1 += all_jcn_count_dict[this_jcn][0] + 1 
             total_ct2 += all_jcn_count_dict[this_jcn][1] + 1 
@@ -3521,8 +3528,8 @@ def getMXE_MCProportion(exon_coord, upstrm_jcn_start, dwnstrm_jcn_end,
     mutually exclusive exon or multi-cassette exon in both samples.
     """
     chr, exon_start, exon_end = convertCoordStr(exon_coord)
-    upstrm_jcn = "%s_%d_%d" % (chr, upstrm_jcn_start, exon_start - 1)
-    dwnstrm_jcn = "%s_%d_%d" % (chr, exon_end + 1, dwnstrm_jcn_end)
+    upstrm_jcn = formatCoordStr(chr, upstrm_jcn_start, exon_start - 1)
+    dwnstrm_jcn = formatCoordStr(chr, exon_end + 1, dwnstrm_jcn_end)
 
     (upstrm_prop1,
      upstrm_prop2) = getJunctionProportion(chr,
@@ -3704,7 +3711,7 @@ def hasAdjExons(chr, exon_dict, start_or_ends, n_or_p):
                         longest_dwnstrm_end = exon_end
 
     if longest_dwnstrm_end != -1:
-        return "%s_%d_%d" % (chr, longest_upstrm_start, longest_dwnstrm_end)
+        return formatCoordStr(chr, longest_upstrm_start, longest_dwnstrm_end)
 
     # Was not returned previously
     return None 
@@ -3791,7 +3798,7 @@ def inferExclusionJunctions(upstrm_jcns, dwnstrm_jcns):
         for dwnstr_jcn in dwnstrm_jcns:
             cnr, dwnstr_start, dwnstr_end = convertCoordStr(dwnstr_jcn)
 
-            excl_jcn = "%s_%d_%d" % (chr, upstr_start, dwnstr_end)
+            excl_jcn = formatCoordStr(chr, upstr_start, dwnstr_end)
             excl_jcns.append(excl_jcn)
    
     return excl_jcns 
@@ -3835,10 +3842,10 @@ def inferIE_junction(incl_junction, excl_junctions):
     chr, excl_start, excl_end = convertCoordStr(getLongestJunction(excl_junctions.split(",")))
 
     if incl_start == excl_start:
-        return "%s_%d_%d" % (chr, excl_end, excl_end + 1)
+        return formatCoordStr(chr, excl_end, excl_end + 1)
     
     # Else the ends are equal
-    return "%s_%d_%d" % (chr, excl_start - 1, excl_start)
+    return formatCoordStr(chr, excl_start - 1, excl_start)
 
 def inferInclusionJunctions(chr, excl_start, excl_end, incl_coord_list):
     coord_list = []
@@ -3854,12 +3861,12 @@ def inferInclusionJunctions(chr, excl_start, excl_end, incl_coord_list):
     
     jcns = []
     for coord in coord_list:
-        this_jcn = "%s_%d_%d" % (chr, prev_start, coord[0] - 1)
+        this_jcn = formatCoordStr(chr, prev_start, coord[0] - 1)
         jcns.append(this_jcn)
         prev_start = coord[1] + 1
 
     # Add last junction
-    last_jcn = "%s_%d_%d" % (chr, prev_start, excl_end)
+    last_jcn = formatCoordStr(chr, prev_start, excl_end)
 
     jcns.append(last_jcn)
 
@@ -3977,7 +3984,7 @@ def parseCoordCounts(mapped_file_name, norm):
 
         chr = formatChr(chr)
 
-        k = "%s_%s_%s" % (chr, start, end)
+        k = formatCoordStr(chr, start, end)
 
         count = int(count_str)
 
@@ -4257,7 +4264,7 @@ def printAlternativeDonorsAcceptors(db,
             strand = None
             onlyNovelIntrons = True
             for start in all_coord_end2start[chr][end]:
-                this_jcn = "%s_%d_%d" % (chr, start, end)
+                this_jcn = formatCoordStr(chr, start, end)
                 strand = updateStrand(strand, all_jcn2strand[this_jcn])
                 if chr in annotated_introns:
                     if (start, end, "+") in annotated_introns[chr]:
@@ -4298,7 +4305,7 @@ def printAlternativeDonorsAcceptors(db,
                                        "P"):
                             event_jcns = []
                             for this_s in all_coord_end2start[chr][end]:
-                                event_jcns.append("%s_%d_%d" % (chr, this_s,
+                                event_jcns.append(formatCoordStr(chr, this_s,
                                                                 end))
 
                             # ad_aa_afe_ale_events list will be updated
@@ -4326,7 +4333,7 @@ def printAlternativeDonorsAcceptors(db,
                                        "P"):
                             event_jcns = []
                             for this_s in all_coord_end2start[chr][end]:
-                                event_jcns.append("%s_%d_%d" % (chr, this_s,
+                                event_jcns.append(formatCoordStr(chr, this_s,
                                                                 end))
 
                             # ad_aa_afe_ale_events list will be updated
@@ -4357,7 +4364,7 @@ def printAlternativeDonorsAcceptors(db,
                     if start < longest_start:
                         longest_start = start
                    
-                    this_distal_jcn = "%s_%d_%d" % (chr,
+                    this_distal_jcn = formatCoordStr(chr,
                                                   start, end) 
                     # Check if it is a novel intron
                     if chr not in annotated_introns:
@@ -4376,7 +4383,7 @@ def printAlternativeDonorsAcceptors(db,
                 # Make parallel count dict {start: (count_raw, count_lenNorm)}
                 par_jcn_count_dict = {}
                 for start in this_all_coord_end2start[chr][end]:
-                    jcn_coord_str = "%s_%d_%d" % (chr, start, end)
+                    jcn_coord_str = formatCoordStr(chr, start, end)
                     if isAltFirstLast:
                         par_jcn_count_dict[start] = event_dict["jcn_cluster_sum"][jcn_coord_str]
                     else:
@@ -4390,7 +4397,7 @@ def printAlternativeDonorsAcceptors(db,
                         if start == longest_start:
                             continue
                 
-                    this_distal_jcn = "%s_%d_%d" % (chr, start, end)
+                    this_distal_jcn = formatCoordStr(chr, start, end)
 
                     exclusion_raw = 0
                     inclusion_raw = 0
@@ -4452,7 +4459,7 @@ def printAlternativeDonorsAcceptors(db,
 #                            inclusion_jcn_ct2 = this_jcn_lenNorm
 
                         else:
-                            excl_intron = "%s_%d_%d" % (chr,par_start,end)
+                            excl_intron = formatCoordStr(chr,par_start,end)
                             if isAltFirstLast:
                                 exclusion_str_list.append(event_dict["jcn2jcn_str"][excl_intron])
                             else:
@@ -4507,9 +4514,9 @@ def printAlternativeDonorsAcceptors(db,
                         # Get all IE junction counts that correspond to all
                         # positions except the last
                         for i in range(len(ordered_pos)-1):
-                            intron = "%s_%d_%d" % (chr, ordered_pos[i], end)
+                            intron = formatCoordStr(chr, ordered_pos[i], end)
                
-                            ie_jcn = "%s_%d_%d" % (chr, ordered_pos[i] - 1,
+                            ie_jcn = formatCoordStr(chr, ordered_pos[i] - 1,
                                                    ordered_pos[i]) 
                             ie_jcns.append(ie_jcn)
                           
@@ -4599,7 +4606,7 @@ def printAlternativeDonorsAcceptors(db,
                             if excl_start == start:
                                 continue
 
-                            this_excl_jcn = "%s_%d_%d" % (chr, excl_start, end)
+                            this_excl_jcn = formatCoordStr(chr, excl_start, end)
                             exon_coord_str = event_dict["jcn2exon_str"][this_excl_jcn]
 
                             if exon_coord_str and exon_coord_str != "None":
@@ -4697,7 +4704,7 @@ def printAlternativeDonorsAcceptors(db,
             strand = None
             onlyNovelIntrons = True
             for end in all_coord_start2end[chr][start]:
-                this_jcn = "%s_%d_%d" % (chr, start, end)
+                this_jcn = formatCoordStr(chr, start, end)
                 strand = updateStrand(strand, all_jcn2strand[this_jcn])
                 if chr in annotated_introns:
                     if (start, end, "+") in annotated_introns[chr]:
@@ -4736,7 +4743,7 @@ def printAlternativeDonorsAcceptors(db,
                                        all_coord_start2end[chr][start], "N"):
                             event_jcns = []
                             for this_e in all_coord_start2end[chr][start]:
-                                event_jcns.append("%s_%d_%d" % (chr, start,
+                                event_jcns.append(formatCoordStr(chr, start,
                                                                 this_e))
         
                             # ad_aa_afe_ale_events list will be updated
@@ -4765,7 +4772,7 @@ def printAlternativeDonorsAcceptors(db,
                                        "N"):
                             event_jcns = []
                             for this_e in all_coord_start2end[chr][start]:
-                                event_jcns.append("%s_%d_%d" % (chr, start,
+                                event_jcns.append(formatCoordStr(chr, start,
                                                                 this_e))
 
                             # ad_aa_afe_ale_events list will be updated
@@ -4796,8 +4803,7 @@ def printAlternativeDonorsAcceptors(db,
                     if end > longest_end:
                         longest_end = end
 
-                    this_distal_jcn = "%s_%d_%d" % (chr,
-                                                    start, end)
+                    this_distal_jcn = formatCoordStr(chr,start, end)
                     
                     # Check if it is a novel intron
                     if chr not in annotated_introns:
@@ -4815,7 +4821,7 @@ def printAlternativeDonorsAcceptors(db,
                 # Make parallel count dict {end: (count_raw, count_lenNorm)}
                 par_jcn_count_dict = {}
                 for end in this_all_coord_start2end[chr][start]:
-                    jcn_coord_str = "%s_%d_%d" % (chr, start, end)
+                    jcn_coord_str = formatCoordStr(chr, start, end)
                     if isAltFirstLast:
                         par_jcn_count_dict[end] = event_dict["jcn_cluster_sum"][jcn_coord_str]
                     else:
@@ -4829,7 +4835,7 @@ def printAlternativeDonorsAcceptors(db,
                         if end == longest_end:
                             continue
 
-                    this_distal_jcn = "%s_%d_%d" % (chr, start, end)
+                    this_distal_jcn = formatCoordStr(chr, start, end)
 
                     exclusion_raw = 0
                     inclusion_raw = 0
@@ -4881,7 +4887,7 @@ def printAlternativeDonorsAcceptors(db,
                             inclusion_jcn_raw = this_incl_raw
 
                         else:
-                            excl_intron = "%s_%d_%d" % (chr, start, par_end)
+                            excl_intron = formatCoordStr(chr, start, par_end)
     
                             if isAltFirstLast:
                                 exclusion_str_list.append(event_dict["jcn2jcn_str"][excl_intron])
@@ -4929,9 +4935,9 @@ def printAlternativeDonorsAcceptors(db,
                         # Get all IE junctions that correspond to all positions
                         # except the first
                         for i in range(1,len(ordered_pos)):
-                            intron = "%s_%d_%d" % (chr, start, ordered_pos[i])
+                            intron = formatCoordStr(chr, start, ordered_pos[i])
 
-                            ie_jcn = "%s_%d_%d" % (chr, ordered_pos[i],
+                            ie_jcn = formatCoordStr(chr, ordered_pos[i],
                                                    ordered_pos[i] + 1)
                             ie_jcns.append(ie_jcn)
 
@@ -5015,7 +5021,7 @@ def printAlternativeDonorsAcceptors(db,
                             if excl_end == end:
                                 continue
 
-                            this_excl_jcn = "%s_%d_%d" % (chr, start, excl_end)
+                            this_excl_jcn = formatCoordStr(chr, start, excl_end)
                             exon_coord_str = event_dict["jcn2exon_str"][this_excl_jcn]
 
                             if exon_coord_str and exon_coord_str != "None":
@@ -5145,10 +5151,10 @@ def printAlternativePolyA(db, txt_db,
 
         if strand == "+":
             updateDictOfLists(alt_polyA_dict, (chr, sgid, start), 
-                              "%s_%d_%d" % (chr, start, end))
+                              formatCoordStr(chr, start, end))
         else:
             updateDictOfLists(alt_polyA_dict, (chr, sgid, end), 
-                              "%s_%d_%d" % (chr, start, end))
+                              formatCoordStr(chr, start, end))
 
     # Now find polyA events and print
     for (chr,sgid,anchor) in alt_polyA_dict:
@@ -5233,18 +5239,18 @@ def printAlternativePolyA(db, txt_db,
                  inclusion_end) = getInclusionPortion(exon_str,
                                                       alt_polyA_dict[(chr,sgid,anchor)])
 
-                inclusion_str = "%s_%d_%d" % (chr, inclusion_start,
+                inclusion_str = formatCoordStr(chr, inclusion_start,
                                               inclusion_end)
                 out_str += "\t%s\t" % inclusion_str
                 exon_coords.add((chr, inclusion_start, inclusion_end))
 
                 if inclusion_start > anchor:
-                    exclusion_str = "%s_%d_%d" % (chr, 
+                    exclusion_str = formatCoordStr(chr, 
                                                   anchor,
                                                   inclusion_start - 1)
                     exon_coords.add((chr, anchor, inclusion_start - 1))
                 else:
-                    exclusion_str = "%s_%d_%d" % (chr,
+                    exclusion_str = formatCoordStr(chr,
                                                   inclusion_end + 1,
                                                   anchor)
                     exon_coords.add((chr, inclusion_end + 1, anchor))
@@ -5413,7 +5419,7 @@ def printCassetteExons(db,
 
         if full_exon_count_dict:
             # Inclusion counts only come from exon counts
-            exon_str = "%s_%d_%d" % (chr, exon_start, exon_end)
+            exon_str = formatCoordStr(chr, exon_start, exon_end)
             exonFound = False
 #           if exon_str in full_exon_count_dict:
 #               exonFound = True
@@ -5561,7 +5567,7 @@ def printCassetteExons(db,
                         incl_lenNorm_count)                                                
 
         if printExonCoord:
-            ce_str = "\t%s_%d_%d" % (chr, exon_start, exon_end)
+            ce_str = "\t%s" % formatCoordStr(chr, exon_start, exon_end)
             out_str += ce_str
             
             exon_coords.add((chr, exon_start, exon_end))
@@ -5581,7 +5587,7 @@ def printCassetteExons(db,
                               ";".join(excl_jcn_strs),
                               ",".join(left_jcn_strs)+ ";" + ",".join(right_jcn_strs), 
                               "",
-                              "%s_%d_%d" % (chr, exon_start, exon_end), 
+                              "%s" % formatCoordStr(chr, exon_start, exon_end), 
                               "",
                               ";".join(const_strs),
                               ";".join(map(repr,excl_jcn_counts_raw)), 
@@ -5624,7 +5630,7 @@ def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exon
 
             for end in coord_start2end[chr][start]:
 
-                jcn_str = "%s_%d_%d" % (chr, start, end)
+                jcn_str = formatCoordStr(chr, start, end)
                 jcn_str_list.append(jcn_str)
         
                 strand = updateStrand(strand, jcn2strand[jcn_str])
@@ -5720,7 +5726,7 @@ def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exon
 
             for start in coord_end2start[chr][end]:
 
-                jcn_str = "%s_%d_%d" % (chr, start, end)
+                jcn_str = formatCoordStr(chr, start, end)
                 jcn_str_list.append(jcn_str)
 
                 strand = updateStrand(strand, jcn2strand[jcn_str])
@@ -5849,7 +5855,7 @@ def printMultiCassetteExons(db,
                         # Check for potential internal cassette exons by
                         # looking for internal introns that exist between the
                         # left inclusion end and the right inclusion_start
-                        excl_jcn = "%s_%d_%d" % (chr, 
+                        excl_jcn = formatCoordStr(chr, 
                                                  exclusion_start,
                                                  exclusion_end)
                         strand = None
@@ -5959,7 +5965,7 @@ def printMultiCassetteExons(db,
                             len_of_exons = 0
                             for (exon_start, exon_end) in mc_exon_list:
                                 # Add to exon_strs
-                                exon_str = "%s_%d_%d" % (chr, exon_start, exon_end)
+                                exon_str = formatCoordStr(chr, exon_start, exon_end)
                                 exon_strs.append(exon_str)
                                 len_of_exons += (exon_end - exon_start + 1)
                                 # Add to cassette exon dict
@@ -5983,7 +5989,7 @@ def printMultiCassetteExons(db,
                                                        exclusion_end)])
 
                             # Exclusion_count
-                            excl_jcn_str = "%s_%d_%d" % (chr, exclusion_start,
+                            excl_jcn_str = formatCoordStr(chr, exclusion_start,
                                                          exclusion_end)
                             excl_file_raw_count = all_jcn_count_dict[excl_jcn_str][1]
 
@@ -6034,16 +6040,16 @@ def printMultiCassetteExons(db,
                                 # Inclusion_count
                                 last_start = exclusion_start
                                 last_end = left_inclusion_end
-                                last_jcn = "%s_%d_%d" % (chr, last_start, last_end)
+                                last_jcn = formatCoordStr(chr, last_start, last_end)
 
                                 incl_file_raw_count = 0
 
                                 for intron_coord in intron_list:
                                     this_start = intron_coord[0]
                                     this_end = intron_coord[1]
-                                    this_jcn = "%s_%d_%d" % (chr, this_start, this_end)
+                                    this_jcn = formatCoordStr(chr, this_start, this_end)
 
-                                    inferred_exon = "%s_%d_%d" % (chr,
+                                    inferred_exon = formatCoordStr(chr,
                                                                   last_end + 1,
                                                                   this_start - 1)
 
@@ -6064,7 +6070,7 @@ def printMultiCassetteExons(db,
 #                                       upstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
 #                                                                                          other_start,
 #                                                                                          this_end)][0]
-                                        upstrm_jcn_sum_raw += all_jcn_count_dict["%s_%d_%d" % (chr,
+                                        upstrm_jcn_sum_raw += all_jcn_count_dict[formatCoordStr(chr,
                                                                                            other_start,
                                                                                            this_end)][1]
                             
@@ -6090,7 +6096,7 @@ def printMultiCassetteExons(db,
 
 
                                 # Now add junctions from last exon
-                                inferred_exon = "%s_%d_%d" % (chr, last_end + 1,
+                                inferred_exon = formatCoordStr(chr, last_end + 1,
                                                               right_inclusion_start - 1)
                                                            
                                 (mc_proportion1,
@@ -6101,9 +6107,9 @@ def printMultiCassetteExons(db,
                                                                        all_coord_start2end,
                                                                        all_coord_end2start)
 
-                                upstrm_jcn = "%s_%d_%d" % (chr, last_start,
+                                upstrm_jcn = formatCoordStr(chr, last_start,
                                                            last_end)
-                                dwnstrm_jcn = "%s_%d_%d" % (chr, right_inclusion_start,
+                                dwnstrm_jcn = formatCoordStr(chr, right_inclusion_start,
                                                             exclusion_end)
 
                                 # proportions used to estimate junction count for
@@ -6116,14 +6122,14 @@ def printMultiCassetteExons(db,
 #                                   upstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
 #                                                                                      other_start,
 #                                                                                      last_end)][0]
-                                    upstrm_jcn_sum_raw += all_jcn_count_dict["%s_%d_%d" % (chr,
+                                    upstrm_jcn_sum_raw += all_jcn_count_dict[formatCoordStr(chr,
                                                                                        other_start,
                                                                                        last_end)][1]
                                 for other_end in all_coord_start2end[chr][right_inclusion_start]:
 #                                   dwnstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
 #                                                                                        right_inclusion_start,
 #                                                                                        other_end)][0]
-                                    dwnstrm_jcn_sum_raw += all_jcn_count_dict["%s_%d_%d" % (chr,
+                                    dwnstrm_jcn_sum_raw += all_jcn_count_dict[formatCoordStr(chr,
                                                                                          right_inclusion_start,
                                                                                          other_end)][1]
 
@@ -6318,7 +6324,7 @@ def printMutuallyExclusive(db,
                     last_end = list_copy[0][1]
                     for (exon_start, exon_end) in list_copy[1:]:
                         # Infer strand information
-                        jcn = "%s_%d_%d" % (chr, upstream_start, exon_start - 1)
+                        jcn = formatCoordStr(chr, upstream_start, exon_start - 1)
                         strand = updateStrand(strand, all_jcn2strand[jcn])
                         intervening_spaces.append((last_end + 1, exon_start - 1))
                         last_end = exon_end
@@ -6361,7 +6367,7 @@ def printMutuallyExclusive(db,
         for (upstream_start, downstream_end) in me_dict4:
             # Infer strand information
             strand = None
-            jcn = "%s_%d_%d" % (chr, upstream_start, 
+            jcn = formatCoordStr(chr, upstream_start, 
                                 me_dict4[(upstream_start, downstream_end)][0][0][0] - 1)  # one of the exon's start -1
 
             strand = updateStrand(strand, all_jcn2strand[jcn])
@@ -6402,14 +6408,14 @@ def printMutuallyExclusive(db,
                 for (exon_start, exon_end) in exon_list:
 
                     # Add to exon_strs
-                    exon_str = "%s_%d_%d" % (chr, exon_start, exon_end)
+                    exon_str = formatCoordStr(chr, exon_start, exon_end)
                     exon_strs.append(exon_str)
 
 
                     # Update strand information for both upstream and
                     # downstream introns
-                    upstr_str = "%s_%d_%d" % (chr, upstream_start, exon_start - 1)
-                    dwnstr_str = "%s_%d_%d" % (chr, exon_end + 1, downstream_end)
+                    upstr_str = formatCoordStr(chr, upstream_start, exon_start - 1)
+                    dwnstr_str = formatCoordStr(chr, exon_end + 1, downstream_end)
 
                     strand = updateStrand(strand, all_jcn2strand[upstr_str])
                     strand = updateStrand(strand, all_jcn2strand[dwnstr_str])
@@ -6434,9 +6440,9 @@ def printMutuallyExclusive(db,
 
                     else: # Just add junction counts
 
-                        left_jcn_str = "%s_%d_%d" % (chr, upstream_start, 
+                        left_jcn_str = formatCoordStr(chr, upstream_start, 
                                                      exon_start - 1)
-                        right_jcn_str = "%s_%d_%d" % (chr, exon_end + 1,
+                        right_jcn_str = formatCoordStr(chr, exon_end + 1,
                                                       downstream_end)
 
                         (mxe_proportion1,
@@ -6454,11 +6460,11 @@ def printMutuallyExclusive(db,
                         dwnstrm_jcn_sum2 = 0
 
                         for this_start in all_coord_end2start[chr][exon_start - 1]:
-                            upstrm_jcn_sum2 += all_jcn_count_dict["%s_%d_%d" % (chr,
+                            upstrm_jcn_sum2 += all_jcn_count_dict[formatCoordStr(chr,
                                                                                this_start,
                                                                                exon_start - 1)][1]
                         for this_end in all_coord_start2end[chr][exon_end + 1]:
-                            dwnstrm_jcn_sum2 += all_jcn_count_dict["%s_%d_%d" % (chr, 
+                            dwnstrm_jcn_sum2 += all_jcn_count_dict[formatCoordStr(chr, 
                                                                                 exon_end + 1,   
                                                                                 this_end)][1]
                                                                             
@@ -7016,7 +7022,7 @@ def translateInput(bed_line):
     intron_start = chromStart + blockSizes[0] + 1
     intron_end = chromStart + blockStarts[1]
 
-    jcn_str = "%s_%d_%d" % (chr, intron_start, intron_end)
+    jcn_str = formatCoordStr(chr, intron_start, intron_end)
 
     strand = input_list[5]
 
