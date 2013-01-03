@@ -174,8 +174,8 @@ def main():
     opt_parser.check_required("-i")
     opt_parser.check_required("--all_psi_output")
     opt_parser.check_required("--mt_correction")
-#   opt_parser.check_required("--sample_set1")
-#   opt_parser.check_required("--sample_set2")
+    opt_parser.check_required("--sample_set1")
+    opt_parser.check_required("--sample_set2")
 
     input_file = open(options.input_file)
     left_input_file_name = options.left_input
@@ -224,13 +224,6 @@ def main():
     if which_test == "t-test":
         which_test = "t.test"
 
-    sample_set1 = getSamples(options.sample_set1)
-    sample_set2 = getSamples(options.sample_set2)
-
-    # The threshold for the number of samples that need to have expressed AS
-    # events in order to consider testing
-    samp_set_thresh1 = float(len(sample_set1)) * PROP_NON_NA
-    samp_set_thresh2 = float(len(sample_set2)) * PROP_NON_NA
 
     idx2sample = {}
 
@@ -264,12 +257,28 @@ def main():
 #               idx2sample[sampleList.index(sample)] = sample
 #           for sample in sample_set2:
 #               idx2sample[sampleList.index(sample)] = sample
+
+            sample_set1 = getSamples(options.sample_set1)
+            sample_set2 = getSamples(options.sample_set2)
+
+            sample_set1_checked = checkSamples(sampleList, sample_set1)
+            sample_set2_checked = checkSamples(sampleList, sample_set2)
+
+            # The threshold for the number of samples that need to have expressed AS
+            # events in order to consider testing
+            samp_set_thresh1 = float(len(sample_set1_checked)) * PROP_NON_NA
+            samp_set_thresh2 = float(len(sample_set2_checked)) * PROP_NON_NA
+
             continue
 
         line_list = line.split("\t")
 
         event = "\t".join(line_list[0:samp_start_idx])
         counts = line_list[samp_start_idx:]
+
+        if event in event2idx:
+            print "Warning: Skipping duplicate event: %s" % event
+            continue
 
         if isGeneric:
             event_type = "generic"
@@ -543,6 +552,19 @@ def belowThreshold(sum_thresh, col_excl, col_incl):
         return True
 
     return False
+
+
+def checkSamples(sampleList, sample_set):
+    checkedSamples = []
+
+    sampleList_set = set(sampleList)
+
+    for samp in sample_set:
+        if samp not in sampleList:
+            print "Warning: Sample in sample set not in data: %s" % samp
+        checkedSamples.append(samp)
+
+    return checkedSamples
 
 def formatDir(i_dir):
     i_dir = os.path.realpath(i_dir)
