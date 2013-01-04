@@ -227,11 +227,15 @@ def main():
 
     idx2sample = {}
 
-    # {event_type:[pval]}
-    event_type2pvals = {}
 
     # {event_type:(set1_medianPSI, set2medianPSI),]}
     event_type2PSI_vals_4_set = {}
+
+    # {event:psi_vals_idx}
+    event2PSI_val_idx = {}
+
+    # {event_type:[pval]}
+    event_type2pvals = {}
 
     # {event::pval_idx}
     event2idx = {}
@@ -333,8 +337,7 @@ def main():
             elif idx2sample[i] in sample_set2:
                 if event2col2psi[event][i] != NA:
                     set2_psis.append(event2col2psi[event][i])
-
-
+    
         if as_only:
             if (float(total_samples - na_count)/total_samples) < PROP_NON_NA:
                 continue 
@@ -349,18 +352,22 @@ def main():
             cur_len = len(event_type2pvals[event_type])
             event_type2pvals[event_type].append(1.0)
             event2idx[event] = cur_len
+            psi_vals_cur_len = len(event_type2PSI_vals_4_set[event_type])
             event_type2PSI_vals_4_set[event_type].append((0.0,0.0))
+            event2PSI_val_idx[event] = psi_vals_cur_len
             continue
-        
+
+        psi_vals_cur_len = len(event_type2PSI_vals_4_set[event_type])
         event_type2PSI_vals_4_set[event_type].append((robjects.r['median'](robjects.FloatVector(set1_psis))[0],
                                                       robjects.r['median'](robjects.FloatVector(set2_psis))[0]))
 
+
+        event2PSI_val_idx[event] = psi_vals_cur_len
 
         # Calculate p-val for intron retention later
         if event_type == "intron_retention":
             continue
 
-        cur_len = len(event_type2pvals[event_type])
 #        cur_len2 = len(event_type2col2pvals[event_type][j])
 
 #           if event in event2pairs2idx:
@@ -374,6 +381,8 @@ def main():
 #               event2col2idx[event] = {j:cur_len2}
 #         
        
+        cur_len = len(event_type2pvals[event_type])
+
         try: 
             raw_pval = robjects.r[which_test](robjects.FloatVector(set1_psis),
                                           robjects.FloatVector(set2_psis))[2][0]
@@ -524,10 +533,11 @@ def main():
             continue
 
         # Add median PSI and delta PSI values
-        outline += "\t%.2f\t%.2f\t%.2f" % (event_type2PSI_vals_4_set[event_type][this_idx][0],
-                                           event_type2PSI_vals_4_set[event_type][this_idx][1],
-                                           event_type2PSI_vals_4_set[event_type][this_idx][1] -
-                                           event_type2PSI_vals_4_set[event_type][this_idx][0])
+        this_psi_vals_idx = event2PSI_val_idx[event_type][event]
+        outline += "\t%.2f\t%.2f\t%.2f" % (event_type2PSI_vals_4_set[event_type][this_psi_vals_idx][0],
+                                           event_type2PSI_vals_4_set[event_type][this_psi_vals_idx][1],
+                                           event_type2PSI_vals_4_set[event_type][this_psi_vals_idx][1] -
+                                           event_type2PSI_vals_4_set[event_type][this_psi_vals_idx][0])
 
         outline += "\t%f\t%f\n" % (event_type2pvals[event_type][this_idx],
                                    event_type2adjusted_pvals[event_type][this_idx])
@@ -562,6 +572,7 @@ def checkSamples(sampleList, sample_set):
     for samp in sample_set:
         if samp not in sampleList:
             print "Warning: Sample in sample set not in data: %s" % samp
+            continue
         checkedSamples.append(samp)
 
     return checkedSamples
