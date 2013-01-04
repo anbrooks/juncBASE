@@ -389,8 +389,8 @@ def main():
     # Now calculate intron retention
     if (not as_only) and (not isGeneric):
         if left_input_file:
-            left_events2counts = getIntronLeftRightCounts(left_input_file)
-            right_events2counts = getIntronLeftRightCounts(right_input_file)
+            left_events2counts = getIntronLeftRightCounts(left_input_file, samp_start_idx)
+            right_events2counts = getIntronLeftRightCounts(right_input_file, samp_start_idx)
         else:
             left_events2counts = {}
             right_events2counts = {}
@@ -604,7 +604,7 @@ def getPSI_sample_sum(excl_incl_ct_str, sum_thresh):
 def getEventType(event):
     return event.split("\t")[1]
     
-def getIntronLeftRightCounts(file):
+def getIntronLeftRightCounts(file, samp_start_idx):
 
     intron_event2counts = {}
     
