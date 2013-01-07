@@ -2505,9 +2505,10 @@ def convertCoordStr(coord_str):
 #    chr, start_str, end_str = coord_str.split()
     try:
         chr, start_end = coord_str.split(":")
+        start_str, end_str = start_end.split("-")
     except:
-        pdb.set_trace()
-    start_str, end_str = start_end.split("-")
+        # Old version of coordinate string
+        chr, start_str, end_str = coord_str.split("_")
 
     return (chr, int(start_str), int(end_str))
 

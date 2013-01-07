@@ -153,12 +153,12 @@ def main():
 #                                isoform length. This will option will specify
 #                                to not normalize by isoform length.""",
 #                         default=False)
-    opt_parser.add_option("--fasta",
-                           dest="genome_file",
-                           type="string",
-                           help="""Contains the genome sequence organized by
-                                   chromosome.""",
-                           default=None)
+#   opt_parser.add_option("--fasta",
+#                          dest="genome_file",
+#                          type="string",
+#                          help="""Contains the genome sequence organized by
+#                                  chromosome.""",
+#                          default=None)
     opt_parser.add_option("-p",
                           dest="num_processes",
                           type="int",
@@ -217,7 +217,7 @@ def main():
     opt_parser.check_required("--txt_db1")
     opt_parser.check_required("--txt_db2")
     opt_parser.check_required("--method")
-    opt_parser.check_required("--fasta")
+#    opt_parser.check_required("--fasta")
     opt_parser.check_required("--jcn_seq_len")
 
     samples = getSampleNames(options.samples)
@@ -330,7 +330,7 @@ def main():
                 cmd += "--txt_db2 %s " % txt_db2
                 cmd += "--method %s " % method
                 cmd += "--jcn_seq_len %d " % jcn_seq_len
-                cmd += "--fasta %s " % genome_file
+#                cmd += "--fasta %s " % genome_file
                 cmd += "--by_chr %s " % chr
 
                 # Now for databases
@@ -413,7 +413,7 @@ def main():
             cmd += "--txt_db2 %s " % txt_db2
             cmd += "--method %s " % method
             cmd += "--jcn_seq_len %d " % jcn_seq_len
-            cmd += "--fasta %s " % genome_file
+#            cmd += "--fasta %s " % genome_file
 
             # Now for databases
             if options.sqlite_db_dir:
