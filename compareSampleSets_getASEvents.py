@@ -17,6 +17,10 @@ import pdb
 import os
 
 import rpy2.robjects as robjects
+import rpy2.robjects.lib.ggplot2 as ggplot2
+from rpy2.robjects.packages import importr
+grdevices = importr('grDevices')
+
 from helperFunctions import updateDictOfLists
 
 r = robjects.r
@@ -26,7 +30,7 @@ robjects.r["options"](warn=-1)
 # CONSTANTS #
 #############
 NA = "NA"
-SIGN_CUTOFF = 0.05
+DEF_SIGN_CUTOFF = 0.05
 DEF_THRESH = 25
 DEF_DPSI_THRESH = 5.0
 
@@ -162,11 +166,24 @@ def main():
                                   Names must be in header columns of input
                                   files.""",
                           default=None)
-#   opt_parser.add_option("--html_out_dir",
-#                         dest="html_out_dir",
-#                         type="string",
-#                         help="Directory to output html report.",
-#                         default=None)
+    opt_parser.add_option("--html_dir",
+                         dest="html_dir",
+                         type="string",
+                         help="""Optional: location to put html output table and
+                                 associated images""",
+                         default=None)
+    opt_parser.add_option("--html_out_sign_thresh",
+                         dest="sign_thresh",
+                         type="float",
+                         help="""Significance threshold of q-value for printed out   
+                                 html_table. DEF=%.2f""" % DEF_SIGN_CUTOFF,
+                         default=DEF_SIGN_CUTOFF)
+    opt_parser.add_option("--image",
+                         dest="image_file_type",
+                         type="string",
+                         help="""Optional: Will create images as pdf instead of
+                                 .png as the default.""",
+                         default="png")
 
     (options, args) = opt_parser.parse_args()
 	
@@ -183,6 +200,22 @@ def main():
     sum_thresh = options.threshold
 
     delta_thresh = options.delta_thresh
+
+    html_out_dir = options.html_dir
+    html_out_table_name = None
+    if html_out_dir:
+        html_out_dir = formatDir(html_out_dir)
+        if not os.path.exists(html_out_dir):
+            os.mkdir(html_out_dir)
+        html_out_table_name = html_out_dir + "/index.html"
+    sign_thresh = options.sign_thresh
+
+    html_out = None
+    if html_out_table_name:
+        html_out = open(html_out_table_name, "w")
+        initiateHTML_table(html_out) 
+
+    image_file_type = options.image_file_type
 
     as_only = options.as_only
     
@@ -203,9 +236,6 @@ def main():
     
     all_psi_output = open(options.all_psi_output, "w")
 
-#   html_out_dir = options.html_out_dir
-#   if html_out_dir:
-#       html_out_dir = formatDir(html_out_dir)
 
     method = options.mt_method
     if method != "BH" and method != "bonferroni":
@@ -253,6 +283,8 @@ def main():
         if line.startswith("#"):
             header = line
             headerList = header.split("\t")
+            if html_out:
+                writeHTMLHeader(html_out, headerList)
             sampleList = headerList[samp_start_idx:]
             # Get sample idx
             for i in range(len(sampleList)):
@@ -338,6 +370,7 @@ def main():
                 if event2col2psi[event][i] != NA:
                     set2_psis.append(event2col2psi[event][i])
     
+
         if as_only:
             if (float(total_samples - na_count)/total_samples) < PROP_NON_NA:
                 continue 
@@ -406,6 +439,11 @@ def main():
 
         for event in left_events2counts:
             if event not in right_events2counts:
+                continue
+
+            # If the event is not in this dictionary, the sum of the left and
+            # right counts did not pass the thresholds.
+            if event not in event2PSI_val_idx:
                 continue
 
             set1_psis_left = []        
@@ -488,6 +526,9 @@ def main():
     event_type2adjusted_pvals = {}
     event_type2col2adjusted_pvals = {}
 
+    # Used for printing boxplots
+    data_counter = 0
+
     for event_type in event_type2pvals:
         if as_only:
             event_type2adjusted_pvals[event_type] = list(event_type2pvals[event_type])
@@ -533,7 +574,7 @@ def main():
             continue
 
         # Add median PSI and delta PSI values
-        this_psi_vals_idx = event2PSI_val_idx[event_type][event]
+        this_psi_vals_idx = event2PSI_val_idx[event]
         outline += "\t%.2f\t%.2f\t%.2f" % (event_type2PSI_vals_4_set[event_type][this_psi_vals_idx][0],
                                            event_type2PSI_vals_4_set[event_type][this_psi_vals_idx][1],
                                            event_type2PSI_vals_4_set[event_type][this_psi_vals_idx][1] -
@@ -543,6 +584,17 @@ def main():
                                    event_type2adjusted_pvals[event_type][this_idx])
 
         all_psi_output.write(outline)
+
+        if html_out:
+            if event_type2adjusted_pvals[event_type][this_idx] < sign_thresh:
+                data_counter = printDataToHTML(grdevices, html_out_dir, html_out,
+                                outline,
+                                samp_start_idx,
+                                idx2sample,
+                                sample_set1,
+                                sample_set2,
+                                data_counter,
+                                image_file_type)
 
     all_psi_output.close()
 
@@ -655,7 +707,81 @@ def getSamples(sample_set):
 
     return samples
         
+def initiateHTML_table(html_out):
+    html_out.write("""<html><head>
+                      <title>compareSampleSets Results</title>
+                      </head>
+                      <body>
+                      <table border="1">\n""")
 
+def makePlot(grdevices, plotName, samp_set1_vals, samp_set2_vals,
+image_file_type):
+    samp_vector = ["set1" for i in range(len(samp_set1_vals))]
+    samp_vector.extend(["set2" for i in range(len(samp_set2_vals))])
+
+    dframe = robjects.DataFrame({"sample":robjects.StrVector(samp_vector),
+                                 "value":robjects.FloatVector(samp_set1_vals + samp_set2_vals)})
+
+    gp = ggplot2.ggplot(dframe)
+
+    pp = gp + \
+     ggplot2.aes_string(x="sample", y='value') + \
+     ggplot2.geom_boxplot() +\
+     ggplot2.geom_jitter() +\
+     ggplot2.theme_bw()
+
+    if image_file_type == "pdf":
+        grdevices.pdf(file=plotName)
+    else:
+        grdevices.png(file=plotName, width=512, height=512)
+    pp.plot()
+    grdevices.dev_off()
+
+def printDataToHTML(grdevices, html_dir, html_out, outline, 
+                    samp_start_idx, idx2sample,
+                    sample_set1, sample_set2,
+                    data_counter, image_file_type):
+
+    outline = outline.rstrip("\n")
+
+    outline_list = outline.split("\t")
+
+    samp_set1_vals = []
+    samp_set2_vals = []
+
+    html_outline = ""
+    for i in range(len(outline_list)):
+        html_outline += "<td>%s</td>" % outline_list[i]
+
+        idx_shift = i - samp_start_idx
+        if idx_shift in idx2sample:
+            if idx2sample[idx_shift] in sample_set1:
+                if outline_list[i] != NA:
+                    samp_set1_vals.append(float(outline_list[i]))
+            if idx2sample[idx_shift] in sample_set2:
+                if outline_list[i] != NA:
+                    samp_set2_vals.append(float(outline_list[i]))
+
+    plotName = "%s/%d.%s" % (html_dir, data_counter, image_file_type)
+    makePlot(grdevices, plotName, samp_set1_vals, samp_set2_vals,
+             image_file_type)
+
+    image_tag = "<tr><td><a href=\"%d.%s\">link</a></td>" % (data_counter,
+                                                             image_file_type)
+    html_outline = image_tag + html_outline
+    html_outline += "</tr>\n"
+    html_out.write(html_outline)
+   
+    return data_counter + 1 
+
+def writeHTMLHeader(html_out, headerList):
+    header = "<tr>"
+    header_elems = ["boxplot"] + headerList + ["set1_med", "set2_med", "delta_val", "raw_pval", "corrected_pval"]
+    for item in header_elems:
+        header += "<th>%s</th>" % item
+    
+    header += "</tr>\n"
+    html_out.write(header)
 #################
 # END FUNCTIONS #	
 #################	
