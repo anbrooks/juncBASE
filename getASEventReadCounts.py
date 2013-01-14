@@ -260,7 +260,12 @@ def main():
                            help="""If running the script one chromosome at a
                                    time, this will specify which chromosome.""",
                            default=False)
-
+    opt_parser.add_option("--keep_intermediate",
+                           dest="keep_interm",
+                           action="store_true",
+                           help="""Will remove intermediate files by default. Use
+                                    this option to keep them.""",
+                           default=False)
 
     # Checking paths of constants
     if not os.path.exists(FISHER_SCRIPT):
@@ -297,6 +302,8 @@ def main():
         print "Wrong method given."
         opt_parser.print_help()
         sys.exit(1)
+
+    keep_interm = options.keep_interm
 
     genome_file = options.genome_file
     disambiguate_jcn_strand = options.disambiguate_jcn_strand
@@ -402,7 +409,7 @@ def main():
         afe_out = open(prefix + "_alternative_first_exon_counts.txt", "w")
         ale_out = open(prefix + "_alternative_last_exon_counts.txt", "w")
         me_out = open(prefix + "_mutually_exclusive_counts.txt", "w")
-        mc_out = open(prefix + "_multi_cassette_counts.txt", "w")
+        mc_out = open(prefix + "_coord_cassette_counts.txt", "w")
 #       if countExonReads:
 #           polya_out = open(prefix + "_alternative_polyA_counts.txt", "w")
         if ie1_file is not None:
@@ -420,7 +427,7 @@ def main():
         afe_out = open("alternative_first_exon_counts.txt", "w")        
         ale_out = open("alternative_last_exon_counts.txt", "w")        
         me_out = open("mutually_exclusive_counts.txt", "w")        
-        mc_out = open("multi_cassette_counts.txt", "w")        
+        mc_out = open("coord_cassette_counts.txt", "w")        
 #       if countExonReads:
 #           polya_out = open("alternative_polyA_counts.txt", "w")        
         if ie1_file is not None:
@@ -716,7 +723,7 @@ def main():
         afe_out_str = prefix + "_alternative_first_exon_counts.txt"
         ale_out_str = prefix + "_alternative_last_exon_counts.txt"
         me_out_str = prefix + "_mutually_exclusive_counts.txt"
-        mc_out_str = prefix + "_multi_cassette_counts.txt"
+        mc_out_str = prefix + "_coord_cassette_counts.txt"
 
         if ie1_file is not None:
             ir_left_out_str = prefix + "_intron_retention_left_counts.txt"
@@ -733,7 +740,7 @@ def main():
         afe_out_str = "alternative_first_exon_counts.txt"
         ale_out_str = "alternative_last_exon_counts.txt"
         me_out_str = "mutually_exclusive_counts.txt"
-        mc_out_str = "multi_cassette_counts.txt"
+        mc_out_str = "coord_cassette_counts.txt"
 
         if ie1_file is not None:
             ir_left_out_str = "intron_retention_left_counts.txt"
@@ -929,6 +936,30 @@ def main():
                                   norm1, norm2, jcn_seq_len)
 
     ERROR_LOG.close()                                  
+
+    # Remove all temporary files.
+    if not keep_interm:
+        os.remove(ir_file)
+        os.remove(cassette_out_str)
+        os.remove(donor_out_str)
+        os.remove(accept_out_str)
+        os.remove(jcn_only_donor_out_str)
+        os.remove(jcn_only_accept_out_str)
+        os.remove(afe_out_str)
+        os.remove(ale_out_str)
+        os.remove(me_out_str)
+        os.remove(mc_out_str)
+        os.remove(ir_left_out_str)
+        os.remove(ir_right_out_str)
+        os.remove(mapped_file1_name)
+        os.remove(mapped_file2_name)
+        os.remove"tmp_exon_coord_file.txt")
+        os.remove"tmp_exon_coord_file.txt")
+
+        if options.prefix:
+            os.remove("%s_IR_diff_direction.txt" % prefix)
+            os.remove("%s_IR_left_no_partner.txt" % prefix)
+            os.remove("%s_IR_right_no_partner.txt" % prefix)
 
     # Create empty file to indicate that the run completed
     finished_file = open("finished.txt", "w")
@@ -4536,7 +4567,8 @@ def printAlternativeDonorsAcceptors(db,
 
                                     ie_jcns_raw.append(ie_jcn_raw)
 #                                    ie_jcn_cts2.append(left_ct_lenNorm)
-            
+                                else:
+                                    ie_jcns_raw.append(0)
 
                     # Add Exclusion or Inclusion Annotation
                     # Checks percent exclusion from both files.
@@ -4664,6 +4696,10 @@ def printAlternativeDonorsAcceptors(db,
                         inclusion_str = this_distal_jcn
 
                     const_str = ";".join(const_regions)
+
+                    ie_jcns_raw_sum = 0
+                    if len(ie_jcns_raw) >= 1:
+                        ie_jcns_raw_sum = sum(ie_jcns_raw) 
     
                     out_str= getAllEventStr(n_or_k, type, gene_name, chr, strand, 
                                              ";".join(exclusion_str_list),
@@ -4678,7 +4714,7 @@ def printAlternativeDonorsAcceptors(db,
                                              "","",
                                              None, None,
                                              ";".join(map(repr, ie_jcns_raw)),
-                                             None,
+                                             ie_jcns_raw_sum,
                                              "",
                                              None)
                     all_event_info_out.write(out_str + "\n")
@@ -4954,6 +4990,8 @@ def printAlternativeDonorsAcceptors(db,
                                     # not length normalizing here, will perform
                                     # normalization later
                                     ie_jcns_raw.append(ie_jcn_raw)
+                                else:
+                                    ie_jcns_raw.append(0)
 
                     # Add Exclusion or Inclusion Annotation
 #                   e_or_i = checkExclusionInclusion_AA_AD_AFE_ALE("alt_end",
@@ -5080,6 +5118,10 @@ def printAlternativeDonorsAcceptors(db,
 
                     const_str = ";".join(const_regions)
 
+                    ie_jcns_raw_sum = 0
+                    if len(ie_jcns_raw) >= 1:
+                        ie_jcns_raw_sum = sum(ie_jcns_raw) 
+
                     out_str = getAllEventStr(n_or_k, type, gene_name, chr, strand, 
                                              ";".join(exclusion_str_list),
                                              inclusion_str, 
@@ -5093,7 +5135,7 @@ def printAlternativeDonorsAcceptors(db,
                                              "","",
                                              None,None,
                                              ";".join(map(repr, ie_jcns_raw)),
-                                             None, 
+                                             ie_jcns_raw_sum, 
                                              "",
                                              None)
                     all_event_info_out.write(out_str + "\n")
@@ -6201,7 +6243,7 @@ def printMultiCassetteExons(db,
                             mc_out.write(out_str + "\n")
 
                             # Now print to all event file
-                            out_str = getAllEventStr(label, "multi_cassette", gene_name,  chr, strand, 
+                            out_str = getAllEventStr(label, "coord_cassette", gene_name,  chr, strand, 
                                                      excl_jcn_str, ";".join(inclusion_jcns),
                                                      "", ";".join(exon_strs),
                                                      "",
@@ -6838,7 +6880,7 @@ def sumExclusion_Inclusion_counts(file_str,
             required_indices = [13,14]
         elif type == "mutually_exclusive":
             required_indices = [13,14]
-        elif type == "multi_cassette":
+        elif type == "coord_cassette":
             required_indices = [13,14]
         elif type == "alternative_donor":
             required_indices = [13,14]
@@ -6862,7 +6904,7 @@ def sumExclusion_Inclusion_counts(file_str,
                 required_indices += [18]
             elif type == "mutually_exclusive":
                 required_indices += [17,18]
-            elif type == "multi_cassette":
+            elif type == "coord_cassette":
                 required_indices += [18]
 #           elif type == "alternative_donor":
 #               required_indices += [25, 27]
@@ -6921,7 +6963,12 @@ def sumExclusion_Inclusion_counts(file_str,
             sum_incl_raw = alt_accept2total_counts[event_key][1]
             sum_excl_lenNorm = alt_accept2total_counts[event_key][2]
             sum_incl_lenNorm = alt_accept2total_counts[event_key][3]
-
+        elif type == "jcn_only_AD" or type == "jcn_only_AA":
+            # Only junction counts are used for the final quantification
+            sum_excl_raw = int(line_elems[13])
+            sum_incl_raw = int(line_elems[14])
+            sum_excl_lenNorm = int(round(float(sum_excl_raw)/jcn_seq_len))
+            sum_incl_lenNorm = int(round(float(sum_incl_raw)/jcn_seq_len))
         elif type == "alternative_first_exon":
             event_key = (line_elems[6], line_elems[5])
             if event_key not in afe2total_counts:
@@ -6951,7 +6998,7 @@ def sumExclusion_Inclusion_counts(file_str,
             sum_incl_raw = mxe2total_counts[event_key][1]
             sum_excl_lenNorm = mxe2total_counts[event_key][2]
             sum_incl_lenNorm = mxe2total_counts[event_key][3]
-        elif type == "multi_cassette":
+        elif type == "coord_cassette":
             event_key = (line_elems[8], line_elems[5])
             if event_key not in mc2total_counts:
                 ERROR_LOG.write("sumExclusion_Inclusion_counts: cannot find MC key. %s\n" % event_key)
