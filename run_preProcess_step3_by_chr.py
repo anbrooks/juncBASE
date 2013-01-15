@@ -31,7 +31,7 @@ DEF_OVERHANG = 6
 
 DEF_NUM_PROCESSES = 2
 DEF_GROUP = "cgafolk"
-DEF_QUEUE = "hour"
+DEF_QUEUE = "week"
 #################
 # END CONSTANTS #
 #################
@@ -76,8 +76,8 @@ def main():
     opt_parser.add_option("--LSF",
                           dest="lsf_group",
                           type="string",
-                          help="""Will launch jobs on LSF. Using specified
-                                  group. DEF=%s""" % DEF_GROUP,
+                          help="""Launches jobs on LSF by default. It will
+                                  use this specified group. DEF=%s""" % DEF_GROUP,
                           default=DEF_GROUP)
     opt_parser.add_option("--lsf_queue",
                           dest="lsf_queue",
@@ -88,8 +88,8 @@ def main():
     opt_parser.add_option("--num_processes",
                           dest="num_processes",
                           type="int",
-                          help="""If running locally, indicate the number of
-                                  processes to batch.""",
+                          help="""If jobs should be run locally, indicate 
+                                  by putting the number of processes to batch.""",
                           default=None)
     opt_parser.add_option("--min_overhang",
                           dest="min_overhang",
