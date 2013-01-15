@@ -7,6 +7,7 @@
 # All rights reserved.
 """Runs each sample against a pseudo reference.
    Difference from previous version is allowing for different input options
+m
    where the two different databases are given.
 """
 
@@ -207,6 +208,13 @@ def main():
                           help="""Will print commands that will be run, but will
                                   not run them. Used for debugging.""",
                          default=False)
+    opt_parser.add_option("--keep_intermediate",
+                           dest="keep_interm",
+                           action="store_true",
+                           help="""Will remove intermediate files by default.
+                                   Use this option to keep them.""",
+                           default=False)
+
 
     (options, args) = opt_parser.parse_args()
 	
@@ -247,12 +255,14 @@ def main():
     txt_db2 = options.txt_db2
 
     method = options.method
-    genome_file = os.path.abspath(options.genome_file)
+#    genome_file = os.path.abspath(options.genome_file)
 
     jcn_seq_len = options.jcn_seq_len
 
     num_processes = options.num_processes
     run_LSF = options.run_lsf
+
+    keep_interm = options.keep_interm
 
     week = options.week
 
@@ -333,6 +343,9 @@ def main():
 #                cmd += "--fasta %s " % genome_file
                 cmd += "--by_chr %s " % chr
 
+                if keep_interm:
+                    cmd += "--keep_intermediate "
+
                 # Now for databases
                 if options.sqlite_db_dir:
                     cmd += "--sqlite_db_dir %s" % options.sqlite_db_dir
@@ -359,7 +372,7 @@ def main():
 
                     runLSF(cmd, 
                            "%s_%s.getASEventReadCounts.bsub.out" % (samp, chr),
-                           samp,
+                           samp + "_" + chr,
                            queue) 
                     continue
 
@@ -414,6 +427,9 @@ def main():
             cmd += "--method %s " % method
             cmd += "--jcn_seq_len %d " % jcn_seq_len
 #            cmd += "--fasta %s " % genome_file
+
+            if keep_interm:
+                cmd += "--keep_intermediate "
 
             # Now for databases
             if options.sqlite_db_dir:
