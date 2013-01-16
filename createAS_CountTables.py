@@ -225,12 +225,13 @@ def main():
 
             event_key, raw_count_str, lenNorm_count_str, genes, strand, const_region = getKeyandCount(line)
         
-            if event_key not in event2sample2counts:
+            if event_key not in event2sample2raw_counts:
                 print "Event from sample, not in dict: %s, %s" % (samp,
                                                                   event_key)
                 continue
 
-            event2sample2counts[event_key][samp] = count_str
+            event2sample2raw_counts[event_key][samp] = count_str
+            event2sample2lenNorm_counts[event_key][samp] = lenNorm_count_str
 
             updateGeneStrand(event2genesStrand, event_key, genes, strand, const_region)
         
@@ -264,7 +265,7 @@ def main():
     lenNorm_file.write(header)
 #   if psi_output_file:
 #       psi_output_file.write(header)
-    for event_key in event2sample2counts:
+    for event_key in event2sample2raw_counts:
         raw_counts_list = [event2sample2raw_counts[event_key][first_sample]]
         lenNorm_counts_list = [event2sample2lenNorm_counts[event_key][first_sample]]
         
