@@ -92,7 +92,7 @@ def main():
 #                         default=None)
     opt_parser.add_option("--remove_tmp_files",
                           dest="remove_tmp_files",
-                          type="string",
+                          action="store_true",
                           help="""Remove temporary files.""",
                           default=None)
 #   opt_parser.add_option("--remove_interm_files",
