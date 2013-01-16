@@ -989,6 +989,8 @@ def main():
         os.remove(mapped_file1_name)
         os.remove(mapped_file2_name)
         os.remove("tmp_exon_coord_file.txt")
+        os.remove("annotated_introns.pk")
+        os.remove("annotated_exons_by_strand.pk")
 
         if options.prefix:
             os.remove("%s_IR_diff_direction.txt" % prefix)
