@@ -89,31 +89,41 @@ def main():
                                   same as the one used for
                                   getASEventReadCounts.py""",
                           default=None)
-    opt_parser.add_option("--sqlite_db_dir",
-                          dest="sqlite_db_dir",
+#   opt_parser.add_option("--sqlite_db_dir",
+#                         dest="sqlite_db_dir",
+#                         type="string",
+#                         help="""Location of sqlite database. If sqlite database
+#                                 is used, will override usage of MySQL database.""",
+#                         default=None)
+#   opt_parser.add_option("--host",
+#                         dest="host",
+#                         type="string",
+#                         help="MySQL database host. Def=\'%s\'" % HOST,
+#                         default=HOST)
+#   opt_parser.add_option("--user",
+#                         dest="user",
+#                         type="string",
+#                         help="MySQL database user. Def=\'%s\'" % USER,
+#                         default=USER)
+#   opt_parser.add_option("--passwd",
+#                         dest="passwd",
+#                         type="string",
+#                         help="MySQL database password. Def=\'%s\'" % PASSWD,
+#                         default=PASSWD)
+#   opt_parser.add_option("-d",
+#                         dest="as_db",
+#                         type="string",
+#                         help="Database of annotated AS events.",
+#                         default=None)
+    opt_parser.add_option("--intron",
+                          dest="intron_pk_file",
                           type="string",
-                          help="""Location of sqlite database. If sqlite database
-                                  is used, will override usage of MySQL database.""",
+                          help="Pickle file containing intron coordinates.",
                           default=None)
-    opt_parser.add_option("--host",
-                          dest="host",
+    opt_parser.add_option("--exon",
+                          dest="exon_pk_file",
                           type="string",
-                          help="MySQL database host. Def=\'%s\'" % HOST,
-                          default=HOST)
-    opt_parser.add_option("--user",
-                          dest="user",
-                          type="string",
-                          help="MySQL database user. Def=\'%s\'" % USER,
-                          default=USER)
-    opt_parser.add_option("--passwd",
-                          dest="passwd",
-                          type="string",
-                          help="MySQL database password. Def=\'%s\'" % PASSWD,
-                          default=PASSWD)
-    opt_parser.add_option("-d",
-                          dest="as_db",
-                          type="string",
-                          help="Database of annotated AS events.",
+                          help="Pickle file containing exon coordinates.",
                           default=None)
     opt_parser.add_option("--all_as_event",
                           dest="all_as_event_file",
@@ -146,9 +156,12 @@ def main():
     # validate the command line arguments
     opt_parser.check_required("-l")
     opt_parser.check_required("-r")
-    opt_parser.check_required("-d")
+#    opt_parser.check_required("-d")
     opt_parser.check_required("--method")
     opt_parser.check_required("--all_as_event")
+    opt_parser.check_required("--intron")
+    opt_parser.check_required("--exon")
+
 
     method = options.method
 
@@ -157,18 +170,18 @@ def main():
         opt_parser.print_help()
         sys.exit(1)
     
-    as_db = options.as_db
+#    as_db = options.as_db
     lengthNorm = options.lengthNorm
 
     this_chr = options.this_chr
     
-    db = None
-    if options.sqlite_db_dir:
-        import pysqlite_wrap
-        db = pysqlite_wrap.DB(options.sqlite_db_dir)
-    else: # Use MySQL database
-        import mysqldb_wrap
-        db = mysqldb_wrap.DB(options.host, options.user, options.passwd)
+#   db = None
+#   if options.sqlite_db_dir:
+#       import pysqlite_wrap
+#       db = pysqlite_wrap.DB(options.sqlite_db_dir)
+#   else: # Use MySQL database
+#       import mysqldb_wrap
+#       db = mysqldb_wrap.DB(options.host, options.user, options.passwd)
 
     left_file = open(options.left_file)
     right_file = open(options.right_file)
@@ -189,14 +202,19 @@ def main():
 #        affected_out = open("IR_events.txt", "w")    
 
     # {chr: set[(start, end, strand)])
-    annotated_introns = getAnnotatedIntronCoords(db, as_db, this_chr)
+#    annotated_introns = getAnnotatedIntronCoords(db, as_db, this_chr)
+    intron_pk_file = open(options.intron_pk_file)
+    annotated_introns = pickle.load(intron_pk_file)
+    intron_pk_file.close()
 
-    (annotated_exons,
-     annotated_internal_exons,
-     annotated_exons_no_strand,
-     annotated_exons_by_strand,
-     annotated_exon_search_tree) = getAnnotatedExonCoords(db, as_db, this_chr)
-
+#   (annotated_exons,
+#    annotated_internal_exons,
+#    annotated_exons_no_strand,
+#    annotated_exons_by_strand,
+#    annotated_exon_search_tree) = getAnnotatedExonCoords(db, as_db, this_chr)
+    exon_pk_file = open(options.exon_pk_file)
+    annoatated_exons_by_strand = pickle.load(exon_pk_file)
+    exon_pk_file.close()
 
     left_line_list = left_file.readlines()
     right_line_list = right_file.readlines()
@@ -229,16 +247,18 @@ def main():
     for intron in left_intron2line:
         if intron not in right_intron2line:
             left_no_partner_out.write(left_line_list[left_intron2line[intron]])
-        elif isInDiffDirection(intron, left_intron2line, right_intron2line,
-                               left_line_list, right_line_list):
-            combined_line = combineLines(left_line_list[left_intron2line[intron]],
-                                         right_line_list[right_intron2line[intron]])
+#       elif isInDiffDirection(intron, left_intron2line, right_intron2line,
+#                              left_line_list, right_line_list):
+#           combined_line = combineLines(left_line_list[left_intron2line[intron]],
+#                                        right_line_list[right_intron2line[intron]])
 
-            diff_direction_out.write(combined_line + "\t" + intron + "\n")
+#           diff_direction_out.write(combined_line + "\t" + intron + "\n")
 
-            # Print all events to allEvent file
-            out_str = getAllEventInfoLine(combined_line, intron, annotated_exons_by_strand, annotated_introns, lengthNorm)
-            all_as_event_file.write(out_str + "\n")
+#           # Print all events to allEvent file
+#           # Decided not to print out intron retention events where both sides
+#           # are going in the opossite direction
+#           out_str = getAllEventInfoLine(combined_line, intron, annotated_exons_by_strand, annotated_introns, lengthNorm)
+#           all_as_event_file.write(out_str + "\n")
         else:
 #           combined_pval = getCombinedPval(left_line_list[left_intron2line[intron]],
 #                                           right_line_list[right_intron2line[intron]])
@@ -255,7 +275,8 @@ def main():
 
             # Print all events to allEvent file
             out_str = getAllEventInfoLine(combined_line, intron, annotated_exons_by_strand, annotated_introns, lengthNorm)
-            all_as_event_file.write(out_str + "\n")
+            if out_str:
+                all_as_event_file.write(out_str + "\n")
 
     # Checking for right_no_partner
     for intron in right_intron2line:
@@ -364,6 +385,10 @@ def getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_intron
         const_regions.append(const_str)
 
     ie_ct_list_raw = map(int, ie_cts_raw.split(";"))
+    # Only print out intron retention events where both sides are non-zero
+    if ((ie_ct_list_raw[0] == 0) and (ie_ct_list_raw[1] == 0)): 
+        return None
+
     ie_ct_list_lenNorm = map(int, ie_cts_lenNorm.split(";"))
 
     ie_ct_raw = 0
@@ -372,6 +397,7 @@ def getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_intron
     ie_ct_lenNorm = 0
     for ct in ie_ct_list_lenNorm:
         ie_ct_lenNorm += ct
+
 
 
     # Now print to all AS Event string

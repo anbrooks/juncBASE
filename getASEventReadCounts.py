@@ -21,6 +21,7 @@ import optparse
 import pdb
 import os
 import profile
+import pickle
 
 from helperFunctions import updateDictOfLists, updateDictOfSets, coordsOverlap, runCmd
 from coord_helperFunctions import getSearchTree, hasOuterContainer, findInternalCoords, hasOverlap
@@ -452,6 +453,8 @@ def main():
      all_jcn2strand,
      all_jcn_search_tree) = parseJcns(jcn1_file, jcn2_file, genome_file, disambiguate_jcn_strand)
 
+    jcn_chrs = all_jcn_search_tree.keys()
+
     # full_exon_count_dict = {chr_start_end:count}
     # start_exon_count_dict = {chr_start:sum of counts}
     # end_exon_count_dict = {chr_end:sum of counts}
@@ -471,6 +474,8 @@ def main():
     # {chr: set[(start, end, strand)])
     annotated_introns = getAnnotatedIntronCoords(db, txt_db1, this_chr)
 
+    chrCheck(jcn_chrs, annotated_introns, "txt_db1:annotated introns")
+
     annotated_exons = None
     if a_exons_only:
         # {chr: set[(start, end, strand)])
@@ -480,9 +485,18 @@ def main():
          annotated_exons_by_strand,
          annotated_exon_search_tree) = getAnnotatedExonCoords(db, txt_db1, this_chr)
 
+    chrCheck(jcn_chrs, annotated_exons, "txt_db1:annotated exons")
+    chrCheck(jcn_chrs, annotated_internal_exons, None)
+    chrCheck(jcn_chrs, annotated_exons_no_strand, None)
+    chrCheck(jcn_chrs, annotated_exons_by_strand, None)
+    chrCheck(jcn_chrs, annotated_exon_search_tree, None)
+
     # {chr: [(sgid, name, strand, start, end)]}
     (annotated_genes,
      annotated_genes_by_strand) = getAnnotatedGenes(db, txt_db1, this_chr)
+
+    chrCheck(jcn_chrs, annotated_genes, "txt_db1:annotated genes")
+    chrCheck(jcn_chrs, annotated_genes_by_strand, None)
 
     # {chr:(start, end)} 
     (alt_first_exons, 
@@ -505,6 +519,15 @@ def main():
     if alt_first_exons == {} or alt_last_exons == {}:
         print "ERROR: Error with transcripts in --txt_db2. Please check this database."
         sys.exit(1)
+
+    chrCheck(jcn_chrs, alt_first_exons, "txt_db2:alt first exons")
+    chrCheck(jcn_chrs, alt_last_exons, "txt_db2:alt last exons")
+    chrCheck(jcn_chrs, alt_first_exons_start2end, None)
+    chrCheck(jcn_chrs, alt_first_exons_end2start, None)
+    chrCheck(jcn_chrs, alt_last_exons_start2end, None)
+    chrCheck(jcn_chrs, alt_last_exons_end2start, None)
+    chrCheck(jcn_chrs, alt_first_exon_search_tree, None)
+    chrCheck(jcn_chrs, alt_last_exon_search_tree, None)
         
 
     # A merge of internal exons from txt_db1 and alternative first and last
@@ -864,6 +887,16 @@ def main():
 
     # Now do intron retention events
     if ie1_file is not None:
+
+        # Pickle up existing annoation dictionaries to make things more
+        # efficient
+        intron_pick_file = open("annotated_introns.pk", "w")
+        pickle.dump(annotated_introns, intron_pick_file)
+        intron_pick_file.close()
+        exon_pick_file = open("annotated_exons_by_strand.pk", "w")
+        pickle.dump(annotated_exons_by_strand, exon_pick_file)
+        exon_pick_file.close()
+
         if options.prefix:
             op = "-l %s_intron_retention_left_counts.txt " % prefix
             op += "-r %s_intron_retention_right_counts.txt " % prefix
@@ -875,20 +908,22 @@ def main():
             op += "--all_as_event all_AS_event_info_irOnly.txt"
 
         cmd = "python %s %s " % (IR_SCRIPT, op)
-        cmd += "--method %s " % method
-        cmd += "-d %s " % txt_db1
-        if DO_LEN_NORM:
-            cmd += "--lengthNorm "
-        if options.sqlite_db_dir:
-            cmd += "--sqlite_db_dir %s" % options.sqlite_db_dir
-        else: # Using MySQL database
-            if options.passwd == "":
-                cmd += "--host %s --user %s" % (options.host,
-                                                options.user)
-            else:
-                cmd += "--host %s --user %s --passwd %s" % (options.host,
-                                                            options.user,
-                                                            options.passwd)
+        cmd += "--intron annotated_introns.pk --exon annotated_exons_by_strand.pk "
+        cmd += "--method %s" % method
+#        cmd += "-d %s " % txt_db1
+        # I would like just raw counts reported
+#       if DO_LEN_NORM:
+#           cmd += "--lengthNorm "
+#       if options.sqlite_db_dir:
+#           cmd += "--sqlite_db_dir %s" % options.sqlite_db_dir
+#       else: # Using MySQL database
+#           if options.passwd == "":
+#               cmd += "--host %s --user %s" % (options.host,
+#                                               options.user)
+#           else:
+#               cmd += "--host %s --user %s --passwd %s" % (options.host,
+#                                                           options.user,
+#                                                           options.passwd)
         os.system(cmd)
 
         # Add constitutive counts to IR events
@@ -953,8 +988,7 @@ def main():
         os.remove(ir_right_out_str)
         os.remove(mapped_file1_name)
         os.remove(mapped_file2_name)
-        os.remove"tmp_exon_coord_file.txt")
-        os.remove"tmp_exon_coord_file.txt")
+        os.remove("tmp_exon_coord_file.txt")
 
         if options.prefix:
             os.remove("%s_IR_diff_direction.txt" % prefix)
@@ -975,6 +1009,16 @@ def main():
 #############
 # FUNCTIONS #
 #############
+def chrCheck(jcn_chrs, annot_dict, annot_type):
+    for chr in jcn_chrs:
+        if chr not in annot_dict:
+            if annot_type:
+                ERROR_LOG.write("WARNING: %s does not exist in %s. Please make sure the genome reference of transcript database matches read alignment reference.\n" % (chr,
+                                                                                                                                          annot_type))
+            # prevents future key errors
+            annot_dict[chr] = [] 
+
+
 def find_AFE_ALE_clusters(events_dictList,
                           next_or_previous,
                           all_confident_exons, 
