@@ -63,50 +63,57 @@ class OptionParser(optparse.OptionParser):
 def main():
     opt_parser = OptionParser()
     # Add Options. Required options should have default=None
-    opt_parser.add_option("-i",
-                          dest="input_file",
+    opt_parser.add_option("--prefix",
+                          dest="prefix",
                           type="string",
-                          help="Resulting file from clusterASExons2.py",
+                          help="""Prefix of output files created from
+                                  createAS_CountTables. In createAS_CountTables,
+                                  this is the -o option""",
                           default=None)
-    opt_parser.add_option("--left_intron",
-                          dest="left_input",
-                          type="string",
-                          help="""Resulting file from clusterASExons2.py, which
-                                  contains the exclusion and inclusion counts
-                                  for just the left side of an intron retention
-                                  event.""",
-                          default=None)
-    opt_parser.add_option("--right_intron",
-                          dest="right_input",
-                          type="string",
-                          help="""Resulting file from clusterASExons2.py, which
-                                  contains the exclusion and inclusion counts
-                                  for just the right side of an intron retention
-                                  event.""",
-                          default=None)
-    opt_parser.add_option("--lenNormalized_counts",
-                          dest="lenNormalized_counts",
-                          type="string",
-                          help="""File containing length-normalized inclusion
-                                  exclusion counts. Used for PSI calculation,
-                                  not for statistcal significance.""",
-                          default=None)
-    opt_parser.add_option("--lenNormalized_left_intron",
-                          dest="lenNormalized_left_intron_counts",
-                          type="string",
-                          help="""File containing length-normalized
-                                  the left intron_retention counts.
-                                  Used for PSI calculation, not for
-                                  statistical significane.""",
-                          default=None)
-    opt_parser.add_option("--lenNormalized_right_intron",
-                          dest="lenNormalized_right_intron_counts",
-                          type="string",
-                          help="""File containing length-normalized
-                                  the right intron_retention counts.
-                                  Used for PSI calculation, not for
-                                  for statistical significance.""",
-                          default=None)
+#   opt_parser.add_option("-i",
+#                         dest="input_file",
+#                         type="string",
+#                         help="Resulting file from clusterASExons2.py",
+#                         default=None)
+#   opt_parser.add_option("--left_intron",
+#                         dest="left_input",
+#                         type="string",
+#                         help="""Resulting file from clusterASExons2.py, which
+#                                 contains the exclusion and inclusion counts
+#                                 for just the left side of an intron retention
+#                                 event.""",
+#                         default=None)
+#   opt_parser.add_option("--right_intron",
+#                         dest="right_input",
+#                         type="string",
+#                         help="""Resulting file from clusterASExons2.py, which
+#                                 contains the exclusion and inclusion counts
+#                                 for just the right side of an intron retention
+#                                 event.""",
+#                         default=None)
+#   opt_parser.add_option("--lenNormalized_counts",
+#                         dest="lenNormalized_counts",
+#                         type="string",
+#                         help="""File containing length-normalized inclusion
+#                                 exclusion counts. Used for PSI calculation,
+#                                 not for statistcal significance.""",
+#                         default=None)
+#   opt_parser.add_option("--lenNormalized_left_intron",
+#                         dest="lenNormalized_left_intron_counts",
+#                         type="string",
+#                         help="""File containing length-normalized
+#                                 the left intron_retention counts.
+#                                 Used for PSI calculation, not for
+#                                 statistical significane.""",
+#                         default=None)
+#   opt_parser.add_option("--lenNormalized_right_intron",
+#                         dest="lenNormalized_right_intron_counts",
+#                         type="string",
+#                         help="""File containing length-normalized
+#                                 the right intron_retention counts.
+#                                 Used for PSI calculation, not for
+#                                 for statistical significance.""",
+#                         default=None)
     opt_parser.add_option("--has_virtual",
                           dest="has_virtual",
                           action="store_true",
@@ -230,15 +237,27 @@ def main():
     (options, args) = opt_parser.parse_args()
 	
     # validate the command line arguments
-    opt_parser.check_required("-i")
+#    opt_parser.check_required("-i")
 #    opt_parser.check_required("--psi_output_most_sign")
 #    opt_parser.check_required("--pval_output")
 #    opt_parser.check_required("--event_sum")
     opt_parser.check_required("--method")
+    opt_parser.check_required("--prefix")
+    opt_parser.check_required("--jcn_seq_len")
 
-    input_file = open(options.input_file)
-    left_input_file_name = options.left_input
-    right_input_file_name = options.right_input
+    prefix = options.prefix
+
+    try:
+        input_file = open(prefix + "_AS_exclusion_inclusion_counts.txt")
+    except:
+        print """Cannot find expected file %s_AS_exclusion_inclusion_counts.txt.
+                 Please check that the same options is given from
+                 combine_createAS_CountTables""" % prefix
+        opt_parser.print_help()
+        sys.exit(1)
+
+    left_input_file_name = prefix + "_left_intron_counts.txt"
+    right_input_file_name = prefix + "_right_intron_counts.txt"
     sum_thresh = options.threshold
 
     sign_cutoff = options.sign_cutoff
@@ -279,52 +298,52 @@ def main():
     recalculate_ref_psi = False
     lenNormalized_counts_event2PSIs = None
     lenNormalized_counts_event2total_counts = None
-    if options.lenNormalized_counts:
-        if ((not options.lenNormalized_left_intron_counts) or 
-            (not options.lenNormalized_right_intron_counts)):
-            print "Need to specify all length-normalized count files."
-            opt_parser.print_help()
-            sys.exit(1)
-    
-        recalculate_ref_psi = True
-        lenNormalized_counts = open(options.lenNormalized_counts)
-        (lenNormalized_counts_event2total_counts,
-         lenNormalized_counts_event2PSIs) = buildDicts(lenNormalized_counts)
-        lenNormalized_counts.close()
+#   if options.lenNormalized_counts:
+#       if ((not options.lenNormalized_left_intron_counts) or 
+#           (not options.lenNormalized_right_intron_counts)):
+#           print "Need to specify all length-normalized count files."
+#           opt_parser.print_help()
+#           sys.exit(1)
+#   
+    recalculate_ref_psi = True
+    lenNormalized_counts = open(prefix + "_AS_exclusion_inclusion_counts_lenNorm.txt")
+    (lenNormalized_counts_event2total_counts,
+     lenNormalized_counts_event2PSIs) = buildDicts(lenNormalized_counts)
+    lenNormalized_counts.close()
 
     left_lenNormalized_counts_event2total_counts = None
     left_lenNormalized_counts_event2PSIs = None
-    if options.lenNormalized_left_intron_counts:
-        if ((not options.lenNormalized_counts) or 
-            (not options.lenNormalized_right_intron_counts)):
-            print "Need to specify all length-normalized count files."
-            opt_parser.print_help()
-            sys.exit(1)
+#   if options.lenNormalized_left_intron_counts:
+#       if ((not options.lenNormalized_counts) or 
+#           (not options.lenNormalized_right_intron_counts)):
+#           print "Need to specify all length-normalized count files."
+#           opt_parser.print_help()
+#           sys.exit(1)
 
-        left_lenNormalized_counts = open(options.lenNormalized_left_intron_counts)
-        (left_lenNormalized_counts_event2total_counts,
-         left_lenNormalized_counts_event2PSIs) = buildDicts(left_lenNormalized_counts)
-        left_lenNormalized_counts.close()
+    left_lenNormalized_counts = open(prefix + "_left_intron_counts_lenNorm.txt")
+    (left_lenNormalized_counts_event2total_counts,
+     left_lenNormalized_counts_event2PSIs) = buildDicts(left_lenNormalized_counts)
+    left_lenNormalized_counts.close()
 
     right_lenNormalized_counts_event2total_counts = None
     right_lenNormalized_counts_event2PSIs = None
-    if options.lenNormalized_right_intron_counts:
-        if ((not options.lenNormalized_counts) or 
-            (not options.lenNormalized_left_intron_counts)):
-            print "Need to specify all length-normalized count files."
-            opt_parser.print_help()
-            sys.exit(1)
+#   if options.lenNormalized_right_intron_counts:
+#       if ((not options.lenNormalized_counts) or 
+#           (not options.lenNormalized_left_intron_counts)):
+#           print "Need to specify all length-normalized count files."
+#           opt_parser.print_help()
+#           sys.exit(1)
 
-        right_lenNormalized_counts = open(options.lenNormalized_right_intron_counts)
-        (right_lenNormalized_counts_event2total_counts,       
-         right_lenNormalized_counts_event2PSIs) = buildDicts(right_lenNormalized_counts)
-        right_lenNormalized_counts.close()
+    right_lenNormalized_counts = open(prefix + "_right_intron_counts_lenNorm.txt")
+    (right_lenNormalized_counts_event2total_counts,       
+     right_lenNormalized_counts_event2PSIs) = buildDicts(right_lenNormalized_counts)
+    right_lenNormalized_counts.close()
 
-    if options.lenNormalized_counts:
-        if not jcn_seq_len:
-            print "If length normalized counts are specified, need to give jcn_seq_len"
-            opt_parser.print_help()
-            sys.exit(1)
+#    if options.lenNormalized_counts:
+#       if not jcn_seq_len:
+#           print "If length normalized counts are specified, need to give jcn_seq_len"
+#           opt_parser.print_help()
+#           sys.exit(1)
 
     weights = None
     if options.weights:
