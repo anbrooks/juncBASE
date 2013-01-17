@@ -27,6 +27,8 @@ NA = "NA"
 DEF_SIGN_CUTOFF = 0.05
 DEF_THRESH = 25
 DEF_EXON_LEN_NORM = 100.0
+
+DEF_DPSI_THRESH = 5.0
 #################
 # END CONSTANTS #
 #################
@@ -195,6 +197,14 @@ def main():
                           help="""Threshold for minimum number of total reads
                                   in an event. Default=%d""" % DEF_THRESH,
                           default=DEF_THRESH)
+    opt_parser.add_option("--min_dpsi_threshold",
+                          dest="dpsi_threshold",
+                          type="float",
+                          help="""Threshold for minimum delta PSI value between
+                                  the sample with the smallest and largest PSI.
+                                  Events with dPSI values below the threshold
+                                  will not be tested or reported. Def=%.2f""" % DEF_DPSI_THRESH,
+                          default=DEF_DPSI_THRESH)
     opt_parser.add_option("--method",
                           dest="method",
                           type="string",
@@ -232,6 +242,8 @@ def main():
     sum_thresh = options.threshold
 
     sign_cutoff = options.sign_cutoff
+
+    dpsi_thresh = options.dpsi_threshold
 
     left_input_file = None
     right_input_file = None
@@ -365,14 +377,15 @@ def main():
             header = line
             line_list = line.split("\t")
             samples = line_list[11:]
+            total_samples = len(samples)
             if weights:
-                if len(weights) != len(samples)-1:
+                if len(weights) != total_samples-1:
                     print "Weights for every sample needs to be given"
                     opt_parser.print_help()
                     sys.exit(1)
 
                 col2weights = {}
-                for i in range(1,len(samples)):
+                for i in range(1,total_samples):
                     col2weights[i-1] = weights[i-1]
             continue
 
@@ -398,10 +411,9 @@ def main():
             event_type2pvals[event_type] = []
         if event_type not in event_type2col2pvals:
             event_type2col2pvals[event_type] = {}
-        total_samples = len(counts)
 
         # Fill PSI dict
-        for i in range(len(counts)):
+        for i in range(total_samples):
             (psi, sum_ct) = getPSI_sample_sum(counts[i], sum_thresh,
                                               lenNormalized_psis[i])
             if event in event2col2psi:
@@ -420,7 +432,19 @@ def main():
                                                         col2weights)
             event2col2psi[event][0] = adj_psi
             lenNormalized_counts_event2total_counts[event][0] = adj_totalCount
-                                                        
+
+        if dPSI(event2col2psi[event]) < dpsi_thresh:
+            for j in range(1,total_samples):
+                if event in event2pairs2idx:
+                    event2pairs2idx[event][(0,j)] = NA
+                else:
+                    event2pairs2idx[event] = {(0,j):NA}
+                if event in event2col2idx:
+                    event2col2idx[event][j] = NA
+                else:
+                    event2col2idx[event] = {j:NA}
+
+            continue
 
         # Calculate p-val for intron retention later
         if event_type == "intron_retention":
@@ -437,7 +461,7 @@ def main():
                                                    col1_excl,
                                                    col1_incl)
 
-        for j in range(1,len(counts)):
+        for j in range(1,total_samples):
 
             if j not in event_type2col2pvals[event_type]:
                 event_type2col2pvals[event_type][j] = []
@@ -501,8 +525,11 @@ def main():
         allPSI_elems_left = []
         allPSI_elems_right = []
 
-        lenNormalized_left_psis = [None for i in range(len(left_events2counts[event]))]
-        lenNormalized_right_psis = [None for i in range(len(right_events2counts[event]))]
+        left_length = len(left_events2counts[event])
+        right_length = len(right_events2counts[event])
+
+        lenNormalized_left_psis = [None for i in range(left_length)]
+        lenNormalized_right_psis = [None for i in range(right_length)]
 
         if left_lenNormalized_counts_event2PSIs:
             try:
@@ -518,7 +545,7 @@ def main():
                 continue
 
         # Fill PSI dict
-        for i in range(len(left_events2counts[event])):
+        for i in range(left_length):
             (psi, sum_ct) = getPSI_sample_sum(left_events2counts[event][i], sum_thresh,
                                               lenNormalized_left_psis[i])
             allPSI_elems_left.append(psi)
@@ -551,6 +578,20 @@ def main():
             allPSI_elems_right[0] = recalculateRefPSI_list(allPSI_elems_right,
                                                            col2weights)
 
+        if dPSI(allPSI_elems_left) < dpsi_thresh or dPSI(allPSI_elems_right) < dpsi_thresh:
+
+            for j in range(1,left_length):
+                if event in event2pairs2idx:
+                    event2pairs2idx[event][(0,j)] = NA
+                else:
+                    event2pairs2idx[event] = {(0,j):NA}
+                if event in event2col2idx:
+                    event2col2idx[event][j] = NA
+                else:
+                    event2col2idx[event] = {j:NA}
+
+            continue
+
         [left_col1_excl, left_col1_incl] = map(int,left_events2counts[event][0].split(";"))
         [right_col1_excl, right_col1_incl] = map(int,right_events2counts[event][0].split(";"))
 
@@ -576,6 +617,7 @@ def main():
                                                                float(allPSI_elems_right[0]), 
                                                                right_col1_excl, 
                                                                right_col1_incl)
+
 
         for j in range(1,total_samples):
 
@@ -826,6 +868,21 @@ def buildDicts(lenNormalized_counts_file):
    
     return lenNormalized_counts_event2total_counts, lenNormalized_counts_event2psis 
     
+def dPSI(psi_vals):
+    minPSI = 130.0
+    maxPSI = -10.0
+
+    for psi_str in psi_vals:
+        psi = float(psi_str)
+
+        if psi < minPSI:
+            minPSI = psi
+        if psi > maxPSI:
+            maxPSI = psi
+
+    return abs(maxPSI - minPSI)
+    
+
 def formatDir(i_dir):
     i_dir = os.path.realpath(i_dir)
     if i_dir.endswith("/"):
@@ -985,9 +1042,10 @@ def recalculateRefPSI(col2psi_str, col2total_count, col2weights):
             continue
         psi_vals.append(float(col2psi_str[col]))
         total_vals.append(col2total_count[col])
-        weights.append(col2weights[col-1])
+        if col2weights:
+            weights.append(col2weights[col-1])
 
-    if weights:
+    if col2weights:
         median_psi = r['weighted.median'](robjects.FloatVector(psi_vals), 
                                           robjects.FloatVector(weights))[0]
         median_total = int(round(r['weighted.median'](robjects.IntVector(total_vals),                                
@@ -1009,9 +1067,10 @@ def recalculateRefPSI_list(psi_list, col2weights):
         if psi_list[i] == NA:
             continue
         vals.append(float(psi_list[i]))
-        weights.append(col2weights[i-1])
+        if col2weights:
+            weights.append(col2weights[i-1])
 
-    if weights:
+    if col2weights:
         median_psi = r['weighted.median'](robjects.FloatVecotr(vals),
                                           robjects.FloatVector(weights))[0]
     else:
