@@ -60,7 +60,7 @@ def main():
                                   option of run_createAS_CountTables.py""",
                           default=None)
     opt_parser.add_option("-o",
-                          dest="output_file_suffix",
+                          dest="output_file_prefix",
                           type="string",
                           help="""Output files that will contain all exclusion
                                   inclusion counts for every sample. As well as
@@ -90,11 +90,11 @@ def main():
 #                                 intron retention events are identified in a
 #                                 different way.""",
 #                         default=None)
-    opt_parser.add_option("--remove_tmp_files",
-                          dest="remove_tmp_files",
+    opt_parser.add_option("--keep_tmp_files",
+                          dest="keep_tmp_files",
                           action="store_true",
-                          help="""Remove temporary files.""",
-                          default=None)
+                          help="""Temporary files will be kept and not deleted""",
+                          default=False)
 #   opt_parser.add_option("--remove_interm_files",
 #                         dest="remove_interm_files",
 #                         type="string",
@@ -113,15 +113,15 @@ def main():
 
     root_dir = formatDir(options.root_dir)
 
-    suffix = options.output_file_suffix
+    prefix = options.output_file_prefix
 
-    output_file = open(suffix + "_AS_exclusion_inclusion_counts.txt" ,"w")
-    left_intron_file = open(suffix + "_left_intron_counts.txt", "w")
-    right_intron_file = open(suffix + "_right_intron_counts.txt", "w")
+    output_file = open(prefix + "_AS_exclusion_inclusion_counts.txt" ,"w")
+    left_intron_file = open(prefix + "_left_intron_counts.txt", "w")
+    right_intron_file = open(prefix + "_right_intron_counts.txt", "w")
 
-    lenNorm_output_file = open(suffix + "_AS_exclusion_inclusion_counts_lenNorm.txt" ,"w")
-    lenNorm_left_intron_file = open(suffix + "_left_intron_counts_lenNorm.txt", "w")
-    lenNorm_right_intron_file = open(suffix + "_right_intron_counts_lenNorm.txt", "w")
+    lenNorm_output_file = open(prefix + "_AS_exclusion_inclusion_counts_lenNorm.txt" ,"w")
+    lenNorm_left_intron_file = open(prefix + "_left_intron_counts_lenNorm.txt", "w")
+    lenNorm_right_intron_file = open(prefix + "_right_intron_counts_lenNorm.txt", "w")
 
     # Get chr list from tmp files that are in the root dir
     chr_list = getChrs(root_dir)
@@ -204,14 +204,22 @@ def main():
             lenNorm_right_intron_file.write(line)
         chr_right_intron_lenNorm.close()
 
-    if options.remove_tmp_files:
-        os.remove(outfile)
-        os.remove(left_file)
-        os.remove(right_file)
+        if not options.keep_tmp_files:
+            os.remove(outfile)
+            os.remove(left_file)
+            os.remove(right_file)
 
-        os.remove(outfile_lenNorm)
-        os.remove(left_file_lenNorm)
-        os.remove(right_file_lenNorm)
+            os.remove(outfile_lenNorm)
+            os.remove(left_file_lenNorm)
+            os.remove(right_file_lenNorm)
+
+    output_file.close() 
+    left_intron_file.close() 
+    right_intron_file.close() 
+
+    lenNorm_output_file.close() 
+    lenNorm_left_intron_file.close()
+    lenNorm_right_intron_file.close() 
 
 #   # Delete intermediate files
 #   if options.remove_interm_files:
