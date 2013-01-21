@@ -297,8 +297,8 @@ def main():
                 file_is_present = False
 
                 try:
-                    file_size = os.path.getsize(expected_out_file)
-                    file_is_present = True                                       
+                    if os.path.getsize(expected_out_file) != 0:
+                        file_is_present = True
                 except:                                                              
                     if check:
                         print "Does not exist: %s,%s,%s" % (samp, chr,
