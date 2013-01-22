@@ -124,7 +124,7 @@ def main():
     lenNorm_right_intron_file = open(prefix + "_right_intron_counts_lenNorm.txt", "w")
 
     # Get chr list from tmp files that are in the root dir
-    chr_list = getChrs(root_dir)
+    chr_list = list(getChrs(root_dir))
 
     # Getting the header from an arbitrary chr
     header = grabHeader(root_dir + "/tmp_createAS_CountTables_%s_AS_exclusion_inclusion_counts.txt" % chr_list[0])
@@ -255,7 +255,7 @@ def formatLine(line):
     return line
 
 def getChrs(root_dir):
-    chr_list = []
+    chr_set = set([])
 
     for subfile in os.listdir(root_dir):
         if not os.path.isdir(root_dir + "/" + subfile):
@@ -263,10 +263,9 @@ def getChrs(root_dir):
                 continue
             if "createAS_CountTables" in subfile:
                 first_split = subfile.split("_")
-                chr_list.append(first_split[3])
-#                chr_list.append(first_split[-1].replace(".out",""))
+                chr_set.add(first_split[3])
 
-    return chr_list
+    return chr_set
 
 def grabHeader(file_name):
     file = open(file_name)
