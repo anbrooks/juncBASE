@@ -138,13 +138,13 @@ def main():
                           help="""Indicates that read counts in the
                                   all_as_event file should be normalized by the length""",
                           default=False)
-    opt_parser.add_option("--method",
-                          dest="method",
-                          type="string",
-                          help="""Type of correction method:
-                                  'BH' - Benjamini & Hochberg,
-                                  'bonferroni'""",
-                          default=None)
+#   opt_parser.add_option("--method",
+#                         dest="method",
+#                         type="string",
+#                         help="""Type of correction method:
+#                                 'BH' - Benjamini & Hochberg,
+#                                 'bonferroni'""",
+#                         default=None)
     opt_parser.add_option("--by_chr",
                           dest="this_chr",
                           type="string",
@@ -158,18 +158,18 @@ def main():
     opt_parser.check_required("-l")
     opt_parser.check_required("-r")
 #    opt_parser.check_required("-d")
-    opt_parser.check_required("--method")
+#    opt_parser.check_required("--method")
     opt_parser.check_required("--all_as_event")
     opt_parser.check_required("--intron")
     opt_parser.check_required("--exon")
 
 
-    method = options.method
+#    method = options.method
 
-    if method != "BH" and method != "bonferroni":
-        print "Wrong method given."
-        opt_parser.print_help()
-        sys.exit(1)
+#   if method != "BH" and method != "bonferroni":
+#       print "Wrong method given."
+#       opt_parser.print_help()
+#       sys.exit(1)
     
 #    as_db = options.as_db
     lengthNorm = options.lengthNorm
