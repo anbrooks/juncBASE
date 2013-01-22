@@ -130,7 +130,7 @@ def parseJcns(junction_file_name):
         line = formatLine(line)
 
         line_list = line.split("\t")
-        jcn_str = "%s_%s_%s" % (line_list[0],
+        jcn_str = "%s:%s-%s" % (line_list[0],
                                 line_list[1],
                                 line_list[2])
 
