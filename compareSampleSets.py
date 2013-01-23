@@ -31,7 +31,7 @@ robjects.r["options"](warn=-1)
 #############
 NA = "NA"
 DEF_SIGN_CUTOFF = 0.05
-DEF_THRESH = 25
+DEF_THRESH = 10
 DEF_DPSI_THRESH = 5.0
 
 DEF_START_IDX =  11
@@ -75,48 +75,56 @@ class OptionParser(optparse.OptionParser):
 def main():
     opt_parser = OptionParser()
     # Add Options. Required options should have default=None
-    opt_parser.add_option("-i",
-                          dest="input_file",
+    opt_parser.add_option("--in_prefix",
+                          dest="in_prefix",
                           type="string",
-                          help="Resulting file from createAS_CountTables.py",
+                          help="""Prefix of output files created from
+                                  createAS_CountTables. In createAS_CountTables
+                                  this was the -o option""",
+                          default=None)
+    opt_parser.add_option("-i",
+                          dest="generic_file",
+                          type="string",
+                          help="""Run statistical tests on a generic table.
+                                  A generic file with any type of value can also
+                                  be used. The first line should be a header
+                                  that starts with # and contains sample names.""",
                           default=None)
     opt_parser.add_option("--generic",
                           dest="samp_start_idx",
                           type="int",
-                          help="""Run statistical tests on a generic table. The
-                                  samp_start_idx gives the 0-based index of the
-                                  column containing the sample value. The first
-                                  line is a header that should start with the #
-                                  symbol.""",
+                          help="""The samp_start_idx gives the 0-based index of the
+                                  column containing the sample value.""",
                           default=None)
-    opt_parser.add_option("--left_intron",
-                          dest="left_input",
-                          type="string",
-                          help="""Resulting file from createAS_CountTables.py, which
-                                  contains the exclusion and inclusion counts
-                                  for just the left side of an intron retention
-                                  event.""",
-                          default=None)
-    opt_parser.add_option("--right_intron",
-                          dest="right_input",
-                          type="string",
-                          help="""Resulting file from createAS_CountTables.py, which
-                                  contains the exclusion and inclusion counts
-                                  for just the right side of an intron retention
-                                  event.""",
-                          default=None)
+#   opt_parser.add_option("--left_intron",
+#                         dest="left_input",
+#                         type="string",
+#                         help="""Resulting length-normalized file from createAS_CountTables.py, which
+#                                 contains the exclusion and inclusion counts
+#                                 for just the left side of an intron retention
+#                                 event.""",
+#                         default=None)
+#   opt_parser.add_option("--right_intron",
+#                         dest="right_input",
+#                         type="string",
+#                         help="""Resulting length-normalized file from createAS_CountTables.py, which
+#                                 contains the exclusion and inclusion counts
+#                                 for just the right side of an intron retention
+#                                 event.""",
+#                         default=None)
     opt_parser.add_option("--all_psi_output",
                           dest="all_psi_output",
                           type="string",
                           help="""Output file that will contain the PSI values
                                   for all events and samples. The last two
                                   columns will correspond to the raw-pvalue and
-                                  corrected p-value.""",
+                                  corrected p-value. If a generic file is used,
+                                  this will be the output file""",
                           default=None)
     opt_parser.add_option("--thresh",
                           dest="threshold",
                           type="float",
-                          help="""Threshold for minimum number of total reads
+                          help="""Threshold for minimum abundance
                                   in an event. Default=%d""" % DEF_THRESH,
                           default=DEF_THRESH)
     opt_parser.add_option("--mt_correction",
@@ -162,7 +170,8 @@ def main():
                           dest="as_only",
                           action="store_true",
                           help="""Will output the psi table just to get a sense
-                                  of alternative splicing. t will not 
+                                  of alternative splicing. It will not perform
+                                  any statistical analyses.
                                   Names must be in header columns of input
                                   files.""",
                           default=None)
@@ -178,25 +187,37 @@ def main():
                          help="""Significance threshold of q-value for printed out   
                                  html_table. DEF=%.2f""" % DEF_SIGN_CUTOFF,
                          default=DEF_SIGN_CUTOFF)
-    opt_parser.add_option("--image",
-                         dest="image_file_type",
-                         type="string",
+    opt_parser.add_option("--pdf",
+                         dest="make_pdf",
+                         action="store_true",
                          help="""Optional: Will create images as pdf instead of
                                  .png as the default.""",
-                         default="png")
+                         default=None)
 
     (options, args) = opt_parser.parse_args()
 	
     # validate the command line arguments
-    opt_parser.check_required("-i")
+#    opt_parser.check_required("-i")
     opt_parser.check_required("--all_psi_output")
     opt_parser.check_required("--mt_correction")
     opt_parser.check_required("--sample_set1")
     opt_parser.check_required("--sample_set2")
 
-    input_file = open(options.input_file)
-    left_input_file_name = options.left_input
-    right_input_file_name = options.right_input
+    if options.in_prefix:
+        prefix = options.in_prefix
+        input_file = open("%s_AS_exclusion_inclusion_counts_lenNorm.txt" % prefix)
+        left_input_file_name = "%s_left_intron_counts_lenNorm.txt" % prefix
+        right_input_file_name = "%s_right_intron_counts_lenNorm.txt" % prefix
+    else:
+        if not options.generic_file:
+            print "Must include either --in_prefix or -i"
+            opt_parser.print_help()
+            sys.exit(1)
+
+        input_file = open(options.generic_file)
+        left_input_file_name = None
+        right_input_file_name = None
+
     sum_thresh = options.threshold
 
     delta_thresh = options.delta_thresh
@@ -215,7 +236,9 @@ def main():
         html_out = open(html_out_table_name, "w")
         initiateHTML_table(html_out) 
 
-    image_file_type = options.image_file_type
+    image_file_type = "png"
+    if options.make_pdf:
+        image_file_type = "pdf"
 
     as_only = options.as_only
     
