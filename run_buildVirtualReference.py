@@ -25,6 +25,8 @@ if not os.path.exists(SCRIPT):
 
 DEF_THRESH = 25
 DEF_NUM_PROCESSES = 2
+
+SHELL = "/bin/tcsh"
 #################
 # END CONSTANTS #
 #################
@@ -71,7 +73,7 @@ def main():
     opt_parser.add_option("--total_thresh",
                           dest="total_thresh",
                           type="int",
-                          help="Threshold for total number of counts.",
+                          help="Threshold for total number of counts. DEF=%d" % DEF_THRESH,
                           default=DEF_THRESH)
     opt_parser.add_option("--remove_from_median",
                           dest="remove_from_median",
@@ -87,7 +89,7 @@ def main():
                                   used to create a weighted median. Default is
                                   equal weight for all samples.""",
                           default=None)
-    opt_parser.add_option("-p"
+    opt_parser.add_option("-p",
                           dest="num_processes",
                           type="int",
                           help="""Number of processes to run simultaneously.
@@ -107,6 +109,8 @@ def main():
     remove_from_median = options.remove_from_median
     weights = options.weights 
 
+    num_processes = options.num_processes
+
     out_prefix = in_prefix + "_w_VR"
 
     file_suffix_list = ["_AS_exclusion_inclusion_counts.txt",
@@ -114,7 +118,7 @@ def main():
                    "_right_intron_counts.txt",
                    "_AS_exclusion_inclusion_counts_lenNorm.txt",
                    "_left_intron_counts_lenNorm.txt",
-                   "_right_intron_counts_lenNorm.txt",
+                   "_right_intron_counts_lenNorm.txt",]
 
     ctr = 0
     for file_suffix in file_suffix_list:
