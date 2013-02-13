@@ -15,14 +15,15 @@ import os
 import pdb
 import pysam
 
-from subprocess import Popen
+from subprocess import Popen, PIPE
 
-from helperFunctions import runCmd
+from helperFunctions import runCmd, waitForChildren
 from preProcess_getASEventReadCounts_by_chr import getReferences, formatChr
 #############
 # CONSTANTS #
 #############
-SCRIPT = "~/bin/preProcess_getASEventReadCounts_by_chr.py"
+BIN_DIR = os.path.realpath(os.path.dirname(sys.argv[0]))
+SCRIPT = "%s/preProcess_getASEventReadCounts_by_chr.py" % BIN_DIR
 
 DEF_NUM_PROCESSES = 1
 SHELL = "/bin/tcsh"
@@ -111,7 +112,7 @@ def main():
 
     input_file = open(options.input_file)
 
-    output_dir = options.output_dir
+    output_dir = formatDir(options.output_dir)
 
     preProcess_options = options.preProcess_options
     num_processes = options.num_processes
@@ -120,39 +121,53 @@ def main():
     force = options.force
 
     ctr = 0
+    children = []
     for line in input_file:
         line = formatLine(line)
 
         samp, bam = line.split("\t")
     
-        check_file = "%s/%s/%s_%s/%s_%s_junctions.bed" % (output_dir,
-                                                          samp,
-                                                          samp, chr,
-                                                          samp, chr)
+        bam_file = pysam.Samfile(bam, "rb")
+        chr_names_unformatted = getReferences([bam_file])
+        bam_file.close()
+
+        chr_names = []
+        for this_chr in chr_names_unformatted:
+            chr_names.append(formatChr(this_chr))
+
         if check:
-            bam = pysam.Samfile(bam, "rb")
-            chr_names_unformatted = getReferences([bam])
-            bam.close()
-
-            chr_names = []
-            for this_chr in chr_names_unformatted:
-                chr_names.append(formatChr(this_chr))
-
             for chr in chr_names:
+                check_file = "%s/%s/%s_%s/%s_%s_junctions.bed" % (output_dir,
+                                                                  samp,
+                                                                  samp, chr,
+                                                                  samp, chr)
                 if not os.path.exists(check_file):
                     print "Cannot find: %s" % check_file 
                     continue
 
                 if os.path.getsize(check_file) == 0:
                     print "File is empty: %s" % check_file
-
+                    continue
+        if check:
             continue
 
+        files_to_run = True
         if not force:
-            if os.path.exists(check_file):
-                continue
-            if os.path.getsize(check_file): > 0:
-                continue
+            files_to_run = False
+            for chr in chr_names:
+                check_file = "%s/%s/%s_%s/%s_%s_junctions.bed" % (output_dir,
+                                                                  samp,
+                                                                  samp, chr,
+                                                                  samp, chr)
+                if os.path.exists(check_file):
+                    continue
+                if os.path.getsize(check_file) > 0:
+                    continue
+
+                files_to_run = True 
+
+        if not files_to_run:
+            continue
 
         cmd = ""
         if options.nice:
@@ -168,13 +183,25 @@ def main():
 
         if ctr % num_processes == 0:
             print cmd
-            runCmd(cmd, SHELL, True)
+#            runCmd(cmd, SHELL, True)
+            sys.stdout.flush()
+            p = Popen(cmd, shell=True, executable=SHELL)
+            children.append(p)
+
+            waitForChildren(children)
+
+            children = []
         else:
             print cmd
-            Popen(cmd, shell=True, executable=SHELL)
+            sys.stdout.flush()
+            p = Popen(cmd, shell=True, executable=SHELL)
+            children.append(p)
 
-    
-			
+   
+    # Finish the last of the jobs
+    waitForChildren(children) 
+
+    sys.stdout.flush()
     sys.exit(0)
 
 ############
