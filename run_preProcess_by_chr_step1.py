@@ -160,9 +160,8 @@ def main():
                                                                   samp, chr,
                                                                   samp, chr)
                 if os.path.exists(check_file):
-                    continue
-                if os.path.getsize(check_file) > 0:
-                    continue
+                    if os.path.getsize(check_file) > 0:
+                        continue
 
                 files_to_run = True 
 
