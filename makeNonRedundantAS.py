@@ -12,10 +12,15 @@ import optparse
 import pdb
 
 from helperFunctions import coordsOverlap
+from getASEventReadCounts import convertCoordStr
+
+import rpy2.robjects as robjects
 #############
 # CONSTANTS #
 #############
 INFINITY = 100000000000000000000
+
+NA = "NA"
 #################
 # END CONSTANTS #
 #################
@@ -64,6 +69,14 @@ def main():
                           help="""Resulting table with all redundancies
                                   removed.""",
                           default=None)
+    opt_parser.add_option("--use_mad",
+                          dest="use_mad",
+                          action="store_true",
+                          help="""Instead of a p-value, redundancies will be
+                                  resolved by taking the event with the largest 
+                                  median absolute deviation (MAD). All value
+                                  columns should be PSI values.""",
+                          default=False)
 
     (options, args) = opt_parser.parse_args()
 	
@@ -73,6 +86,8 @@ def main():
 
     input_file = open(options.input)
     output_file = open(options.output, "w")
+
+    use_mad = options.use_mad
 
     as_type2event2pval = {}
     as_type2redundantGroup2event = {}
@@ -85,7 +100,8 @@ def main():
             output_file.write(event + "\n")
             continue
         
-        buildDictionaries(event, as_type2event2pval, as_type2redundantGroup2event)
+        buildDictionaries(event, as_type2event2pval,
+                          as_type2redundantGroup2event, use_mad)
 
     input_file.close()
 
@@ -113,11 +129,15 @@ def main():
 #############
 # FUNCTIONS #
 #############
-def buildDictionaries(event, as_type2event2pval, as_type2redundantGroup2event):
+def buildDictionaries(event, as_type2event2pval, as_type2redundantGroup2event,
+                      use_mad):
 
     line_list = event.split("\t")
 
-    pval = float(line_list[-1])
+    if use_mad:
+        pval = get_mad(line_list)
+    else:
+        pval = float(line_list[-1])
     as_type = line_list[1]
 
     if as_type in as_type2event2pval:
@@ -145,10 +165,10 @@ def buildDictionaries(event, as_type2event2pval, as_type2redundantGroup2event):
     updateRedundantDictionary(as_type2redundantGroup2event, as_type, redundantRegion,
                               event)
 
-def convertCoordStr(coord_str):
-    chr, start_str, end_str = coord_str.split("_")
+#ef convertCoordStr(coord_str):
+#   chr, start_str, end_str = coord_str.split("_")
 
-    return chr, int(start_str), int(end_str)
+#   return chr, int(start_str), int(end_str)
 
 def findLargestRegion(coords_string):
 
@@ -184,10 +204,34 @@ def findMostSignEvent(event2pval, events):
     return most_sign_event
 
     
+def fixMissingVals(vals_str):
+
+    return_vals = []
+
+    for val in vals_str:
+        if val != NA:
+            return_vals.append(val)
+
+    return return_vals
+
 def formatLine(line):
     line = line.replace("\r","")
     line = line.replace("\n","")
     return line
+
+def get_mad(line_list):
+    vals_str = line_list[11:]
+    
+    vals_str = fixMissingVals(vals_str)
+
+    vals = map(float, vals_str) 
+
+    abs_mad_val = abs(robjects.r['mad'](robjects.FloatVector(vals))[0])
+
+    # Since the lowest p-value is supposed to be used for selecting the
+    # non-redundant set of events, the negative of the larget MAD value will
+    # give the event with the largets MAD value.
+    return -abs_mad_val
 
 def mergeRedundantEvents(as_type2redundantGroup2event):
     """
