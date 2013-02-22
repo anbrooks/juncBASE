@@ -69,7 +69,6 @@ if not os.path.exists(COORD_COUNT):
 
 SHELL = "/bin/tcsh"
 
-ERROR_LOG = open("error.log", "w")
 #################
 # END CONSTANTS #
 #################
@@ -198,6 +197,15 @@ def main():
                                   be fairly clean of fragmented
                                   transcripts.""",
                           default=None)
+    opt_parser.add_option("--txt_db3",
+                          dest="txt_db3",
+                          type="string",
+                          help="""Database of transcript annotations derived
+                                  from a gtf file. Used for annotating gene
+                                  names and whether an intron/junction is annotated or
+                                  not. By default, txt_db1 will be used for this
+                                  information.""",
+                          default=None)
     opt_parser.add_option("-p",
                           dest="prefix",
                           type="string",
@@ -234,13 +242,13 @@ def main():
                                   used the -a option with something < 6, give
                                   the value (read_length-(anchor length)*2.""",
                           default=None)
-    opt_parser.add_option("--method",
-                          dest="method",
-                          type="string",
-                          help="""Type of correction method:
-                                  'BH' - Benjamini & Hochberg,
-                                  'bonferroni'""",
-                          default=None)
+#   opt_parser.add_option("--method",
+#                         dest="method",
+#                         type="string",
+#                         help="""Type of correction method:
+#                                 'BH' - Benjamini & Hochberg,
+#                                 'bonferroni'""",
+#                         default=None)
     opt_parser.add_option("--fasta",
                            dest="genome_file",
                            type="string",
@@ -289,20 +297,20 @@ def main():
     opt_parser.check_required("--jcn2")
     opt_parser.check_required("--txt_db1")
     opt_parser.check_required("--txt_db2")
-    opt_parser.check_required("--method")
+#    opt_parser.check_required("--method")
     opt_parser.check_required("--jcn_seq_len")
 
-    method = options.method
+#    method = options.method
 
     jcn_seq_len = options.jcn_seq_len
 #   if options.lengthNorm:
 #       global DO_LEN_NORM
 #       DO_LEN_NORM = True
 
-    if method != "BH" and method != "bonferroni":
-        print "Wrong method given."
-        opt_parser.print_help()
-        sys.exit(1)
+#   if method != "BH" and method != "bonferroni":
+#       print "Wrong method given."
+#       opt_parser.print_help()
+#       sys.exit(1)
 
     keep_interm = options.keep_interm
 
@@ -386,6 +394,10 @@ def main():
     txt_db1 = options.txt_db1
     txt_db2 = options.txt_db2
 
+    annot_db = txt_db1
+    if options.txt_db3:
+        annot_db = options.txt_db3
+
     db = None
     if options.sqlite_db_dir:
         import pysqlite_wrap
@@ -399,6 +411,7 @@ def main():
     norm1 = options.norm1
     norm2 = options.norm2
 
+    prefix = None
     if options.prefix:
         prefix = options.prefix
         # Output files
@@ -418,6 +431,9 @@ def main():
             ir_right_out = open(prefix + "_intron_retention_right_counts.txt", "w")
 
         all_event_info_out = open(prefix + "_all_AS_event_info.txt", "w")
+
+        if __name__ == "__main__":
+            ERROR_LOG = open("%s_error.log" % prefix, "w")
     else:
         # Output files
         cassette_out = open("cassette_event_counts.txt", "w")
@@ -437,6 +453,8 @@ def main():
 
         all_event_info_out = open("all_AS_event_info.txt", "w")
 
+        if __name__ == "__main__":
+            ERROR_LOG = open("error.log", "w")
     # jcn_count_dict - {jcn_coord_str:(file1_count, file2_count)}
     # coord_start2end - {chr:{start:[end]}}
     # coord_end2start - {chr:{end:[start]}}
@@ -472,7 +490,7 @@ def main():
         ir_count_dict = parseIEJcnFiles(ie1_file, ie2_file)
 
     # {chr: set[(start, end, strand)])
-    annotated_introns = getAnnotatedIntronCoords(db, txt_db1, this_chr)
+    annotated_introns = getAnnotatedIntronCoords(db, annot_db, this_chr)
 
     chrCheck(jcn_chrs, annotated_introns, "txt_db1:annotated introns")
 
@@ -491,17 +509,17 @@ def main():
     chrCheck(jcn_chrs, annotated_exons_by_strand, None)
     chrCheck(jcn_chrs, annotated_exon_search_tree, None)
 
-    # {chr: [(sgid, name, strand, start, end)]}
+    # {chr: (start,end): [gene_names]}
+    # {chr: strand: (start,end): [gene_names]}
     (annotated_genes,
-     annotated_genes_by_strand) = getAnnotatedGenes(db, txt_db1, this_chr)
+     annotated_genes_by_strand) = getAnnotatedGenes(db, annot_db, this_chr)
 
     chrCheck(jcn_chrs, annotated_genes, "txt_db1:annotated genes")
     chrCheck(jcn_chrs, annotated_genes_by_strand, None)
 
     # {chr:(start, end)} 
     (alt_first_exons, 
-     alt_last_exons,
-     alt_first_exons_start2end,
+     alt_last_exons, alt_first_exons_start2end,
      alt_first_exons_end2start,
      alt_last_exons_start2end,
      alt_last_exons_end2start,
@@ -774,7 +792,12 @@ def main():
     if printExonCoords:
         if genome_read_file1 or genome_read_file2:
             # Produce exon coord file
-            exon_coord_file = open("tmp_exon_coord_file.txt", "w")
+            if prefix:            
+                exon_coord_file_name = "%s_tmp_exon_coord_file.txt" % prefix
+            else:
+                exon_coord_file_name = "tmp_exon_coord_file.txt"
+    
+            exon_coord_file = open(exon_coord_file_name, "w")
 
             for coord in exon_coords:
 
@@ -786,9 +809,12 @@ def main():
             exon_coord_file.close()
 
         if genome_read_file1:
-            mapped_file1_name = "tmp_exon_coord_file1_readCounts.txt" 
+            if prefix:
+                mapped_file1_name = "%s_tmp_exon_coord_file1_readCounts.txt"  % prefix
+            else:
+                mapped_file1_name = "tmp_exon_coord_file1_readCounts.txt" 
 
-            cmd = "python %s --coords tmp_exon_coord_file.txt " % COORD_COUNT
+            cmd = "python %s --coords %s " % (COORD_COUNT, exon_coord_file_name)
             
             # Run First Set of Reads through coordReadCounts
             first_cmd = cmd + "--reads %s -o %s" % (genome_read_file1,
@@ -800,9 +826,12 @@ def main():
             mapped_file1_name = coord_counts1
 
         if genome_read_file2:
-            mapped_file2_name = "tmp_exon_coord_file2_readCounts.txt" 
+            if prefix:
+                mapped_file2_name = "%s_tmp_exon_coord_file2_readCounts.txt"  % prefix
+            else:
+                mapped_file2_name = "tmp_exon_coord_file2_readCounts.txt" 
 
-            cmd = "python %s --coords tmp_exon_coord_file.txt " % COORD_COUNT
+            cmd = "python %s --coords %s " % (COORD_COUNT, exon_coord_file_name)
 
             # Run Second Set of Reads through coordReadCounts
             second_cmd = cmd + "--reads %s -o %s" % (genome_read_file2,
@@ -890,10 +919,19 @@ def main():
 
         # Pickle up existing annoation dictionaries to make things more
         # efficient
-        intron_pick_file = open("annotated_introns.pk", "w")
+        if prefix:
+            annot_intron_pick_name = "%s_annotated_introns.pk" % prefix
+        else:
+            annot_intron_pick_name = "annotated_introns.pk"
+        intron_pick_file = open(annot_intron_pick_name, "w")
         pickle.dump(annotated_introns, intron_pick_file)
         intron_pick_file.close()
-        exon_pick_file = open("annotated_exons_by_strand.pk", "w")
+
+        if prefix:
+            annot_exon_pick_name = "%s_annoated_exons_by_strand.pk" % prefix
+        else:
+            annot_exon_pick_name = "annoated_exons_by_strand.pk"
+        exon_pick_file = open(annot_exon_pick_name, "w")
         pickle.dump(annotated_exons_by_strand, exon_pick_file)
         exon_pick_file.close()
 
@@ -908,8 +946,8 @@ def main():
             op += "--all_as_event all_AS_event_info_irOnly.txt"
 
         cmd = "python %s %s " % (IR_SCRIPT, op)
-        cmd += "--intron annotated_introns.pk --exon annotated_exons_by_strand.pk "
-        cmd += "--method %s" % method
+        cmd += "--intron %s --exon %s" % (annot_intron_pick_name, annot_exon_pick_name)
+#        cmd += "--method %s" % method
 #        cmd += "-d %s " % txt_db1
         # I would like just raw counts reported
 #       if DO_LEN_NORM:
@@ -934,14 +972,16 @@ def main():
        
         # IR Counts are already normalized 
         if printExonCoords:
-            updateCounts2all_as_events(ir_file_name, 
-                                   mapped_file1_counts, mapped_file2_counts,
-                                   norm1, norm2, jcn_seq_len)
+            if os.path.exists(ir_file_name):
+                updateCounts2all_as_events(ir_file_name, 
+                                       mapped_file1_counts, mapped_file2_counts,
+                                       norm1, norm2, jcn_seq_len)
 
         # The exclusion counts in the original files are incorrect because
         # each end of the junction was calculated separately
-        fixIRExclusion_count(ir_file_name, all_jcn_count_dict,
-                             norm1, norm2, jcn_seq_len)
+        if os.path.exists(ir_file_name):
+            fixIRExclusion_count(ir_file_name, all_jcn_count_dict,
+                                 norm1, norm2, jcn_seq_len)
 
         # Combine irOnly with the rest of all_AS_event_info
         if ie1_file is not None:
@@ -952,8 +992,9 @@ def main():
                 main_file = "all_AS_event_info.txt"
                 ir_file = "all_AS_event_info_irOnly.txt"
 
-            cmd = "cat %s >> %s" % (ir_file, main_file)
-            os.system(cmd)
+            if os.path.exists(ir_file):
+                cmd = "cat %s >> %s" % (ir_file, main_file)
+                os.system(cmd)
 
     # Sum Totals for inclusion and exclusion isoforms in all_AS_event_info
     # and adjust for paired end counting
@@ -974,7 +1015,6 @@ def main():
 
     # Remove all temporary files.
     if not keep_interm:
-        os.remove(ir_file)
         os.remove(cassette_out_str)
         os.remove(donor_out_str)
         os.remove(accept_out_str)
@@ -988,17 +1028,26 @@ def main():
         os.remove(ir_right_out_str)
         os.remove(mapped_file1_name)
         os.remove(mapped_file2_name)
-        os.remove("tmp_exon_coord_file.txt")
-        os.remove("annotated_introns.pk")
-        os.remove("annotated_exons_by_strand.pk")
+        os.remove(exon_coord_file_name)
+        os.remove(annot_intron_pick_name)
+        os.remove(annot_exon_pick_name)
 
-        if options.prefix:
-            os.remove("%s_IR_diff_direction.txt" % prefix)
-            os.remove("%s_IR_left_no_partner.txt" % prefix)
-            os.remove("%s_IR_right_no_partner.txt" % prefix)
+        if os.path.exists(ir_file):
+            os.remove(ir_file)
+            if options.prefix:
+                os.remove("%s_IR_diff_direction.txt" % prefix)
+                os.remove("%s_IR_left_no_partner.txt" % prefix)
+                os.remove("%s_IR_right_no_partner.txt" % prefix)
+            else:
+                os.remove("IR_diff_direction.txt")
+                os.remove("IR_left_no_partner.txt")
+                os.remove("IR_right_no_partner.txt")
 
     # Create empty file to indicate that the run completed
-    finished_file = open("finished.txt", "w")
+    if options.prefix:
+        finished_file = open("%s_finished.txt" % prefix, "w")
+    else:
+        finished_file = open("finished.txt", "w")
     finished_file.write("DONE\n")
     finished_file.close()
 
@@ -3219,25 +3268,33 @@ def getAnnotatedExonCoords(db, txt_db, this_chr):
 
     return exon_dict, exon_internal_dict, exon_dict_no_strand, exon_dict_by_strand, exon_search_tree
 
-    # {chr: [(gid, name, strand, start, end)]}
+    # {chr: (start,end): [gene_names]}
 def getAnnotatedGenes(db, txt_db, this_chr):
-    gene_select = """SELECT gene_id, name, chr, strand,
+    intron_select = """SELECT gene_name, chr, strand,
                             start, end
-                     FROM gene"""
+                     FROM intron"""
 
     if this_chr:
-        gene_select += " WHERE chr = \'%s\' OR chr = \'%s\'" % (this_chr,
+        intron_select += " WHERE chr = \'%s\' OR chr = \'%s\'" % (this_chr,
                                                                 this_chr.lstrip("chr"))
 
-    gene_records = db.getDBRecords_Dict(gene_select, txt_db) 
+    intron_records = list(db.getDBRecords_Dict(intron_select, txt_db))
 
+    exon_select = """SELECT gene_name, chr, strand, start, end FROM exon"""
+    if this_chr:
+        exon_select += " WHERE chr = \'%s\' OR chr = \'%s\'" % (this_chr,
+                                                                  this_chr.lstrip("chr"))
+
+    exon_records = list(db.getDBRecords_Dict(exon_select, txt_db))
+
+    all_records = intron_records + exon_records
 
     gene_dict = {}
     gene_dict_by_strand = {}
-    for row in gene_records:
+    for row in all_records:
 
-        gid = int(row["gene_id"])
-        name = row["name"]
+#        gid = int(row["gene_name"])
+        name = row["gene_name"]
 
         strand = row["strand"]
         start = int(row["start"])
@@ -3245,35 +3302,57 @@ def getAnnotatedGenes(db, txt_db, this_chr):
 
         chr = formatChr(row["chr"])
 
-        updateDictOfLists(gene_dict, chr, (gid, name, strand, start, end)) 
-        if chr in gene_dict_by_strand:
-            updateDictOfLists(gene_dict_by_strand[chr], strand, (gid, name, strand, start, end))
-        else:
-            gene_dict_by_strand[chr] = {strand:
-                                        [(gid, name, strand, start,end)]}
+        try:
+            if (start,end) in gene_dict[chr]:
+                updateDictOfLists(gene_dict[chr], (start,end), name)
+            else:
+                gene_dict[chr][(start,end)] = [name]
+#            updateDictOfLists(gene_dict[chr], chr, (gid, name, strand, start, end)) 
+        except:
+            gene_dict[chr] = {(start,end):[name]}
+
+        try:
+            if (start,end) in gene_dict_by_strand[chr][strand]:
+                updateDictOfLists(gene_dict_by_strand[chr][strand], (start,end), name)
+            else:
+                gene_dict_by_strand[chr][strand][(start,end)] = [name]
+        except:
+            if chr in gene_dict_by_strand:
+                if strand in gene_dict_by_strand:
+                    updateDictOfLists(gene_dict_by_strand[chr][strand], (start,end), name) 
+                else:
+                    gene_dict_by_strand[chr][strand] = {(start,end):[name]}
+            else:
+                gene_dict_by_strand[chr] = {strand:{(start,end):[name]}}
+
+#       if chr in gene_dict_by_strand:
+#           updateDictOfLists(gene_dict_by_strand[chr], strand, (gid, name, strand, start, end))
+#       else:
+#           gene_dict_by_strand[chr] = {strand:
+#                                       [(gid, name, strand, start,end)]}
 
     # If for some reason there are no genes on a chromosome, can check for
     # chromosomes that have exon to avoid key errors on chromosomes
-    exon_select = "SELECT DISTINCT chr FROM exon"
+#   exon_select = "SELECT DISTINCT chr FROM exon"
 
-    exon_records = db.getDBRecords_Dict(exon_select, txt_db)
+#   exon_records = db.getDBRecords_Dict(exon_select, txt_db)
 
-    for row in exon_records:
-        chr = formatChr(row["chr"])
+#   for row in exon_records:
+#       chr = formatChr(row["chr"])
 
-        if chr not in gene_dict:
-            # Add an empty list.
-            gene_dict[chr] = []
+#       if chr not in gene_dict:
+#           # Add an empty list.
+#           gene_dict[chr] = []
 
-        # Update gene_dict_by_strand as well
-        if chr not in gene_dict_by_strand:
-            gene_dict_by_strand[chr] = {"+": [],
-                                        "-": []}
-        else:
-            if "+" not in gene_dict_by_strand[chr]:
-                gene_dict_by_strand[chr]["+"] = []
-            if "-" not in gene_dict_by_strand[chr]:
-                gene_dict_by_strand[chr]["-"] = [] 
+#       # Update gene_dict_by_strand as well
+#       if chr not in gene_dict_by_strand:
+#           gene_dict_by_strand[chr] = {"+": [],
+#                                       "-": []}
+#       else:
+#           if "+" not in gene_dict_by_strand[chr]:
+#               gene_dict_by_strand[chr]["+"] = []
+#           if "-" not in gene_dict_by_strand[chr]:
+#               gene_dict_by_strand[chr]["-"] = [] 
 
     return gene_dict, gene_dict_by_strand
 
@@ -3881,33 +3960,50 @@ def inferExclusionJunctions(upstrm_jcns, dwnstrm_jcns):
    
     return excl_jcns 
 
-def inferGeneName(annotated_genes_by_strand, chr, start, end, strand):
+def inferGeneName(annotated_genes_by_strand, chr, strand, start_and_ends):
     """
     Looks for the gene(s) that the start and end coordinate is contained in
     """
-    # annotated_genes -  {chr: [(sgid, name, strand, start, end)]}
-    gene_list = []
+    # annotated_genes -  
+    # {chr: (start,end): [gene_names]}
+    # {chr: strand: (start,end): [gene_names]}
+    gene_set = set([])
     if chr not in annotated_genes_by_strand:
         return "None"
 
     if strand not in annotated_genes_by_strand[chr]:
         return "None"
 
-    for (sgid, name, gene_strand, gene_start, gene_end) in annotated_genes_by_strand[chr][strand]:
-         
-        if coordsOverlap(start, end, gene_start, gene_end):
-            if strand == ".":
-                gene_list.append(name)
-            elif gene_strand == strand:
-                gene_list.append(name)
-            elif strand is None:
-                gene_list.append(name)
+    for elem1 in start_and_ends:
+        elem2 = []
+        if "," in elem1:
+            elem2 = elem1.split(",")
+        else:
+            elem2 = [elem1]
+        for elem in elem2:
+            if ":" in elem:
+                chr, start, end = convertCoordStr(elem)
+                elem = (start, end)
+
+            if elem in annotated_genes_by_strand[chr][strand]:
+                gene_set.update(annotated_genes_by_strand[chr][strand][elem])
+
+#   for (sgid, name, gene_strand, gene_start, gene_end) in annotated_genes_by_strand[chr][strand]:
+#        
+#       if coordsOverlap(start, end, gene_start, gene_end):
+#           if strand == ".":
+#               gene_list.append(name)
+#           elif gene_strand == strand:
+#               gene_list.append(name)
+#           elif strand is None:
+#               gene_list.append(name)
 
 #   if strand is None:
 #       if len(gene_list) > 1:
 #           return "None"
 #       else:
 #           return gene_list[0]
+    gene_list = list(gene_set)
 
     return ",".join(gene_list)
 
@@ -4623,10 +4719,8 @@ def printAlternativeDonorsAcceptors(db,
 #                                                                  ordered_pos,
 #                                                                  proportions1,
 #                                                                  proportions2)
-
-
-                    gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
-
+                    gene_name = inferGeneName(annotated_genes_by_strand, chr, strand, 
+                                              exclusion_str_list + [formatCoordStr(chr,start,end)])
 
                     out_str = "%s\t%s\t%s\t%s\t%s" % (n_or_k,
                                                   "?",
@@ -5045,7 +5139,8 @@ def printAlternativeDonorsAcceptors(db,
 #                                                                  ordered_pos,
 #                                                                  proportions1,
 #                                                                  proportions2)
-                    gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
+                    gene_name = inferGeneName(annotated_genes_by_strand, chr, strand,
+                                              exclusion_str_list + [inclusion_str]) 
 
 
                     out_str = "%s\t%s\t%s\t%s\t%s" % (n_or_k,
@@ -5385,6 +5480,7 @@ def printCassetteExons(db,
     for chr in all_coord_start2end:
         for start in all_coord_start2end[chr]:
             if len(all_coord_start2end[chr][start]) > 1:
+
                 all_coord_start2end[chr][start].sort()
 
                 possible_excl = list(all_coord_start2end[chr][start][1:])
@@ -5450,8 +5546,11 @@ def printCassetteExons(db,
                                     if firstBreakFound and not secondBreakFound:
                                         for this_end in all_coord_end2start[chr]: 
                                             if exon_start < this_end < exon_end:
-                                                secondBreakFound = True
-                                                break
+                                                # This has to be a full internal
+                                                # intron
+                                                if this_start < this_end:
+                                                    secondBreakFound = True
+                                                    break
 
                                     if firstBreakFound and secondBreakFound:
                                         continue
@@ -5461,7 +5560,6 @@ def printCassetteExons(db,
 #                                                         chr,
 #                                                         exon_start, exon_end):
 #                                        continue
-
 
                                     if hasInternalTerminationInitationExon(alt_first_exons,
                                                                            chr,
@@ -5636,8 +5734,8 @@ def printCassetteExons(db,
 #                                       excl_file2_count,
 #                                       incl_file2_count) 
 
-        gene_name = inferGeneName(annotated_genes_by_strand, chr, exon_start, exon_end,
-                                  cassette_exon_dict[exon_coord]["strand"])
+        gene_name = inferGeneName(annotated_genes_by_strand, chr, cassette_exon_dict[exon_coord]["strand"],
+                                  [(exon_start, exon_end)])
 
 
         # print
@@ -5757,7 +5855,8 @@ def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exon
 #            else:
 #                label = "N"
 
-            gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
+            gene_name = inferGeneName(annotated_genes_by_strand, chr, strand,
+                                      [(start, end)])
 
             if norm2:
 #               excl_file1_count = int(round(excl_file1_count/norm1))
@@ -5851,8 +5950,9 @@ def printIREvents(db, annotated_genes, annotated_genes_by_strand, annotated_exon
 #                label = "N"
 
             
-            gene_name = inferGeneName(annotated_genes_by_strand, chr, start, end, strand)
-
+            gene_name = inferGeneName(annotated_genes_by_strand, chr, strand,
+                                      [(start,end)])
+    
             if norm2:
 #               excl_file1_count = int(round(excl_file1_count/norm1))
 #               incl_file1_count = int(round(incl_file1_count/norm1))
@@ -6263,8 +6363,8 @@ def printMultiCassetteExons(db,
                             if isNovel:
                                 label = "N"
 
-                            gene_name = inferGeneName(annotated_genes_by_strand, chr,
-                                                      exclusion_start, exclusion_end, strand)
+                            gene_name = inferGeneName(annotated_genes_by_strand, chr, strand,
+                                                      inclusion_jcns + [excl_jcn_str])
 
 
                             # print
@@ -6654,8 +6754,8 @@ def printMutuallyExclusive(db,
 #                                                   excl_file2_count,
 #                                                   incl_file2_count) 
 
-                    gene_name = inferGeneName(annotated_genes_by_strand, chr,
-                                              upstream_start, downstream_end, strand)
+                    gene_name = inferGeneName(annotated_genes_by_strand, chr, strand,
+                                              exon_strs)
 
 
                     out_str = "%s\t%s\t%s\t%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%d\t%d" %\
