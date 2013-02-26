@@ -370,6 +370,7 @@ def main():
                     max_psi = psi_val
             else:
                 na_count += 1
+
             if event in event2col2psi:
                 event2col2psi[event][i] = psi
             else:
@@ -738,20 +739,23 @@ def initiateHTML_table(html_out):
                       <table border="1">\n""")
 
 def makePlot(grdevices, plotName, samp_set1_vals, samp_set2_vals,
-image_file_type):
+             image_file_type):
     samp_vector = ["set1" for i in range(len(samp_set1_vals))]
     samp_vector.extend(["set2" for i in range(len(samp_set2_vals))])
 
+    data_vector = samp_set1_vals + samp_set2_vals
+    
     dframe = robjects.DataFrame({"sample":robjects.StrVector(samp_vector),
-                                 "value":robjects.FloatVector(samp_set1_vals + samp_set2_vals)})
+                                 "value":robjects.FloatVector(data_vector)})
 
     gp = ggplot2.ggplot(dframe)
 
     pp = gp + \
      ggplot2.aes_string(x="sample", y='value') + \
-     ggplot2.geom_boxplot() +\
-     ggplot2.geom_jitter() +\
+     ggplot2.geom_jitter(position=ggplot2.position_jitter(width=0.2, height=0.01)) +\
      ggplot2.theme_bw()
+
+#     ggplot2.geom_boxplot(stat="identity") +\
 
     if image_file_type == "pdf":
         grdevices.pdf(file=plotName)
@@ -767,14 +771,18 @@ def printDataToHTML(grdevices, html_dir, html_out, outline,
 
     outline = outline.rstrip("\n")
 
+    # Need to remove the last few values from adding it to the values
+    html_outline = ""
     outline_list = outline.split("\t")
+    for i in range(len(outline_list)):
+        html_outline += "<td>%s</td>" % outline_list[i]
+
+    outline_list = outline_list[:-5]
 
     samp_set1_vals = []
     samp_set2_vals = []
 
-    html_outline = ""
     for i in range(len(outline_list)):
-        html_outline += "<td>%s</td>" % outline_list[i]
 
         idx_shift = i - samp_start_idx
         if idx_shift in idx2sample:
