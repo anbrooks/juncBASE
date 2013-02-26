@@ -14,7 +14,7 @@ import os
 import pdb
 
 from subprocess import Popen
-from broad_helperFunctions import runLSF
+from helperFunctions import runLSF
 
 from createPseudoSample import getChr
 #############
@@ -138,10 +138,10 @@ def main():
     opt_parser.check_required("--jcn_seq_len")
 
     root_dir = formatDir(options.root_dir)
+    input_dir = formatDir(options.input_dir)
     # Change to the root directory to make sure output files are put here
     os.chdir(root_dir)
 
-    input_dir = formatDir(options.input_dir)
 
     samples = options.samples
 
@@ -161,12 +161,12 @@ def main():
     ctr = 0
     for this_chr in chr_list:
         files_are_present = False
-        expected_out_files = ["%s/tmp_create_AS_CountTables_AS_exclusion_inclusion_counts.txt",
-                              "%s/tmp_create_AS_CountTables_left_intron_counts.txt",
-                              "%s/tmp_create_AS_CountTables_right_intron_counts.txt",
-                              "%s/tmp_create_AS_CountTables_AS_exclusion_inclusion_counts_lenNorm.txt",
-                              "%s/tmp_create_AS_CountTables_left_intron_counts_lenNorm.txt",
-                              "%s/tmp_create_AS_CountTables_right_intron_counts_lenNorm.txt"]
+        expected_out_files = ["%s/tmp_createAS_CountTables_%s_AS_exclusion_inclusion_counts.txt" % (root_dir, this_chr),
+                              "%s/tmp_createAS_CountTables_%s_left_intron_counts.txt" % (root_dir, this_chr),
+                              "%s/tmp_createAS_CountTables_%s_right_intron_counts.txt" % (root_dir, this_chr),
+                              "%s/tmp_createAS_CountTables_%s_AS_exclusion_inclusion_counts_lenNorm.txt" % (root_dir, this_chr),
+                              "%s/tmp_createAS_CountTables_%s_left_intron_counts_lenNorm.txt" % (root_dir, this_chr),
+                              "%s/tmp_createAS_CountTables_%s_right_intron_counts_lenNorm.txt" % (root_dir, this_chr)]
         try: 
             for expect_file in expected_out_files:
                 if os.path.getsize(expect_file) == 0:
