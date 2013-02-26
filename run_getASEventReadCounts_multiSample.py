@@ -363,7 +363,7 @@ def main():
 
                 # Now for databases
                 if options.sqlite_db_dir:
-                    cmd += "--sqlite_db_dir %s" % options.sqlite_db_dir
+                    cmd += "--sqlite_db_dir %s" % sqlite_db_dir
                 else: # use MySQL
                     if options.passwd == "":
                         cmd += "--host %s --user %s" % (options.host,
