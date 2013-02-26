@@ -248,6 +248,9 @@ def main():
     if input_dir.endswith("/"):
         input_dir = input_dir.rstrip("/")
 
+    if options.sqlite_db_dir:
+        sqlite_db_dir = formatDir(options.sqlite_db_dir)
+
     if os.path.exists(options.output_dir):
         output_dir = os.path.abspath(options.output_dir)
     else:
@@ -448,7 +451,7 @@ def main():
 
             # Now for databases
             if options.sqlite_db_dir:
-                cmd += "--sqlite_db_dir %s" % options.sqlite_db_dir
+                cmd += "--sqlite_db_dir %s" % sqlite_db_dir
             else: # use MySQL
                 if options.passwd == "":
                     cmd += "--host %s --user %s" % (options.host,
@@ -492,6 +495,12 @@ def main():
 #############
 # FUNCTIONS #
 #############
+def formatDir(i_dir):
+    i_dir = os.path.realpath(i_dir)
+    if i_dir.endswith("/"):
+        i_dir = i_dir.rstrip("/")
+    return i_dir
+
 def formatLine(line):
     line = line.replace("\r","")
     line = line.replace("\n","")
