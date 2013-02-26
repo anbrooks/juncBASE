@@ -17,8 +17,7 @@ import os
 import pdb
 
 from subprocess import Popen
-from helperFunctions import runCmd
-from broad_helperFunctions import runLSF
+from helperFunctions import runCmd, runLSF
 
 from createPseudoSample import getChr
 #############
@@ -130,13 +129,22 @@ def main():
                                   be fairly clean of fragmented
                                   transcripts.""",
                           default=None)
-    opt_parser.add_option("--method",
-                          dest="method",
+    opt_parser.add_option("--txt_db3",
+                          dest="txt_db3",
                           type="string",
-                          help="""Type of correction method:
-                                  'BH' - Benjamini & Hochberg,
-                                  'bonferroni'""",
+                          help="""Database of transcript annotations derived
+                                  from a gtf file. Used for annotating gene
+                                  names and whether an intron/junction is
+                                  annotated or not. By default, txt_db1 will be used for this
+                                  information.""",
                           default=None)
+#   opt_parser.add_option("--method",
+#                         dest="method",
+#                         type="string",
+#                         help="""Type of correction method:
+#                                 'BH' - Benjamini & Hochberg,
+#                                 'bonferroni'""",
+#                         default=None)
     opt_parser.add_option("--jcn_seq_len",
                           dest="jcn_seq_len",
                           type="int",
@@ -224,7 +232,7 @@ def main():
     opt_parser.check_required("-o")
     opt_parser.check_required("--txt_db1")
     opt_parser.check_required("--txt_db2")
-    opt_parser.check_required("--method")
+#    opt_parser.check_required("--method")
 #    opt_parser.check_required("--fasta")
     opt_parser.check_required("--jcn_seq_len")
 
@@ -253,8 +261,9 @@ def main():
 
     txt_db1 = options.txt_db1
     txt_db2 = options.txt_db2
+    txt_db3 = options.txt_db3
 
-    method = options.method
+#    method = options.method
 #    genome_file = os.path.abspath(options.genome_file)
 
     jcn_seq_len = options.jcn_seq_len
@@ -338,7 +347,10 @@ def main():
                 cmd += "-p %s_%s " % (samp, chr)
                 cmd += "--txt_db1 %s " % txt_db1
                 cmd += "--txt_db2 %s " % txt_db2
-                cmd += "--method %s " % method
+                if txt_db3:
+                    cmd += "--txt_db3 %s " % txt_db3
+            
+#                cmd += "--method %s " % method
                 cmd += "--jcn_seq_len %d " % jcn_seq_len
 #                cmd += "--fasta %s " % genome_file
                 cmd += "--by_chr %s " % chr
@@ -424,7 +436,10 @@ def main():
             cmd += "-p %s " % samp
             cmd += "--txt_db1 %s " % txt_db1
             cmd += "--txt_db2 %s " % txt_db2
-            cmd += "--method %s " % method
+            if txt_db3:
+                cmd += "--txt_db3 %s " % txt_db3
+
+#            cmd += "--method %s " % method
             cmd += "--jcn_seq_len %d " % jcn_seq_len
 #            cmd += "--fasta %s " % genome_file
 
@@ -483,12 +498,11 @@ def formatLine(line):
     return line
 
 def getSampleNames(samples_option):
-    if "," in samples_option:
-        return samples_option.split(",")
-
     if not os.path.exists(samples_option):
-        print "Cannot find sample names file: %s" % samples_option
-        sys.exit(1)
+#        if "," in samples_option:
+        return samples_option.split(",")
+#        print "Cannot find sample names file: %s" % samples_option
+#        sys.exit(1)
 
     s_file = open(samples_option)
 
