@@ -401,7 +401,7 @@ def main():
     db = None
     if options.sqlite_db_dir:
         import pysqlite_wrap
-        db = pysqlite_wrap.DB(options.sqlite_db_dir)
+        db = pysqlite_wrap.DB(formatDir(options.sqlite_db_dir))
     else: # Use MySQL database
         import mysqldb_wrap
         db = mysqldb_wrap.DB(options.host, options.user, options.passwd)
@@ -1289,6 +1289,12 @@ def find_exon_clusters(next_or_previous, all_confident_exons,
     # Clusters have been found
     return (clusters, ",".join(novel_jcns), novel_jcn_sum_raw,
             novel_jcn_sum_lenNorm)
+
+def formatDir(i_dir):
+    i_dir = os.path.realpath(i_dir)
+    if i_dir.endswith("/"):
+        i_dir = i_dir.rstrip("/")
+    return i_dir
 
 def updateCounts2AltDonorAccept(file_out_str, 
                                 ir_count_dict,
