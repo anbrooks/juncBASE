@@ -304,7 +304,7 @@ def main():
 
                 os.chdir(chr_dir)
 
-                expected_out_file = "finished.txt"
+                expected_out_file = "%s_%s_finished.txt" % (samp, chr)
 
                 file_is_present = False
 
@@ -410,7 +410,7 @@ def main():
 
             os.chdir(full_output_dir)
 
-            expected_out_file = "finished.txt"
+            expected_out_file = "%s_finished.txt" % samp
                                                                                
             file_is_present = False                                            
             try:
