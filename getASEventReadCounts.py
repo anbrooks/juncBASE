@@ -7119,8 +7119,8 @@ def sumExclusion_Inclusion_counts(file_str,
             # Only junction counts are used for the final quantification
             sum_excl_raw = int(line_elems[13])
             sum_incl_raw = int(line_elems[14])
-            sum_excl_lenNorm = int(round(float(sum_excl_raw)/jcn_seq_len))
-            sum_incl_lenNorm = int(round(float(sum_incl_raw)/jcn_seq_len))
+            sum_excl_lenNorm = int(round((float(sum_excl_raw))/(jcn_seq_len/DEF_EXON_LEN_NORM)))
+            sum_incl_lenNorm = int(round((float(sum_incl_raw))/(jcn_seq_len/DEF_EXON_LEN_NORM)))
         elif type == "alternative_first_exon":
             event_key = (line_elems[6], line_elems[5])
             if event_key not in afe2total_counts:
