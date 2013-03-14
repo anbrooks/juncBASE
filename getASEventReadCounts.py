@@ -2635,10 +2635,10 @@ def checkExclusionInclusion_AA_AD_AFE_ALE(alt_start_or_end,
 
 def convertCoordStr(coord_str):
 #    chr, start_str, end_str = coord_str.split()
-    try:
+    if ":" in coord_str:
         chr, start_end = coord_str.split(":")
         start_str, end_str = start_end.split("-")
-    except:
+    else:
         # Old version of coordinate string
         chr, start_str, end_str = coord_str.split("_")
 
