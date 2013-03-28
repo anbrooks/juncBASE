@@ -319,7 +319,12 @@ def main():
                 if check:
                     continue
 
-                if not force:
+                if force:
+                    # Delete previous expected out file to prevent confusions
+                    # with previous runs when rechecking again
+                    if file_is_present:
+                        os.system("rm " + expected_out_file)
+                else:
                     if file_is_present:
                         continue
 
@@ -423,7 +428,10 @@ def main():
             if check:
                 continue
             
-            if not force:
+            if force:
+                if file_is_present:
+                    os.system("rm " + expected_out_file)
+            else:
                 if file_is_present:
                     continue
 
