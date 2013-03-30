@@ -63,8 +63,8 @@ class OptionParser(optparse.OptionParser):
 def main():
     opt_parser = OptionParser()
     # Add Options. Required options should have default=None
-    opt_parser.add_option("--prefix",
-                          dest="prefix",
+    opt_parser.add_option("--in_prefix",
+                          dest="in_prefix",
                           type="string",
                           help="""Prefix of output files created from
                                   createAS_CountTables. In createAS_CountTables,
@@ -242,13 +242,15 @@ def main():
 #    opt_parser.check_required("--pval_output")
 #    opt_parser.check_required("--event_sum")
     opt_parser.check_required("--method")
-    opt_parser.check_required("--prefix")
+    opt_parser.check_required("--in_prefix")
+    opt_parser.check_required("--out_prefix")
     opt_parser.check_required("--jcn_seq_len")
 
+    in_prefix = options.in_prefix
     prefix = options.prefix
 
     try:
-        input_file = open(prefix + "_AS_exclusion_inclusion_counts.txt")
+        input_file = open(in_prefix + "_AS_exclusion_inclusion_counts.txt")
     except:
         print """Cannot find expected file %s_AS_exclusion_inclusion_counts.txt.
                  Please check that the same options is given from
@@ -256,8 +258,8 @@ def main():
         opt_parser.print_help()
         sys.exit(1)
 
-    left_input_file_name = prefix + "_left_intron_counts.txt"
-    right_input_file_name = prefix + "_right_intron_counts.txt"
+    left_input_file_name = in_prefix + "_left_intron_counts.txt"
+    right_input_file_name = in_prefix + "_right_intron_counts.txt"
     sum_thresh = options.threshold
 
     sign_cutoff = options.sign_cutoff
@@ -306,7 +308,7 @@ def main():
 #           sys.exit(1)
 #   
     recalculate_ref_psi = True
-    lenNormalized_counts = open(prefix + "_AS_exclusion_inclusion_counts_lenNorm.txt")
+    lenNormalized_counts = open(in_prefix + "_AS_exclusion_inclusion_counts_lenNorm.txt")
     (lenNormalized_counts_event2total_counts,
      lenNormalized_counts_event2PSIs) = buildDicts(lenNormalized_counts)
     lenNormalized_counts.close()
@@ -320,7 +322,7 @@ def main():
 #           opt_parser.print_help()
 #           sys.exit(1)
 
-    left_lenNormalized_counts = open(prefix + "_left_intron_counts_lenNorm.txt")
+    left_lenNormalized_counts = open(in_prefix + "_left_intron_counts_lenNorm.txt")
     (left_lenNormalized_counts_event2total_counts,
      left_lenNormalized_counts_event2PSIs) = buildDicts(left_lenNormalized_counts)
     left_lenNormalized_counts.close()
@@ -334,7 +336,7 @@ def main():
 #           opt_parser.print_help()
 #           sys.exit(1)
 
-    right_lenNormalized_counts = open(prefix + "_right_intron_counts_lenNorm.txt")
+    right_lenNormalized_counts = open(in_prefix + "_right_intron_counts_lenNorm.txt")
     (right_lenNormalized_counts_event2total_counts,       
      right_lenNormalized_counts_event2PSIs) = buildDicts(right_lenNormalized_counts)
     right_lenNormalized_counts.close()
@@ -416,6 +418,11 @@ def main():
         # If the reference is NA, then do not calculate anything
         if counts[0] == NA:
             continue
+
+        if has_virtual:
+            # Cannot do a comparison when virtual reference is low expressed
+            if lenNormalized_counts_event2total_counts[event][0] == NA:
+                continue
         
         lenNormalized_psis = [None for i in range(len(counts))]
         if lenNormalized_counts_event2PSIs:
@@ -569,8 +576,11 @@ def main():
                                               lenNormalized_left_psis[i])
             allPSI_elems_left.append(psi)
 
-            (psi, sum_ct) = getPSI_sample_sum(right_events2counts[event][i], sum_thresh,
-                                              lenNormalized_right_psis[i])
+            try:
+                (psi, sum_ct) = getPSI_sample_sum(right_events2counts[event][i], sum_thresh,
+                                                  lenNormalized_right_psis[i])
+            except:
+                pdb.set_trace()
             allPSI_elems_right.append(psi)
 
 
@@ -792,7 +802,10 @@ def main():
         if all_psi_output:
             psi_vals = []
             for i in range(total_samples):
-                psi_vals.append(event2col2psi[event][i])
+                try:
+                    psi_vals.append(event2col2psi[event][i])
+                except:
+                    psi_vals.append(NA)
 
             outline = "%s\t%s\n" % (event, 
                                     "\t".join(psi_vals))
@@ -832,7 +845,7 @@ def adjustRefCounts(event_str, jcn_seq_len, lengthNorm_total, ref_psi, excl, inc
         print "Error in obtaining isoform length from: %s" % event_str
         sys.exit(1)
 
-    adj_incl = int(round((inclusion_isoform_len/DEF_EXON_LEN_NORM) *
+    adj_incl = int(round((float(inclusion_isoform_len)/DEF_EXON_LEN_NORM) *
                           ref_psi_proportion * lengthNorm_total))
 
     # Do to rounding, do not want to have negative values
@@ -891,7 +904,14 @@ def dPSI(psi_vals):
     minPSI = 130.0
     maxPSI = -10.0
 
-    for psi_str in psi_vals:
+    if type(psi_vals) == type({}):
+        this_psi_vals = psi_vals.values()
+    else:
+        this_psi_vals = list(psi_vals)
+
+    for psi_str in this_psi_vals:
+        if psi_str == NA:
+            continue
         psi = float(psi_str)
 
         if psi < minPSI:
@@ -1071,7 +1091,10 @@ def recalculateRefPSI(col2psi_str, col2total_count, col2weights):
                                                       robjects.FloatVector(weights))[0]))
     else:
         median_psi = r['median'](robjects.FloatVector(psi_vals))[0]
-        median_total = int(round(r['median'](robjects.IntVector(total_vals))[0]))
+        try:
+            median_total = int(round(r['median'](robjects.IntVector(total_vals))[0]))
+        except:
+            pdb.set_trace()
 
     return "%.2f" % median_psi, median_total
 
