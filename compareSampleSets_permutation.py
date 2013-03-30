@@ -849,27 +849,28 @@ def get_emp_pval(null_dist, this_stat):
     """
     Two-tailed emp_pval
     """
-#   mu = robjects.r["mean"](robjects.FloatVector(null_dist))[0]
-#   sd = robjects.r["sd"](robjects.FloatVector(null_dist))[0]
+    mu = robjects.r["mean"](robjects.FloatVector(null_dist))[0]
+    sd = robjects.r["sd"](robjects.FloatVector(null_dist))[0]
 
-    high_ctr = 0
-    low_ctr = 0
+#   high_ctr = 0
+#   low_ctr = 0
+    ctr = 0
+
+    z = abs((this_stat - mu)/sd)
     
     for stat in null_dist:
-        if this_stat > stat:
-            high_ctr += 1
-        if this_stat < stat:
-            low_ctr += 1
+        if stat > z:
+            ctr += 1
+        elif stat < -z:
+            ctr += 1
 
     p_val = None
-    if high_ctr < low_ctr:
-        p_val = 2 * (float(high_ctr)/NUM_ITERATIONS)
-    elif low_ctr < high_ctr:
-        p_val = 2 * (float(low_ctr)/NUM_ITERATIONS)
-    elif high_ctr == 0 and low_ctr == 0:
+    if high_ctr == 0 and low_ctr == 0:
         p_val = 1.0/NUM_ITERATIONS
     elif high_ctr == low_ctr:
         p_val = 1.0
+    else:
+        p_val = float(ctr)/NUM_ITERATIONS
     
     return p_val
 
