@@ -369,8 +369,8 @@ def getAllEventInfoLine(combined_line, intron, annotated_exons, annotated_intron
      excl_cts_raw, excl_cts_lenNorm,
      ie_cts_raw, ie_cts_lenNorm) = getEventInfo(combined_line)
 
-    ie_jcns = ["%s_%d_%d" % (chr, left_intron_start - 1, left_intron_start)]
-    ie_jcns.append("%s_%d_%d" % (chr, right_intron_end, right_intron_end + 1))
+    ie_jcns = ["%s:%d-%d" % (chr, left_intron_start - 1, left_intron_start)]
+    ie_jcns.append("%s:%d-%d" % (chr, right_intron_end, right_intron_end + 1))
  
     const_regions = [] 
     const_str = findAdjacentSharedRegion(chr, strand, annotated_exons,
