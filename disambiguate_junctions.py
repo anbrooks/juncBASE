@@ -15,6 +15,7 @@ import pdb
 import shutil
 
 from Bio import SeqIO
+from getASEventReadCounts import convertCoordStr
 #from createPseudoSample import getChr
 #############
 # CONSTANTS #
@@ -191,12 +192,12 @@ def disambiguateJcnStr(chr_seq, line_list):
     """
 
     try:
-        chr, start_str, end_str = line_list[3].split("_")
+        chr, start, end = convertCoordStr(line_list[3])
     except:
         print "Junction BED file must have intron position in 4th column."
         sys.exit(1)    
 
-    intron_seq = chr_seq[int(start_str)-1:int(end_str)]
+    intron_seq = chr_seq[start-1:end]
 
     if intron_seq.startswith("GT") and intron_seq.endswith("AG"):
         line_list[5] = "+"
