@@ -15,7 +15,7 @@ import pdb
 import shutil
 
 from Bio import SeqIO
-from createPseudoSample import getChr
+#from createPseudoSample import getChr
 #############
 # CONSTANTS #
 #############
@@ -95,7 +95,7 @@ def main():
         sys.exit(1)
 
     if by_chr:
-        chr_list = getChr(input_dir)
+        chr_list = getChr(input_dir, samples)
 
         for this_chr in chr_list:
             if this_chr in records:
@@ -254,6 +254,22 @@ def formatLine(line):
     line = line.replace("\r","")
     line = line.replace("\n","")
     return line
+
+def getChr(input_dir, samples):
+    """
+    Returns a list of all chromosomes
+    """
+    chr_names = set([])
+
+    for samp in samples:
+        samp_dir = input_dir + "/" + samp
+        for subdir in os.listdir(samp_dir):
+            chr = subdir.replace(samp, "")
+            chr = chr.lstrip("_") 
+            chr_names.add(chr)
+
+    return list(chr_names)
+
 
 def getSamples(input_dir):
     samples = []
