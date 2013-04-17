@@ -49,7 +49,7 @@ DEF_TEST = "Wilcoxon"
 
 # NUM_ITERATIONS/NUM_IN_BATCH should equal 0
 NUM_ITERATIONS = 10000
-NUM_IN_BATCH = 1000
+NUM_IN_BATCH = 10000
 
 INFINITY = 100000000000000000000000000000000000000000000
 DEF_EXON_LEN_NORM = 100.0
@@ -270,7 +270,7 @@ def main():
     html_out_dir = options.html_dir
     html_out_table_name = None
     if html_out_dir:
-        import rpy2.robjects.lib.ggplot2 as ggplot2
+        exec "import rpy2.robjects.lib.ggplot2 as ggplot2" in globals()
         html_out_dir = formatDir(html_out_dir)
         if not os.path.exists(html_out_dir):
             os.mkdir(html_out_dir)
@@ -357,7 +357,7 @@ def main():
     if permutation:
         raw_lines = raw_input_file.readlines()
     num_lines = len(lenNorm_lines)
-    for j in range(num_lines):
+    for j in xrange(num_lines):
         line = formatLine(lenNorm_lines[j])
 
         if line.startswith("#"):
@@ -403,7 +403,7 @@ def main():
 
         line_list = line.split("\t")
         if permutation:
-            raw_line_list = raw_lines[j].split("\t")
+            raw_line_list = formatLine(raw_lines[j]).split("\t")
             
             if line_list[5] != raw_line_list[5] or line_list[6] != raw_line_list[6]:
                 print "Count files (raw and lenNorm) do not match up)"
@@ -526,7 +526,6 @@ def main():
        
         cur_len = len(event_type2pvals[event_type])
 
-
         try: 
             if permutation:
                 incl_iso_len = getEventInclLen(event, jcn_seq_len)
@@ -537,10 +536,18 @@ def main():
                                           batch2setLabels,
                                           batch2len)
 
+
                 this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis),
                                                    robjects.FloatVector(set2_psis))[0][0]
+   
+                # For debugging 
+#               fig = plt.figure()
+#               ax = fig.add_subplot(111)
+#               ax.hist(null_dist, 100, normed=1)
+#               plt.show()
 
                 raw_pval = get_emp_pval(null_dist, this_stat)
+
             else:
                 raw_pval = robjects.r[which_test](robjects.FloatVector(set1_psis),
                                                   robjects.FloatVector(set2_psis))[2][0]
@@ -856,29 +863,37 @@ def get_emp_pval(null_dist, this_stat):
 #   low_ctr = 0
     ctr = 0
 
-    z = abs((this_stat - mu)/sd)
+    if sd == 0.0:
+        if this_stat - mu < 0:
+            z = -INFINITY
+        elif this_stat - mu > 0:
+            z = -INFINITY
+        else: # this_stat == mu
+            z = 0
+    else:
+        z = abs((this_stat - mu)/sd)
     
     for stat in null_dist:
-        if stat > z:
+        this_z = abs((stat - mu)/sd)
+        if this_z > z:
             ctr += 1
-        elif stat < -z:
+        elif this_z < -z:
             ctr += 1
 
     p_val = None
-    if high_ctr == 0 and low_ctr == 0:
+    if ctr == 0: 
         p_val = 1.0/NUM_ITERATIONS
-    elif high_ctr == low_ctr:
-        p_val = 1.0
     else:
         p_val = float(ctr)/NUM_ITERATIONS
     
     return p_val
 
 
-def get_null_dist(raw_excl_incl_counts, incl_iso_len, total_counts, all_psis, which_test, batch2setLabels, batch2len):
+def get_null_dist(raw_excl_incl_counts, incl_iso_len, total_counts, all_psis, 
+                  which_test, batch2setLabels, batch2len):
     stats = []
     ctr = 0
-    for i in range(0, NUM_ITERATIONS, NUM_IN_BATCH):
+    for i in xrange(0, NUM_ITERATIONS, NUM_IN_BATCH):
         # Calls to R will be batched to reduce time
         idx2incl_iter = []
         for excl_incl_counts in raw_excl_incl_counts: 
@@ -889,7 +904,7 @@ def get_null_dist(raw_excl_incl_counts, incl_iso_len, total_counts, all_psis, wh
                                                        excl + 1)))
 
         # random calls have been made. Use values to get statistic.
-        for k in range(NUM_IN_BATCH):
+        for k in xrange(NUM_IN_BATCH):
 
             this_idx2sample_set = {}
             
@@ -907,14 +922,19 @@ def get_null_dist(raw_excl_incl_counts, incl_iso_len, total_counts, all_psis, wh
             for idx in this_idx2sample_set:
                 if all_psis[idx] == NA:
                     continue
-                this_incl = int(round(idx2incl_iter[idx][k]/(incl_iso_len/DEF_EXON_LEN_NORM)))
+                this_incl = float(round(idx2incl_iter[idx][k]/(incl_iso_len/DEF_EXON_LEN_NORM)))
 
 #               this_incl =  float(robjects.r["rbinom"](1,total_counts[idx],
 #                                                      all_psis[idx]/100)[0])
-                this_psi = this_incl/total_counts[idx]
-                if this_psi > 1.0:
-                    print "Error in getting PSI value from iteration"
-                    sys.exit(1)
+                this_psi = (this_incl/total_counts[idx]) * 100
+                if this_psi > 100.0:
+                    if abs(this_incl - total_counts[idx]) == 1:
+                        # There are small adjustments for rounding
+                        this_psi = 100.0
+                    else:
+                        pdb.set_trace()
+                        print "Error in getting PSI value from iteration"
+                        sys.exit(1)
 
                 if this_idx2sample_set[idx] == 0:
                     this_set1_psis.append(this_psi)
@@ -948,11 +968,11 @@ def getPSI_sample_sum(excl_incl_ct_str, sum_thresh):
 
     return (psi_str, total_ct)
 
-def getEventInclLen(event, jcn_seq_len):
+def getEventInclLen(event_str, jcn_seq_len):
     if "jcn_only" in event_str or "intron_retention" in event_str:
         # These events were not length normalized since each isoform has the
         # same length
-        inclusion_isoform_len = DEF_EXON_LEN_NORM
+        inclusion_isoform_len = jcn_seq_len
     elif "alternative_donor" in event_str or "alternative_acceptor" in event_str:
         # This can be removed once bug in reporting inclusion regions are
         # fixed, then getInclIsoformLen can simply be used
@@ -1018,6 +1038,7 @@ def initiateHTML_table(html_out):
 
 def makePlot(grdevices, plotName, samp_set1_vals, samp_set2_vals,
              image_file_type):
+
     samp_vector = ["set1" for i in range(len(samp_set1_vals))]
     samp_vector.extend(["set2" for i in range(len(samp_set2_vals))])
 
