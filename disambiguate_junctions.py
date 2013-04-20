@@ -74,12 +74,23 @@ def main():
                           help="""Indicates that input files are organized by
                                   chromosome""",
                           default=False)
+    opt_parser.add_option("--majority_rules",
+                          dest="majority_rules",
+                          action="store_true",
+                          help="""Will ensure that strand of each junction across all samples
+                                  are the same using the strand that is most
+                                  aligned to. This option should be used if
+                                  there are junctions corresponding to
+                                  non-major and non-minor spliceosome splice site sequences.""",
+                          default=False)
 
     (options, args) = opt_parser.parse_args()
 	
     # validate the command line arguments
     opt_parser.check_required("-i")
     opt_parser.check_required("-g")
+
+    majority_rules = options.majority_rules
 
     input_dir = formatDir(options.input_dir)
 
@@ -106,7 +117,7 @@ def main():
             else:
                 print "Cannot find %s in genome sequence." % this_chr
                 sys.exit(1)
-    
+            jcn2strands = {} 
             for this_samp in samples:
                 bed_file_name = "%s/%s/%s_%s/%s_%s_junctions.bed" % (input_dir,
                                                                      this_samp,
@@ -135,12 +146,48 @@ def main():
     
                     if line_list[5] == ".":
                         # Updates the strand position in the list
-                        disambiguateJcnStr(chr_seq, line_list) 
+                        disambiguateJcnStr(chr_seq, line_list, majority_rules) 
+
+                    if majority_rules:
+                        updateJcn2Strands(jcn2strands, 
+                                          line_list[3], 
+                                          line_list[5])
                     
                     bed_file.write("\t".join(line_list)) 
 
                 original_bed.close()
                 bed_file.close()
+
+            # Fix junctions across all samples
+            if majority_rules:
+                fixed_jcn2strand = getMajorityStrand(jcn2strands)
+    
+                if fixed_jcn2strand != {}:
+                    for this_samp in samples:
+                        bed_file_name = "%s/%s/%s_%s/%s_%s_junctions.bed" % (input_dir,
+                                                                             this_samp,
+                                                                             this_samp, this_chr,
+                                                                             this_samp, this_chr)
+
+                        bed_file = open(bed_file_name)
+                        bedlines = bed_file.readlines()
+                        bed_file.close()
+
+                        bed_file = open(bed_file_name, "w")
+                        for line in bedlines:
+                            if line.startswith("track"):
+                                bed_file.write(line)
+                                continue
+
+                            line_list = line.split("\t")
+                            
+                            if line_list[3] in fixed_jcn2strand:
+                                line_list[5] = fixed_jcn2strand[line_list[3]]
+        
+                            bed_file.write("\t".join(line_list)
+
+                        bed_file.close()
+                    
 
     # Files are just organized by sample
     else:
@@ -168,7 +215,7 @@ def main():
                 line_list = line.split("\t")
 
                 if line_list[5] == ".":
-                    disambiguateJcnStr_findChr(records, line_list)
+                    disambiguateJcnStr_findChr(records, line_list, majority_rules)
 
                 bed_file.write("\t".join(line_list))
 
@@ -186,7 +233,7 @@ def main():
 #############
 # FUNCTIONS #
 #############
-def disambiguateJcnStr(chr_seq, line_list):
+def disambiguateJcnStr(chr_seq, line_list, majority_rules):
     """
     Will use splice site sequence to infer strand
     """
@@ -224,10 +271,11 @@ def disambiguateJcnStr(chr_seq, line_list):
     elif intron_seq.startswith("CT"):
         line_list[5] = "-"
     else:
-        print "Cannot find strand for %s" % line_list[3]
+        if not majority_rules: # Strand will resolved later if majority_rules
+            print "Cannot find strand for %s" % line_list[3]
 
 
-def disambiguateJcnStr_findChr(records, line_list):
+def disambiguateJcnStr_findChr(records, line_list, majority_rules):
     """
     Will identify chr sequence, then call disambiguateJcnStr
     """
@@ -242,7 +290,7 @@ def disambiguateJcnStr_findChr(records, line_list):
         print "Cannot find %s in genome sequence." % this_chr
         sys.exit(1)
 
-    disambiguateJcnStr_findChr(chr_seq, line_list)
+    disambiguateJcnStr(chr_seq, line_list, majority_rules)
     
 
 def formatDir(i_dir):
@@ -271,6 +319,33 @@ def getChr(input_dir, samples):
 
     return list(chr_names)
 
+def getMajorityStrand(jcn2strands):
+    fixed_jcn2strand = {}
+    for jcn in jcn2strands:
+        if len(jcn2strands[jcn]) == 1:
+            if "." in jcn2strands[jcn]:
+                print "No strand for %s" % jcn
+            continue
+
+        if "+" in jcn2strands[jcn]:
+            pos_count = jcn2strands[jcn]["+"]
+        else:
+            pos_count = 0
+        if "-" in jcn2strands[jcn]:
+            neg_count = jcn2strands[jcn]["-"]
+        else:
+            neg_count = 0
+
+        if pos_count == neg_count:
+            fixed_jcn2strand[jcn] = "."
+            print "No strand for %s" % jcn
+            continue
+
+        if pos_count > neg_count:
+            fixed_jcn2strand[jcn] = "+"
+        else:
+            fixed_jcn2strand[jcn] = "-"
+        
 
 def getSamples(input_dir):
     samples = []
@@ -290,6 +365,15 @@ def getSamples(input_dir):
 
 def unFormatChr(chr_name):
     return chr_name.lstrip("chr")
+
+def updateJcn2Strands(jcn2strands, jcn, strand):
+    if jcn in jcn2strands:
+        if strand in jcn2strands[jcn]:
+            jcn2strands[jcn][strand] += 1
+        else: 
+            jcn2strands[jcn][strand] = 1
+    else:
+        jcn2strands[jcn] = {strand:1}
 #################
 # END FUNCTIONS #	
 #################	
