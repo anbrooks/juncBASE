@@ -180,11 +180,14 @@ def main():
                                 continue
 
                             line_list = line.split("\t")
-                            
-                            if line_list[3] in fixed_jcn2strand:
-                                line_list[5] = fixed_jcn2strand[line_list[3]]
+                           
+                            try: 
+                                if line_list[3] in fixed_jcn2strand:
+                                    line_list[5] = fixed_jcn2strand[line_list[3]]
+                            except:
+                                pdb.set_trace()
         
-                            bed_file.write("\t".join(line_list)
+                            bed_file.write("\t".join(line_list))
 
                         bed_file.close()
                     
@@ -252,7 +255,7 @@ def main():
                         if line_list[3] in fixed_jcn2strand:
                             line_list[5] = fixed_jcn2strand[line_list[3]]
     
-                        bed_file.write("\t".join(line_list)
+                        bed_file.write("\t".join(line_list))
         
 			
     sys.exit(0)
@@ -376,7 +379,8 @@ def getMajorityStrand(jcn2strands):
             fixed_jcn2strand[jcn] = "+"
         else:
             fixed_jcn2strand[jcn] = "-"
-        
+
+    return fixed_jcn2strand
 
 def getSamples(input_dir):
     samples = []
