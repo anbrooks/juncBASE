@@ -191,6 +191,7 @@ def main():
 
     # Files are just organized by sample
     else:
+        jcn2strands = {}
         for this_samp in samples:
             bed_file_name = "%s/%s/%s_junctions.bed" % (input_dir,
                                                         this_samp,
@@ -217,12 +218,42 @@ def main():
                 if line_list[5] == ".":
                     disambiguateJcnStr_findChr(records, line_list, majority_rules)
 
+                if majority_rules:
+                    updateJcn2Strands(jcn2strands, 
+                                      line_list[3], 
+                                      line_list[5])
+
                 bed_file.write("\t".join(line_list))
 
             original_bed.close()
             bed_file.close
 
-            
+        # Fix junctions across all samples
+        if majority_rules:
+            fixed_jcn2strand = getMajorityStrand(jcn2strands)
+
+            if fixed_jcn2strand != {}:
+                for this_samp in samples:
+                    bed_file_name = "%s/%s/%s_junctions.bed" % (input_dir,
+                                                        this_samp,
+                                                        this_samp)
+                    bed_file = open(bed_file_name)
+                    bedlines = bed_file.readlines()
+                    bed_file.close()
+
+                    bed_file = open(bed_file_name, "w")
+                    for line in bedlines:
+                        if line.startswith("track"):
+                            bed_file.write(line)
+                            continue
+
+                        line_list = line.split("\t")
+                        
+                        if line_list[3] in fixed_jcn2strand:
+                            line_list[5] = fixed_jcn2strand[line_list[3]]
+    
+                        bed_file.write("\t".join(line_list)
+        
 			
     sys.exit(0)
 
