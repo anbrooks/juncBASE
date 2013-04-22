@@ -14,8 +14,7 @@ import os
 import pdb
 
 from subprocess import Popen
-from helperFunctions import runCmd
-from broad_helperFunctions import runLSF
+from helperFunctions import runCmd, runLSF
 #############
 # CONSTANTS #
 #############
@@ -112,6 +111,11 @@ def main():
                           help="""Will check samples that are not done and print
                                   out which need to still be run""",
                          default=False)
+    opt_parser.add_option("--nice",
+                          dest="nice",
+                          action="store_true",
+                          help="""Will run locally, using nice""",
+                         default=False)
 
     (options, args) = opt_parser.parse_args()
 	
@@ -126,6 +130,7 @@ def main():
 
     force = options.force
     check = options.check
+    nice = options.nice
 
     # Will use the tmp files in the input directory to determine chromosomes to
     # process.
@@ -182,6 +187,8 @@ def main():
             cmd += "--min_overhang %d" % options.min_overhang
 
             if num_processes:
+                if nice:
+                    cmd = "nice " + cmd
                 if ctr % num_processes == 0:
                     os.system(cmd)
                 else:
