@@ -2214,7 +2214,7 @@ def updateCounts2MutuallyExclusive(me_out_str,
                 excl_lenNorm_add += normalizeByLen(int(round(mapped_file2_counts[excl_add_coord]* mxe_proportion2)),
                                             this_isoform_len)
 
-        excl_raw += excl_raw
+        excl_raw += excl_raw_add
         excl_lenNorm += excl_lenNorm_add
 
 #       e_or_i = checkExclusionInclusion(excl1,
