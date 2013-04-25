@@ -15,12 +15,14 @@ import pdb
 import os
 
 from compareSampleSets import getSamples
+from getASEventReadCounts import normalizeByLen
+
 #############
 # CONSTANTS #
 #############
 NA = "NA"
 
-NORM_FACTOR = 100
+DEF_EXON_LEN_NORM = 100.0
 #################
 # END CONSTANTS #
 #################
@@ -64,13 +66,18 @@ def main():
                                   with output from getASEventReadCounts""",
                           default=None)
     opt_parser.add_option("-o",
-                          dest="output_file_suffix",
+                          dest="output_file_prefix",
                           type="string",
                           help="""Output files that will contain all exclusion
                                   inclusion counts for every sample. As well as
                                   files for intron retention calculation.
                                   Finally, length-normalized counts are also
                                   produced.""",
+                          default=None)
+    opt_parser.add_option("--jcn_seq_len",
+                          dest="jcn_seq_len",
+                          type="int",
+                          help="""Value used in getASEventReadCounts""", 
                           default=None)
 #   opt_parser.add_option("--left_intron",
 #                         dest="left_intron_file",
@@ -137,6 +144,7 @@ def main():
     opt_parser.check_required("-d")
     opt_parser.check_required("-o")
     opt_parser.check_required("-s")
+    opt_parser.check_required("--jcn_seq_len")
 #   opt_parser.check_required("--left_intron")
 #   opt_parser.check_required("--right_intron")
 
@@ -152,21 +160,25 @@ def main():
     if not root_dir.endswith("/"):
         root_dir += "/"
     
-    suffix = options.output_file_suffix
+    prefix = options.output_file_prefix
     
-    output_file_name = suffix + "_AS_exclusion_inclusion_counts.txt"
-    left_file_name = suffix + "_left_intron_counts.txt"
-    right_file_name = suffix + "_right_intron_counts.txt"
+    output_file_name = prefix + "_AS_exclusion_inclusion_counts.txt"
+    left_file_name = prefix + "_left_intron_counts.txt"
+    right_file_name = prefix + "_right_intron_counts.txt"
 
-    lenNorm_output_file_name = suffix + "_AS_exclusion_inclusion_counts_lenNorm.txt"
-    lenNorm_left_file_name = suffix + "_left_intron_counts_lenNorm.txt"
-    lenNorm_right_file_name = suffix + "_right_intron_counts_lenNorm.txt"
+    lenNorm_output_file_name = prefix + "_AS_exclusion_inclusion_counts_lenNorm.txt"
+    lenNorm_left_file_name = prefix + "_left_intron_counts_lenNorm.txt"
+    lenNorm_right_file_name = prefix + "_right_intron_counts_lenNorm.txt"
 
     samples = getSamples(options.samples)
+    
+    num_samples = len(samples)
 
     which_chr = None
     if options.which_chr:
         which_chr = options.which_chr
+
+    jcn_seq_len = options.jcn_seq_len
 
     # Will equal none if no length normalization occurred
 #    lengthNorm = options.lengthNorm
@@ -182,7 +194,7 @@ def main():
     left_intron2sample2raw_counts = {}
     right_intron2sample2raw_counts = {}
     left_intron2sample2lenNorm_counts = {}
-    right_intron2sample2lenNormcounts = {}
+    right_intron2sample2lenNorm_counts = {}
 
     first_sample = samples.pop(0)
 
@@ -204,8 +216,8 @@ def main():
         updateGeneStrand(event2genesStrand, event_key, genes, strand, const_region)
 
         if "intron_retention" in line:
-            left_raw_count_str, right_raw_count_str = getIRKeyandCounts(line, False)
-            left_lenNorm_count_str, right_lenNorm_count_str = getIRKeyandCounts(line, True)
+            left_raw_count_str, right_raw_count_str = getIRKeyandCounts(line, jcn_seq_len, False)
+            left_lenNorm_count_str, right_lenNorm_count_str = getIRKeyandCounts(line, jcn_seq_len, True)
             left_intron2sample2raw_counts[event_key] = {first_sample:left_raw_count_str}
             right_intron2sample2raw_counts[event_key] = {first_sample:right_raw_count_str}
             left_intron2sample2lenNorm_counts[event_key] = {first_sample:left_lenNorm_count_str}
@@ -224,20 +236,20 @@ def main():
             line = formatLine(line)
 
             event_key, raw_count_str, lenNorm_count_str, genes, strand, const_region = getKeyandCount(line)
-        
+
             if event_key not in event2sample2raw_counts:
                 print "Event from sample, not in dict: %s, %s" % (samp,
                                                                   event_key)
                 continue
 
-            event2sample2raw_counts[event_key][samp] = count_str
+            event2sample2raw_counts[event_key][samp] = raw_count_str
             event2sample2lenNorm_counts[event_key][samp] = lenNorm_count_str
 
             updateGeneStrand(event2genesStrand, event_key, genes, strand, const_region)
         
             if "intron_retention" in line:
-                left_raw_count_str, right_raw_count_str = getIRKeyandCounts(line, False)
-                left_lenNorm_count_str, right_lenNorm_count_str = getIRKeyandCounts(line, True)
+                left_raw_count_str, right_raw_count_str = getIRKeyandCounts(line, jcn_seq_len, False)
+                left_lenNorm_count_str, right_lenNorm_count_str = getIRKeyandCounts(line, jcn_seq_len, True)
                 left_intron2sample2raw_counts[event_key][samp] = left_raw_count_str
                 right_intron2sample2raw_counts[event_key][samp] = right_raw_count_str
                 left_intron2sample2lenNorm_counts[event_key][samp] = left_lenNorm_count_str
@@ -293,6 +305,14 @@ def main():
                             event2genesStrand[event_key][1],
                             event2genesStrand[event_key][2])
 
+        if len(raw_counts_list) != num_samples:
+            print "Error: Issue with raw counts for %s" % out_key
+            sys.exit(1)
+        if len(lenNorm_counts_list) != num_samples:
+            print "Error: Issue with lenNorm counts for %s" % out_key
+            sys.exit(1)
+            
+
         raw_outline = "%s\t%s\n" % (out_key, 
                                 "\t".join(raw_counts_list))
         lenNorm_outline = "%s\t%s\n" % (out_key, 
@@ -343,6 +363,14 @@ def main():
                             event2genesStrand[event_key][0],
                             event2genesStrand[event_key][1],
                             event2genesStrand[event_key][2])
+
+
+        if len(raw_counts_list) != num_samples:
+            print "Error: Issue with raw counts for %s" % out_key
+            sys.exit(1)
+        if len(lenNorm_counts_list) != num_samples:
+            print "Error: Issue with lenNorm counts for %s" % out_key
+            sys.exit(1)
 
         raw_outline = "%s\t%s\n" % (out_key,
                                 "\t".join(raw_counts_list))
@@ -396,6 +424,12 @@ def main():
                             event2genesStrand[event_key][1],
                             event2genesStrand[event_key][2])
 
+        if len(raw_counts_list) != num_samples:
+            print "Error: Issue with raw counts for %s" % out_key
+            sys.exit(1)
+        if len(lenNorm_counts_list) != num_samples:
+            print "Error: Issue with lenNorm counts for %s" % out_key
+
         raw_outline = "%s\t%s\n" % (out_key,
                                 "\t".join(raw_counts_list))
         lenNorm_outline = "%s\t%s\n" % (out_key,
@@ -448,33 +482,32 @@ def getKeyandCount(line):
     raw_count_str = "%s;%s" % (excl_raw_count, incl_raw_count)
     lenNorm_count_str = "%s;%s" % (excl_lenNorm_count, incl_lenNorm_count)
 
-    if "-" in count_str:
+    if (("-" in raw_count_str) or ("-" in lenNorm_count_str)):
         print "Negative value in %s" % line
         raw_count_str = "0;0"
         lenNorm_count_str = "0;0"
 
     return event_key, raw_count_str, lenNorm_count_str, genes, strand, const_region
 
-def getIRKeyandCounts(line, lengthNorm):
+def getIRKeyandCounts(line, jcn_seq_len, lengthNorm):
     """ 
     Returns excl;incl pairs for the left side and then the right side
     """
 
     line_list = line.split("\t")
 
-    excl_count = line_list[-2]
+    if lengthNorm:
+        excl_count = line_list[-2]
+    else:
+        excl_count = line_list[-4]
 
-    left_right_incl_cts = line_list[29] 
+    left_right_incl_cts = line_list[19] 
 
     left_incl_count, right_incl_count = left_right_incl_cts.split(";")
 
     if lengthNorm:
-        # If length normalization occurred, both the left and right side was
-        # normalized by the total length of inclusion isoform. Since I am
-        # decoupling the left and right side, the length will be just one
-        # junction.
-        left_incl_count = int(left_incl_count)*2
-        right_incl_count = int(right_incl_count)*2
+        left_incl_count = normalizeByLen(int(left_incl_count), jcn_seq_len)
+        right_incl_count = normalizeByLen(int(right_incl_count), jcn_seq_len)
     
         left_count_str = "%s;%d" % (excl_count, left_incl_count)
         right_count_str = "%s;%d" % (excl_count, right_incl_count)

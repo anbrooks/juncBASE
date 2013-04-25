@@ -1,4 +1,4 @@
-#!/broad/software/free/Linux/redhat_5_x86_64/pkgs/python_2.5.4/bin/python
+#!/usr/bin/env python
 # combine_createAS_CountTables_by_chr.py
 # Author: Angela Brooks
 # Program Completion Date:
@@ -148,13 +148,22 @@ def main():
             print "No file for %s" % this_chr
             continue
 
-        for line in chr_out:
+        # Check if there is anything in the file
+        chr_out_lines = chr_out.readlines()
+        chr_out_lenNorm_lines = chr_out_lenNorm.readlines()
+
+        if (len(chr_out.readlines()) == 1) or (len(chr_out_lenNorm_lines) == 1):
+            print "Warning: No information for %s" % this_chr
+            print "This may have failed in previous step."
+            continue
+
+        for line in chr_out_lines:
             if line.startswith("#"):
                 continue
             output_file.write(line)
         chr_out.close()       
        
-        for line in chr_out_lenNorm:
+        for line in chr_out_lenNorm_lines:
             if line.startswith("#"):
                 continue
             lenNorm_output_file.write(line)
@@ -169,14 +178,22 @@ def main():
         except:
             print "No left file for %s" % this_chr
             continue
+
+        chr_left_intron_lines = chr_left_intron.readlines()
+        chr_left_intron_lenNorm_lines = chr_left_intron_lenNorm.readlines()
+
+        if (len(chr_left_intron_lines.readlines()) == 1) or (len(chr_left_intron_lenNorm_lines) == 1):
+            print "Warning: No information for left intron %s" % this_chr
+            print "This may have failed in previous step."
+            continue
             
-        for line in chr_left_intron:
+        for line in chr_left_intron_lines:
             if line.startswith("#"):
                 continue
             left_intron_file.write(line)
         chr_left_intron.close()
 
-        for line in chr_left_intron_lenNorm:
+        for line in chr_left_intron_lenNorm_lines:
             if line.startswith("#"):
                 continue
             lenNorm_left_intron_file.write(line)
@@ -191,14 +208,22 @@ def main():
         except:
             print "No right file for %s" % this_chr
             continue 
+
+        chr_right_intron_lines = chr_right_intron.readlines()
+        chr_right_intron_lenNorm_lines = chr_right_intron_lenNorm.readlines()
+
+        if (len(chr_right_intron_lines.readlines()) == 1) or (len(chr_right_intron_lenNorm_lines) == 1):
+            print "Warning: No information for right intron %s" % this_chr
+            print "This may have failed in previous step."
+            continue
             
-        for line in chr_right_intron:
+        for line in chr_right_intron_lines:
             if line.startswith("#"):
                 continue
             right_intron_file.write(line)
         chr_right_intron.close()
 
-        for line in chr_right_intron_lenNorm:
+        for line in chr_right_intron_lenNorm_lines:
             if line.startswith("#"):
                 continue
             lenNorm_right_intron_file.write(line)
