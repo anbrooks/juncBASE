@@ -182,7 +182,7 @@ def main():
         chr_left_intron_lines = chr_left_intron.readlines()
         chr_left_intron_lenNorm_lines = chr_left_intron_lenNorm.readlines()
 
-        if (len(chr_left_intron_lines.readlines()) == 1) or (len(chr_left_intron_lenNorm_lines) == 1):
+        if (len(chr_left_intron_lines) == 1) or (len(chr_left_intron_lenNorm_lines) == 1):
             print "Warning: No information for left intron %s" % this_chr
             print "This may have failed in previous step."
             continue
@@ -212,7 +212,7 @@ def main():
         chr_right_intron_lines = chr_right_intron.readlines()
         chr_right_intron_lenNorm_lines = chr_right_intron_lenNorm.readlines()
 
-        if (len(chr_right_intron_lines.readlines()) == 1) or (len(chr_right_intron_lenNorm_lines) == 1):
+        if (len(chr_right_intron_lines) == 1) or (len(chr_right_intron_lenNorm_lines) == 1):
             print "Warning: No information for right intron %s" % this_chr
             print "This may have failed in previous step."
             continue
