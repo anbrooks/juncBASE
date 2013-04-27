@@ -2320,10 +2320,14 @@ def updateCounts2MultiCassette(mc_out_str,
 #           if inferred_exon in mapped_file1_counts:
 #               incl1_add += normalizeByLen(int(round(mapped_file1_counts[inferred_exon] * mc_proportion1)),
 #                                           inclusion_len)
+
             if inferred_exon in mapped_file2_counts:
                 incl_raw_add += int(round(mapped_file2_counts[inferred_exon] * mc_proportion2))
                 incl_lenNorm_add += normalizeByLen(int(round(mapped_file2_counts[inferred_exon] * mc_proportion2)),
                                             inclusion_len)
+
+            last_end = this_end
+            last_start = this_start
 
         incl_raw += incl_raw_add
         incl_lenNorm += incl_lenNorm_add
@@ -6084,7 +6088,6 @@ def printMultiCassetteExons(db,
 
                             # Check for novel introns
                             isNovel = False
-            
 
                             if chr not in annotated_introns:
                                 isNovel = True
@@ -6239,6 +6242,7 @@ def printMultiCassetteExons(db,
 
                                 incl_file_raw_count = 0
 
+
                                 for intron_coord in intron_list:
                                     this_start = intron_coord[0]
                                     this_end = intron_coord[1]
@@ -6261,13 +6265,19 @@ def printMultiCassetteExons(db,
                                     # each side of the exon
                                     upstrm_jcn_sum_raw = 0
 
-                                    for other_start in all_coord_end2start[chr][this_end]:
+#                                   The end coordinate shouldn't have been
+#                                   this_end bu last end
+#                                    for other_start in all_coord_end2start[chr][this_end]:
+                                    for other_start in all_coord_end2start[chr][last_end]:
 #                                       upstrm_jcn_sum1 += all_jcn_count_dict["%s_%d_%d" % (chr,
 #                                                                                          other_start,
 #                                                                                          this_end)][0]
+#                                       upstrm_jcn_sum_raw += all_jcn_count_dict[formatCoordStr(chr,
+#                                                                                          other_start,
+#                                                                                          this_end)][1]
                                         upstrm_jcn_sum_raw += all_jcn_count_dict[formatCoordStr(chr,
                                                                                            other_start,
-                                                                                           this_end)][1]
+                                                                                           last_end)][1]
                             
 #                                   this_incl_file1_count = int(round(upstrm_jcn_sum1 *
 #                                                                     mc_proportion1))
