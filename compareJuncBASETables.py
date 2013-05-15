@@ -72,6 +72,12 @@ def main():
                                   events in both tables, (2) events in 1 but not
                                   2, (3) events in 2 but not 1.""",
                           default=None)
+    opt_parser.add_option("--subset",
+                          dest="subset_prefix",
+                          type="string",
+                          help="""Optional: Prefix of a table that will contain a subset
+                                  of table1 with only events found in table2""",
+                          default=None)
 #   opt_parser.add_option("--out_1_not_2",
 #                         dest="out_1_not_2",
 #                         type="string",
@@ -98,6 +104,11 @@ def main():
     opt_parser.check_required("--table2")
     opt_parser.check_required("--out_prefix")
 
+    subset = options.subset
+    
+    subset_file = None
+    if subset:
+        subset_file = open(subset + "_subset.txt", "w")
 
     table1 = open(options.table1)
     table2 = open(options.table2)
@@ -142,19 +153,39 @@ def main():
                 this_event_list = this_event.split("\t")
                 out_1_and_2.write("\t".join(this_event_list[:-1]) + "\n")
             elif which_tables == [1]:
-                for event in as_type2redundantGroup2event[as_type][rGroup]:
+                for this_event in as_type2redundantGroup2event[as_type][rGroup]:
                     this_event_list = this_event.split("\t")
                     out_1_not_2.write("\t".join(this_event_list[:-1]) + "\n")
             elif which_tables == [2]:
-                for event in as_type2redundantGroup2event[as_type][rGroup]:
+                for this_event in as_type2redundantGroup2event[as_type][rGroup]:
                     this_event_list = this_event.split("\t")
                     out_2_not_1.write("\t".join(this_event_list[:-1]) + "\n")
             else:
-                print "Error in redundant group: %s" % rGroup
+                print "Error in redundant group: %s" % repr(rGroup)
+        
 
     out_1_and_2.close()
     out_1_not_2.close()
     out_2_not_1.close()
+
+    # Will print subset if option is given
+    if subset_file:
+        table1 = open(options.table1)
+        for line in table1:
+            if line.startswith("#"):
+                subset_file.write(line)
+                continue
+
+            line = formatLine(line)
+            rGroup, as_type = get_rGroup_as_event(line)
+
+            which_tables = getTableNums(as_type2redundantGroup2event[as_type][rGroup])            
+            if which_tables == [1,2]:
+                subset_file.write(line + "\n")
+
+        table1.close()
+
+    subset_file.close()
         
 			
     sys.exit(0)
@@ -168,27 +199,7 @@ def main():
 #############
 def buildDictionary(as_type2redundantGroup2event, event, which_table):
     
-    line_list = event.split("\t")
-
-    as_type = line_list[1]
-
-    chr = line_list[3]
-    strand = line_list[4]
-
-    # Add on table num to the end fo the event
-    event = event + "\t%s" % which_table
-    
-    if as_type == "mutually_exclusive":
-        # Largest region will be in exclusion junctions
-        group_start, group_end = findLargestRegion(",".join([line_list[5],
-                                                             line_list[6]]))
-    else:
-        try:
-            group_start, group_end = findLargestRegion(line_list[5])
-        except:
-            pdb.set_trace()
-
-    redundantRegion = (chr, strand, group_start, group_end)
+    redundantRegion, as_type = get_rGroup_as_event(event)
 
     updateRedundantDictionary(as_type2redundantGroup2event, as_type,
                               redundantRegion, event)
@@ -204,6 +215,29 @@ def formatLine(line):
     line = line.replace("\n","")
     return line
 
+def get_rGroup_as_event(event):
+    line_list = event.split("\t")
+
+    as_type = line_list[1]
+
+    chr = line_list[3]
+    strand = line_list[4]
+
+    # Add on table num to the end fo the event
+    event = event + "\t%s" % which_table
+
+    if as_type == "mutually_exclusive":
+        # Largest region will be in exclusion junctions
+        group_start, group_end = findLargestRegion(",".join([line_list[5],
+                                                             line_list[6]]))
+    else:
+        group_start, group_end = findLargestRegion(line_list[5])
+
+    redundantRegion = (chr, strand, group_start, group_end)
+
+    return redundantRegion, as_type
+
+
 def getTableNums(event_set):
     tables = set([])
 
@@ -213,8 +247,9 @@ def getTableNums(event_set):
         tables.add(int(event_list[-1]))
 
     table_list = list(tables)
+    table_list.sort()
 
-    return table_list.sort()
+    return table_list
 
 #################
 # END FUNCTIONS #	
