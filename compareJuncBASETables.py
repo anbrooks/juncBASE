@@ -133,6 +133,7 @@ def main():
         buildDictionary(as_type2redundantGroup2event, event, "1")
     table1.close()
 
+    table2_events = set([])
     # Now insert events from table 2
     for event in table2:
         if event.startswith("#"):
@@ -141,6 +142,15 @@ def main():
         event = formatLine(event)
 
         buildDictionary(as_type2redundantGroup2event, event, "2")
+
+        if subset_file:
+            lineList = event.split("\t")
+            table2_events.add((lineList[1],
+                               lineList[3],
+                               lineList[4],
+                               lineList[5],
+                               lineList[6]))
+
     table2.close()
 
     # Now go through dictionary and output events
@@ -177,10 +187,12 @@ def main():
                 continue
 
             line = formatLine(line)
-            rGroup, as_type = get_rGroup_as_event(line)
-
-            which_tables = getTableNums(as_type2redundantGroup2event[as_type][rGroup])            
-            if which_tables == [1,2]:
+            lineList = line.split("\t")
+            if (lineList[1],
+                lineList[3],
+                lineList[4],
+                lineList[5],
+                lineList[6]) in table2_events:
                 subset_file.write(line + "\n")
 
         table1.close()
