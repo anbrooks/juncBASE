@@ -15,13 +15,17 @@ import sys
 import optparse 
 import pdb
 import os
+import random
 
 import rpy2.robjects as robjects
-import rpy2.robjects.lib.ggplot2 as ggplot2
 from rpy2.robjects.packages import importr
 grdevices = importr('grDevices')
 
 from helperFunctions import updateDictOfLists
+
+#import numpy as np
+#import matplotlib.pyplot as plt
+#import matplotlib.mlab as mlab
 
 r = robjects.r
 # Suppresses warnings
@@ -39,6 +43,7 @@ DEF_START_IDX =  11
 PROP_NON_NA = 0.666
 
 DEF_TEST = "Wilcoxon"
+NUM_ITERATIONS = 10000
 
 INFINITY = 100000000000000000000000000000000000000000000
 #################
@@ -140,6 +145,18 @@ def main():
                           help="""Which test to use. Either "t-test" or
                                   "Wilcoxon". Default=%s""" % DEF_TEST,
                           default=DEF_TEST)
+    opt_parser.add_option("--permutation",
+                          dest="permutation",
+                          action="store_true",
+                          help="""Will do permutation tests to get empircal
+                                  p-value""",
+                          default=False)
+    opt_parser.add_option("--samp2batch",
+                          dest="samp2batch_file",
+                          type="string",
+                          help="""If doing a permutation test, will account for
+                                  potential batch effects""",
+                          default=None)
     opt_parser.add_option("--delta_thresh",
                           dest="delta_thresh",
                           type="float",
@@ -222,9 +239,15 @@ def main():
 
     delta_thresh = options.delta_thresh
 
+    permutation = options.permutation
+    samp2batch = None
+    if options.samp2batch_file:
+        samp2batch = parseBatchFile(options.samp2batch_file)
+
     html_out_dir = options.html_dir
     html_out_table_name = None
     if html_out_dir:
+        exec "import rpy2.robjects.lib.ggplot2 as ggplot2" in globals()
         html_out_dir = formatDir(html_out_dir)
         if not os.path.exists(html_out_dir):
             os.mkdir(html_out_dir)
@@ -248,6 +271,11 @@ def main():
     if options.samp_start_idx:
         samp_start_idx = options.samp_start_idx
         isGeneric = True
+
+    if permutation and isGeneric:
+        print "Permutation test is only for JuncBASE tables"
+        opt_parser.print_help()
+        sys.exit(1)
 
     left_input_file = None
     right_input_file = None
@@ -312,6 +340,11 @@ def main():
             # Get sample idx
             for i in range(len(sampleList)):
                 idx2sample[i] = sampleList[i]
+
+            # If there were no batches, all samples are in the same batch
+            if permutation:
+                if samp2batch is None:
+                    samp2batch = {}.fromkeys(sampleList, 0)
 #           for sample in sample_set1:
 #               idx2sample[sampleList.index(sample)] = sample
 #           for sample in sample_set2:
@@ -328,12 +361,23 @@ def main():
             samp_set_thresh1 = float(len(sample_set1_checked)) * PROP_NON_NA
             samp_set_thresh2 = float(len(sample_set2_checked)) * PROP_NON_NA
 
+            if permutation:
+                # batch2setLabels : {batch:{"idx":[indexes in batch],
+                #                            "samp_set":[parallele list indicating which sample set it is in]}
+                (batch2setLabels,
+                 batch2len) = buildBatchDict(sampleList,
+                                             samp2batch,
+                                             sample_set1_checked,
+                                             sample_set2_checked)
+
             continue
 
         line_list = line.split("\t")
 
         event = "\t".join(line_list[0:samp_start_idx])
         counts = line_list[samp_start_idx:]
+        if permutation:
+            total_counts = []
 
         if event in event2idx:
             print "Warning: Skipping duplicate event: %s" % event
@@ -355,6 +399,7 @@ def main():
         max_psi = -INFINITY
         set1_psis = []        
         set2_psis = []
+        all_psis = []
         na_count = 0
         for i in range(total_samples):
             if isGeneric:
@@ -364,11 +409,13 @@ def main():
                 (psi, sum_ct) = getPSI_sample_sum(counts[i], sum_thresh)
             if psi != NA:
                 psi_val = float(psi)
+                all_psis.append(psi_val)
                 if psi_val < min_psi:
                     min_psi = psi_val
                 if psi_val > max_psi:
                     max_psi = psi_val
             else:
+                all_psis.append(NA)
                 na_count += 1
 
             if event in event2col2psi:
@@ -383,9 +430,14 @@ def main():
                 # Compare samples groups together in a wilcoxon rank sum test
                 [col_excl, col_incl] = map(int,counts[i].split(";"))
 
-                # Both samples have to be non-zero
-                if belowThreshold(sum_thresh, col_excl, col_incl):
+                total_count = col_excl + col_incl
+                if permutation:
+                    total_counts.append(total_count)
+                if total_count < sum_thresh:
                     continue
+                # Both samples have to be non-zero
+#               if belowThreshold(sum_thresh, col_excl, col_incl):
+#                   continue
 
             if idx2sample[i] in sample_set1:
                 if event2col2psi[event][i] != NA:
@@ -394,7 +446,6 @@ def main():
                 if event2col2psi[event][i] != NA:
                     set2_psis.append(event2col2psi[event][i])
     
-
         if as_only:
             if (float(total_samples - na_count)/total_samples) < PROP_NON_NA:
                 continue 
@@ -440,9 +491,21 @@ def main():
        
         cur_len = len(event_type2pvals[event_type])
 
+
         try: 
-            raw_pval = robjects.r[which_test](robjects.FloatVector(set1_psis),
-                                          robjects.FloatVector(set2_psis))[2][0]
+            if permutation:
+                null_dist = get_null_dist(total_counts, all_psis,
+                                          which_test,
+                                          batch2setLabels,
+                                          batch2len)
+
+                this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis),
+                                                   robjects.FloatVector(set2_psis))[0][0]
+
+                raw_pval = get_emp_pval(null_dist, this_stat)
+            else:
+                raw_pval = robjects.r[which_test](robjects.FloatVector(set1_psis),
+                                                  robjects.FloatVector(set2_psis))[2][0]
         except:
             continue
 
@@ -475,36 +538,57 @@ def main():
             set1_psis_right = []        
             set2_psis_right = []
 
+            left_total_counts = []
+            right_total_counts = []
+            left_all_psis = []
+            right_all_psis = []
+
             left_min_psi = 200
             left_max_psi = -1
             right_min_psi = 200
             right_max_psi = -1
             for j in range(total_samples):
-                [left_col_excl, left_col_incl] = map(int,left_events2counts[event][j].split(";"))
-                [right_col_excl, right_col_incl] = map(int,right_events2counts[event][j].split(";"))
+                try:
+                    [left_col_excl, left_col_incl] = map(int,left_events2counts[event][j].split(";"))
+                    [right_col_excl, right_col_incl] = map(int,right_events2counts[event][j].split(";"))
+                except:
+                    pdb.set_trace()
 
+                left_total = left_col_excl + left_col_incl
+                right_total = right_col_excl + right_col_incl
+                left_total_counts.append(left_total)
+                right_total_counts.append(right_total)
                 # Both samples have to be non-zero
-                if (belowThreshold(sum_thresh, left_col_excl, left_col_incl)
-                                   or
-                    belowThreshold(sum_thresh, right_col_excl, right_col_incl)):
-                    continue
+#               if (belowThreshold(sum_thresh, left_col_excl, left_col_incl)
+#                                  or
+#                   belowThreshold(sum_thresh, right_col_excl, right_col_incl)):
+#                   continue
 
                 (left_psi, sum_ct) = getPSI_sample_sum(left_events2counts[event][j], sum_thresh)
                 (right_psi, sum_ct) = getPSI_sample_sum(right_events2counts[event][j], sum_thresh)
 
                 if left_psi != NA:
                     left_psi_val = float(left_psi)
+                    left_all_psis.append(left_psi_val)
                     if left_psi_val < left_min_psi:
                         left_min_psi = left_psi_val
                     if left_psi_val > left_max_psi:
                         left_max_psi = left_psi_val
+                else:
+                    left_all_psis.append(NA)
 
                 if right_psi != NA:
                     right_psi_val = float(right_psi)
+                    right_all_psis.append(right_psi_val)
                     if right_psi_val < right_min_psi:
                         right_min_psi = right_psi_val
                     if right_psi_val > right_max_psi:
                         right_max_psi = right_psi_val
+                else:
+                    right_all_psis.append(NA)
+
+                if left_total < sum_thresh or right_total < sum_thresh:
+                    continue
 
                 if idx2sample[j] in sample_set1:
                     if left_psi != NA:
@@ -529,11 +613,28 @@ def main():
             cur_len = len(event_type2pvals["intron_retention"])
 
             try:
-                left_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
-                                                   robjects.FloatVector(set2_psis_left))[2][0]
+                if permutation:
+                    null_dist = get_null_dist(left_total_counts, left_all_psis,
+                                              which_test,
+                                              batch2setLabels,
+                                              batch2len)
+                    this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis),
+                                                       robjects.FloatVector(set2_psis))[0][0]
+                    left_pval = get_emp_pval(null_dist, this_stat)
+
+                    null_dist = get_null_dist(right_total_counts, right_all_psis,
+                                              which_test,
+                                              batch2setLabels,
+                                              batch2len)
+                    this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis),
+                                                       robjects.FloatVector(set2_psis))[0][0]
+                    right_pval = get_emp_pval(null_dist, this_stat)
+                else:
+                    left_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
+                                                       robjects.FloatVector(set2_psis_left))[2][0]
                         
-                right_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
-                                                    robjects.FloatVector(set2_psis_right))[2][0]
+                    right_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
+                                                        robjects.FloatVector(set2_psis_right))[2][0]
             except:
                 continue
 
@@ -631,7 +732,6 @@ def main():
 #############
 # FUNCTIONS #
 #############
-
 def belowThreshold(sum_thresh, col_excl, col_incl):
 
     if col_excl + col_incl < sum_thresh:
@@ -639,6 +739,39 @@ def belowThreshold(sum_thresh, col_excl, col_incl):
 
     return False
 
+def buildBatchDict(sampleList, samp2batch, 
+                   sample_set1_samps, sample_set2_samps):
+    """
+    batch2setLabels : {batch:{"idx":[indexes in batch],
+                              "samp_set":[parallele list indicating which sample set it is in]}
+    batch2len : dictionary to hold the length of the batch to prevent
+                recalculating this later
+    """
+    batch2setLabels = {}
+    num_samples = len(sampleList)
+    for i in range(num_samples):
+        samp = sampleList[i]
+        batch = samp2batch[samp]
+        if samp in sample_set1_samps:
+            samp_set = 0
+        elif samp in sample_set2_samps:
+            samp_set = 1
+        else:
+            continue
+
+        if batch not in batch2setLabels:
+            batch2setLabels[batch] = {"idx":[i],
+                                      "samp_set":[samp_set]}
+        else:
+            batch2setLabels[batch]["idx"].append(i)
+            batch2setLabels[batch]["samp_set"].append(samp_set)
+
+    batch2len = {}
+    for batch in batch2setLabels:
+        batch2len[batch] = len(batch2setLabels[batch]["idx"])
+
+    return batch2setLabels, batch2len
+        
 
 def checkSamples(sampleList, sample_set):
     checkedSamples = []
@@ -663,6 +796,67 @@ def formatLine(line):
     line = line.replace("\r","")
     line = line.replace("\n","")
     return line
+
+def get_emp_pval(null_dist, this_stat):
+    """
+    Two-tailed emp_pval
+    """
+#   mu = robjects.r["mean"](robjects.FloatVector(null_dist))[0]
+#   sd = robjects.r["sd"](robjects.FloatVector(null_dist))[0]
+
+    high_ctr = 0
+    low_ctr = 0
+    
+    for stat in null_dist:
+        if this_stat > stat:
+            high_ctr += 1
+        if this_stat < stat:
+            low_ctr += 1
+
+    p_val = None
+    if high_ctr < low_ctr:
+        p_val = 2 * (float(high_ctr)/NUM_ITERATIONS)
+    elif low_ctr < high_ctr:
+        p_val = 2 * (float(low_ctr)/NUM_ITERATIONS)
+    elif high_ctr == 0 and low_ctr == 0:
+        p_val = 1/NUM_ITERATIONS
+    elif high_ctr == low_ctr:
+        p_val = 1.0
+    
+    return p_val
+
+
+def get_null_dist(total_counts, all_psis, which_test, batch2setLabels, batch2len):
+    stats = []
+    for i in range(NUM_ITERATIONS):
+        this_idx2sample_set = {}
+        
+        for batch in batch2setLabels:
+            samp_shuffle = list(batch2setLabels[batch]["samp_set"])
+            random.shuffle(samp_shuffle)
+
+            # Assign idx2sampset
+            for j in range(batch2len[batch]):
+                this_idx2sample_set[batch2setLabels[batch]["idx"][j]] = samp_shuffle[j]
+
+        # Sample labels have been shuffled
+        this_set1_psis = []
+        this_set2_psis = []
+        for idx in this_idx2sample_set:
+            if all_psis[idx] == NA:
+                continue
+            this_incl = float(robjects.r["rbinom"](1,total_counts[idx],
+                                                   all_psis[idx]/100)[0])
+            this_psi = this_incl/total_counts[idx]
+
+            if this_idx2sample_set[idx] == 0:
+                this_set1_psis.append(this_psi)
+            else:
+                this_set2_psis.append(this_psi)
+
+        stats.append(robjects.r[which_test](robjects.FloatVector(this_set1_psis),
+                                            robjects.FloatVector(this_set2_psis))[0][0])
+    return stats
 
 def getPSI_sample_sum(excl_incl_ct_str, sum_thresh):
     if excl_incl_ct_str == NA:
@@ -740,6 +934,7 @@ def initiateHTML_table(html_out):
 
 def makePlot(grdevices, plotName, samp_set1_vals, samp_set2_vals,
              image_file_type):
+
     samp_vector = ["set1" for i in range(len(samp_set1_vals))]
     samp_vector.extend(["set2" for i in range(len(samp_set2_vals))])
 
@@ -753,6 +948,8 @@ def makePlot(grdevices, plotName, samp_set1_vals, samp_set2_vals,
     pp = gp + \
      ggplot2.aes_string(x="sample", y='value') + \
      ggplot2.geom_jitter(position=ggplot2.position_jitter(width=0.2, height=0.01)) +\
+#     ggplot2.geom_jitter(position=ggplot2.position_jitter(width=0.2, height=0.01, ylim=robjects.IntVector([0,100]))) +\
+     ggplot2.coord_cartesian(ylim=robjects.IntVector([0,100])) +\
      ggplot2.theme_bw()
 
 #     ggplot2.geom_boxplot(stat="identity") +\
@@ -763,6 +960,24 @@ def makePlot(grdevices, plotName, samp_set1_vals, samp_set2_vals,
         grdevices.png(file=plotName, width=512, height=512)
     pp.plot()
     grdevices.dev_off()
+
+def parseBatchFile(batch_file_name):
+    samp2batch = {}
+    batch_file = open(batch_file_name)
+    for line in batch_file:
+        line = formatLine(line)
+        if line.startswith("#"):
+            continue
+        if "Batch" in line:
+            continue 
+
+        samp, batch = line.split("\t") 
+
+        samp2batch[samp] = batch
+
+    batch_file.close()
+
+    return samp2batch
 
 def printDataToHTML(grdevices, html_dir, html_out, outline, 
                     samp_start_idx, idx2sample,
