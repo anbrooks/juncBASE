@@ -311,6 +311,9 @@ def main():
                 try:
                     if os.path.getsize(expected_out_file) != 0:
                         file_is_present = True
+                    else:
+                        if check:
+                            print "File is empty: %s,%s,%s" % (samp, chr, expected_out_file)
                 except:                                                              
                     if check:
                         print "Does not exist: %s,%s,%s" % (samp, chr,
@@ -418,9 +421,13 @@ def main():
             expected_out_file = "%s_finished.txt" % samp
                                                                                
             file_is_present = False                                            
+
             try:
-                file_size = os.path.getsize(expected_out_file)
-                file_is_present = True                                       
+                if os.path.getsize(expected_out_file) != 0:
+                    file_is_present = True
+                else:
+                    if check:
+                        print "File is empty: %s,%s" % (samp, expected_out_file)
             except:                                                              
                 if check:
                     print "Does not exist: %s, %s" % (samp, expected_out_file)
