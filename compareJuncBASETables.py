@@ -104,7 +104,7 @@ def main():
     opt_parser.check_required("--table2")
     opt_parser.check_required("--out_prefix")
 
-    subset = options.subset
+    subset = options.subset_prefix
     
     subset_file = None
     if subset:
@@ -197,7 +197,8 @@ def main():
 
         table1.close()
 
-    subset_file.close()
+    if not subset is None:
+        subset_file.close()
         
 			
     sys.exit(0)
@@ -210,8 +211,11 @@ def main():
 # FUNCTIONS #
 #############
 def buildDictionary(as_type2redundantGroup2event, event, which_table):
-    
+   
     redundantRegion, as_type = get_rGroup_as_event(event)
+
+    # Add on table num to the end fo the event
+    event = event + "\t%s" % which_table
 
     updateRedundantDictionary(as_type2redundantGroup2event, as_type,
                               redundantRegion, event)
@@ -234,9 +238,6 @@ def get_rGroup_as_event(event):
 
     chr = line_list[3]
     strand = line_list[4]
-
-    # Add on table num to the end fo the event
-    event = event + "\t%s" % which_table
 
     if as_type == "mutually_exclusive":
         # Largest region will be in exclusion junctions
