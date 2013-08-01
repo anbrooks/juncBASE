@@ -90,7 +90,8 @@ def main():
     use_mad = options.use_mad
 
     as_type2event2pval = {}
-    as_type2redundantGroup2event = {}
+
+    as_type2chr2strand2redundantGroup2event = {}
 
     for event in input_file:
         event = formatLine(event)
@@ -101,17 +102,17 @@ def main():
             continue
         
         buildDictionaries(event, as_type2event2pval,
-                          as_type2redundantGroup2event, use_mad)
+                          as_type2chr2strand2redundantGroup2event, use_mad)
 
     input_file.close()
 
     # Merge redundant events
     changeOccurred = True
     while changeOccurred:
-        changeOccurred = mergeRedundantEvents(as_type2redundantGroup2event)
+        changeOccurred = mergeRedundantEvents(as_type2chr2strand2redundantGroup2event)
 
     # Now remove redundant events from as_type2event2pval dictionary
-    removeRedundantEvents(as_type2redundantGroup2event, as_type2event2pval)
+    removeRedundantEvents(as_type2chr2strand2redundantGroup2event, as_type2event2pval)
 
     # Now print out the remaining events
     for as_type in as_type2event2pval:
@@ -129,7 +130,7 @@ def main():
 #############
 # FUNCTIONS #
 #############
-def buildDictionaries(event, as_type2event2pval, as_type2redundantGroup2event,
+def buildDictionaries(event, as_type2event2pval, as_type2chr2strand2redundantGroup2event,
                       use_mad):
 
     line_list = event.split("\t")
@@ -162,7 +163,7 @@ def buildDictionaries(event, as_type2event2pval, as_type2redundantGroup2event,
 
     redundantRegion = (chr, strand, group_start, group_end)
 
-    updateRedundantDictionary(as_type2redundantGroup2event, as_type, redundantRegion,
+    updateRedundantDictionary(as_type2chr2strand2redundantGroup2event, as_type, redundantRegion,
                               event)
 
 #ef convertCoordStr(coord_str):
@@ -233,94 +234,106 @@ def get_mad(line_list):
     # give the event with the largets MAD value.
     return -abs_mad_val
 
-def mergeRedundantEvents(as_type2redundantGroup2event):
+def mergeRedundantEvents(as_type2chr2strand2redundantGroup2event):
     """
     Because of the construction of the dictionary, some of the redundant
     groups are overlapping.
     """
-    for as_type in as_type2redundantGroup2event:
-        for first_group in as_type2redundantGroup2event[as_type]:
-            for second_group in as_type2redundantGroup2event[as_type]:
-                if first_group == second_group:
-                    continue
+    for as_type in as_type2chr2strand2redundantGroup2event:
+        for chr in as_type2chr2strand2redundantGroup2event[as_type]:
+            for strand in as_type2chr2strand2redundantGroup2event[as_type][chr]:
+                for first_group in as_type2chr2strand2redundantGroup2event[as_type][chr][strand]:
+                    for second_group in as_type2chr2strand2redundantGroup2event[as_type][chr][strand]:
+                        if first_group == second_group:
+                            continue
+                        if coordsOverlap(first_group[2], first_group[3],
+                                         second_group[2], second_group[3]):
 
-                if ((first_group[0] == second_group[0]) and
-                    (first_group[1] == second_group[1])):
-                    if coordsOverlap(first_group[2], first_group[3],
-                                     second_group[2], second_group[3]):
-                        # Add sets together
-                        new_set = as_type2redundantGroup2event[as_type][first_group].union(as_type2redundantGroup2event[as_type][second_group])
-                        new_start = min(first_group[2], second_group[2])
-                        new_end = max(first_group[3], second_group[3])
+                            # Add sets together
+                            new_set = as_type2chr2strand2redundantGroup2event[as_type][chr][strand][first_group].union(as_type2chr2strand2redundantGroup2event[as_type][chr][strand][second_group])
+                            new_start = min(first_group[2], second_group[2])
+                            new_end = max(first_group[3], second_group[3])
 
-                        new_region = (first_group[0], first_group[1],
-                                      new_start, new_end)
+                            new_region = (first_group[0], first_group[1],
+                                          new_start, new_end)
 
-                        if new_region in as_type2redundantGroup2event[as_type]:
-                            as_type2redundantGroup2event[as_type][new_region].update(new_set)
-                        else:
-                            as_type2redundantGroup2event[as_type][new_region] = new_set
+                            if new_region in as_type2chr2strand2redundantGroup2event[as_type][chr][strand]:
+                                as_type2chr2strand2redundantGroup2event[as_type][chr][strand][new_region].update(new_set)
+                            else:
+                                as_type2chr2strand2redundantGroup2event[as_type][chr][strand][new_region] = new_set
 
-                        # Remove old sets and return with flag
-                        del as_type2redundantGroup2event[as_type][first_group]
-                        del as_type2redundantGroup2event[as_type][second_group]
+                            # Remove old sets and return with flag
+                            if new_region != first_group:
+                                del as_type2chr2strand2redundantGroup2event[as_type][chr][strand][first_group]
+                            if new_region != second_group:
+                                del as_type2chr2strand2redundantGroup2event[as_type][chr][strand][second_group]
 
-                        return True
+                            return True
 
     # If not returned from within the loop, then no change occurred
     return False
 
-def removeRedundantEvents(as_type2redundantGroup2event, as_type2event2pval):
+def removeRedundantEvents(as_type2chr2strand2redundantGroup2event, as_type2event2pval):
     """
     Returns the as_type2event2pval dictionary with redundant values removed
     """
-    for as_type in as_type2redundantGroup2event:
-        for redundant_group in as_type2redundantGroup2event[as_type]:
-            if len(as_type2redundantGroup2event[as_type][redundant_group]) > 1:
-                most_sign_event = findMostSignEvent(as_type2event2pval[as_type],
-                                                    as_type2redundantGroup2event[as_type][redundant_group])
-        
-                for event in as_type2redundantGroup2event[as_type][redundant_group]:
-                    if event == most_sign_event:
-                        continue
-                    # Delete all non-significant events
-                    del as_type2event2pval[as_type][event] 
+    for as_type in as_type2chr2strand2redundantGroup2event:
+        for chr in as_type2chr2strand2redundantGroup2event[as_type]:
+            for strand in as_type2chr2strand2redundantGroup2event[as_type][chr]:
+                for redundant_group in as_type2chr2strand2redundantGroup2event[as_type][chr][strand]:
+                    if len(as_type2chr2strand2redundantGroup2event[as_type][chr][strand][redundant_group]) > 1:
+                        most_sign_event = findMostSignEvent(as_type2event2pval[as_type],
+                                                            as_type2chr2strand2redundantGroup2event[as_type][chr][strand][redundant_group])
+                
+                        for event in as_type2chr2strand2redundantGroup2event[as_type][chr][strand][redundant_group]:
+                            if event == most_sign_event:
+                                continue
+                            # Delete all non-significant events
+                            del as_type2event2pval[as_type][event] 
 
-def updateRedundantDictionary(as_type2redundantGroup2event, as_type, redundantRegion,
+def updateRedundantDictionary(as_type2chr2strand2redundantGroup2event, as_type, redundantRegion,
                               event):
-    if as_type in as_type2redundantGroup2event:
+
+    this_chr = redundantRegion[0]
+    this_strand = redundantRegion[1]    
+
+    if as_type in as_type2chr2strand2redundantGroup2event:
+        if not this_chr in as_type2chr2strand2redundantGroup2event[as_type]:
+            as_type2chr2strand2redundantGroup2event[as_type][this_chr] = {this_strand:{redundantRegion: set([event])}}
+            return
+        if not this_strand in as_type2chr2strand2redundantGroup2event[as_type][this_chr]:
+            as_type2chr2strand2redundantGroup2event[as_type][this_chr][this_strand] = {redundantRegion: set([event])}
+            return
+
         foundOverlap = False
-        for redundantGroup in as_type2redundantGroup2event[as_type]:
-            # Check if chromosome and strand is the same
-            if ((redundantGroup[0] == redundantRegion[0]) and
-                (redundantGroup[1] == redundantRegion[1])):
-                if coordsOverlap(redundantGroup[2], redundantGroup[3],
-                                 redundantRegion[2], redundantRegion[3]):
-                    foundOverlap = True
-                    # Pick longest region as the key
-                    region_start = min(redundantGroup[2], redundantRegion[2])
-                    region_end = max(redundantGroup[3], redundantRegion[3])
+        for redundantGroup in as_type2chr2strand2redundantGroup2event[as_type][this_chr][this_strand]:
+            if coordsOverlap(redundantGroup[2], redundantGroup[3],
+                             redundantRegion[2], redundantRegion[3]):
+                foundOverlap = True
+                # Pick longest region as the key
+                region_start = min(redundantGroup[2], redundantRegion[2])
+                region_end = max(redundantGroup[3], redundantRegion[3])
 
-                    # Copy the existing set of exon_names
-                    cur_set = set(as_type2redundantGroup2event[as_type][redundantGroup]) 
-                    # Add the current event
-                    cur_set.add(event)
+                # Copy the existing set of exon_names
+                cur_set = set(as_type2chr2strand2redundantGroup2event[as_type][this_chr][this_strand][redundantGroup]) 
+                # Add the current event
+                cur_set.add(event)
 
-                    del as_type2redundantGroup2event[as_type][redundantGroup]
+                del as_type2chr2strand2redundantGroup2event[as_type][this_chr][this_strand][redundantGroup]
 
-                    # Check for existing new group
-                    new_group = (redundantGroup[0], redundantGroup[1],
-                                 region_start, region_end)
-                    if new_group in as_type2redundantGroup2event[as_type]:
-                        as_type2redundantGroup2event[as_type][new_group].update(cur_set)
-                    else:
-                        as_type2redundantGroup2event[as_type][new_group] = cur_set
-                    break
+                # Check for existing new group
+                new_group = (redundantGroup[0], redundantGroup[1],
+                             region_start, region_end)
+                if new_group in as_type2chr2strand2redundantGroup2event[as_type][this_chr][this_strand]:
+                    as_type2chr2strand2redundantGroup2event[as_type][this_chr][this_strand][new_group].update(cur_set)
+                else:
+                    as_type2chr2strand2redundantGroup2event[as_type][this_chr][this_strand][new_group] = cur_set
+                break
         if not foundOverlap:
             # Add this non overlapping region on its own
-            as_type2redundantGroup2event[as_type][redundantRegion] = set([event]) 
+            as_type2chr2strand2redundantGroup2event[as_type][this_chr][this_strand][redundantRegion] = set([event]) 
     else:
-        as_type2redundantGroup2event[as_type] = {redundantRegion : set([event])}
+        as_type2chr2strand2redundantGroup2event[as_type] = {this_chr:{this_strand:{redundantRegion: set([event])}}}
 
 #################
 # END FUNCTIONS #	
