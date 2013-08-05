@@ -245,10 +245,10 @@ def main():
         left_input_file_name = "%s_left_intron_counts_lenNorm.txt" % prefix
         right_input_file_name = "%s_right_intron_counts_lenNorm.txt" % prefix
 
-        if permutation:
-            raw_input_file = open("%s_AS_exclusion_inclusion_counts.txt" % prefix)
-            raw_left_input_file_name = "%s_left_intron_counts.txt" % prefix
-            raw_right_input_file_name = "%s_right_intron_counts.txt" % prefix
+#       if permutation:
+#           raw_input_file = open("%s_AS_exclusion_inclusion_counts.txt" % prefix)
+#           raw_left_input_file_name = "%s_left_intron_counts.txt" % prefix
+#           raw_right_input_file_name = "%s_right_intron_counts.txt" % prefix
     else:
         if not options.generic_file:
             print "Must include either --in_prefix or -i"
@@ -308,9 +308,9 @@ def main():
         left_input_file = open(left_input_file_name)
         right_input_file = open(right_input_file_name)
     
-        if permutation:
-            raw_left_input_file = open(raw_left_input_file_name)
-            raw_right_input_file = open(raw_right_input_file_name)
+#       if permutation:
+#           raw_left_input_file = open(raw_left_input_file_name)
+#           raw_right_input_file = open(raw_right_input_file_name)
     
     all_psi_output = open(options.all_psi_output, "w")
 
@@ -354,8 +354,8 @@ def main():
     header = None
     total_samples = None
     lenNorm_lines = input_file.readlines()
-    if permutation:
-        raw_lines = raw_input_file.readlines()
+#   if permutation:
+#       raw_lines = raw_input_file.readlines()
     num_lines = len(lenNorm_lines)
     for j in xrange(num_lines):
         line = formatLine(lenNorm_lines[j])
@@ -373,7 +373,7 @@ def main():
             # If there were no batches, all samples are in the same batch
             if permutation:
                 if samp2batch is None:
-                    samp2batch = {}.fromkeys(sampleList, 0)
+                    samp2batch = {}.fromkeys(sampleList, '0')
 #           for sample in sample_set1:
 #               idx2sample[sampleList.index(sample)] = sample
 #           for sample in sample_set2:
@@ -402,13 +402,13 @@ def main():
             continue
 
         line_list = line.split("\t")
-        if permutation:
-            raw_line_list = formatLine(raw_lines[j]).split("\t")
-            
-            if line_list[5] != raw_line_list[5] or line_list[6] != raw_line_list[6]:
-                print "Count files (raw and lenNorm) do not match up)"
-                opt_parser.print_help()
-                sys.exit(1)
+#       if permutation:
+#           raw_line_list = formatLine(raw_lines[j]).split("\t")
+#           
+#           if line_list[5] != raw_line_list[5] or line_list[6] != raw_line_list[6]:
+#               print "Count files (raw and lenNorm) do not match up)"
+#               opt_parser.print_help()
+#               sys.exit(1)
 
         event = "\t".join(line_list[0:samp_start_idx])
         counts = line_list[samp_start_idx:]
@@ -480,7 +480,7 @@ def main():
             elif idx2sample[i] in sample_set2:
                 if event2col2psi[event][i] != NA:
                     set2_psis.append(event2col2psi[event][i])
-    
+
         if as_only:
             if (float(total_samples - na_count)/total_samples) < PROP_NON_NA:
                 continue 
@@ -528,14 +528,13 @@ def main():
 
         try: 
             if permutation:
-                incl_iso_len = getEventInclLen(event, jcn_seq_len)
-                null_dist = get_null_dist(raw_line_list[samp_start_idx:],
-                                          incl_iso_len,
+#                incl_iso_len = getEventInclLen(event, jcn_seq_len)
+                null_dist = get_null_dist(line_list[samp_start_idx:],
                                           total_counts, all_psis,
                                           which_test,
                                           batch2setLabels,
-                                          batch2len)
-
+                                          batch2len,
+                                          sum(map(ord,event)))
 
                 this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis),
                                                    robjects.FloatVector(set2_psis))[0][0]
@@ -566,16 +565,16 @@ def main():
             left_events2counts = getIntronLeftRightCounts(left_input_file, samp_start_idx)
             right_events2counts = getIntronLeftRightCounts(right_input_file, samp_start_idx)
 
-            if permutation:
-                raw_left_events2counts = getIntronLeftRightCounts(raw_left_input_file, samp_start_idx)
-                raw_right_events2counts = getIntronLeftRightCounts(raw_right_input_file, samp_start_idx)
+#           if permutation:
+#               raw_left_events2counts = getIntronLeftRightCounts(raw_left_input_file, samp_start_idx)
+#               raw_right_events2counts = getIntronLeftRightCounts(raw_right_input_file, samp_start_idx)
         else:
             left_events2counts = {}
             right_events2counts = {}
     
-            if permutation:
-                raw_left_events2counts = {}
-                raw_right_events2counts = {}
+#           if permutation:
+#               raw_left_events2counts = {}
+#               raw_right_events2counts = {}
 
         for event in left_events2counts:
             if event not in right_events2counts:
@@ -662,27 +661,48 @@ def main():
 
             cur_len = len(event_type2pvals["intron_retention"])
 
+#           if "PACAP" in event:
+#               pdb.set_trace()
+
             try:
                 if permutation:
-                    incl_iso_len = getEventInclLen(event, jcn_seq_len)
-                    null_dist = get_null_dist(raw_left_events2counts[event],
-                                              incl_iso_len,
+#                    incl_iso_len = getEventInclLen(event, jcn_seq_len)
+                    null_dist = get_null_dist(left_events2counts[event],
                                               left_total_counts, left_all_psis,
                                               which_test,
                                               batch2setLabels,
-                                              batch2len)
-                    this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis),
-                                                       robjects.FloatVector(set2_psis))[0][0]
+                                              batch2len,
+                                              sum(map(ord,event)))
+#                   # For debugging 
+#                   fig = plt.figure()
+#                   ax = fig.add_subplot(111)
+#                   ax.hist(null_dist, 100, normed=1)
+#                   plt.show() 
+
+                    this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
+                                                       robjects.FloatVector(set2_psis_left))[0][0]
+
+#                    pdb.set_trace()
+
                     left_pval = get_emp_pval(null_dist, this_stat)
 
-                    null_dist = get_null_dist(raw_right_events2counts[event],
-                                              incl_iso_len,
+                    null_dist = get_null_dist(right_events2counts[event],
                                               right_total_counts, right_all_psis,
                                               which_test,
                                               batch2setLabels,
-                                              batch2len)
-                    this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis),
-                                                       robjects.FloatVector(set2_psis))[0][0]
+                                              batch2len,
+                                              sum(map(ord,event)))
+#                   # For debugging 
+#                   fig = plt.figure()
+#                   ax = fig.add_subplot(111)
+#                   ax.hist(null_dist, 100, normed=1)
+#                   plt.show() 
+
+                    this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
+                                                       robjects.FloatVector(set2_psis_right))[0][0]
+
+#                    pdb.set_trace()
+
                     right_pval = get_emp_pval(null_dist, this_stat)
                 else:
                     left_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
@@ -889,17 +909,30 @@ def get_emp_pval(null_dist, this_stat):
     return p_val
 
 
-def get_null_dist(raw_excl_incl_counts, incl_iso_len, total_counts, all_psis, 
-                  which_test, batch2setLabels, batch2len):
+def get_null_dist(excl_incl_counts, total_counts, all_psis, 
+                  which_test, batch2setLabels, batch2len, random_seed):
+    """ 
+    Uses beta binomial to select inclusion isoform abundances from the length
+    normalized counts for permutation testing
+    """
     stats = []
     ctr = 0
     for i in xrange(0, NUM_ITERATIONS, NUM_IN_BATCH):
         # Calls to R will be batched to reduce time
         idx2incl_iter = []
-        for excl_incl_counts in raw_excl_incl_counts: 
-            excl, incl = map(int, excl_incl_counts.split(";"))
+        iter_ctr = 0
+        for excl_incl_count in excl_incl_counts: 
+            iter_ctr += 1
+            excl, incl = map(int, excl_incl_count.split(";"))
+            robjects.r["set.seed"](random_seed + i + iter_ctr) 
+            tot_count = excl + incl 
+
+            if tot_count == 0:
+                idx2incl_iter.append([0 for n in range(NUM_IN_BATCH)])
+                continue
+
             idx2incl_iter.append(list(vgam.rbetabin_ab(NUM_IN_BATCH,
-                                                       excl + incl,
+                                                       tot_count,
                                                        incl + 1,
                                                        excl + 1)))
 
@@ -910,11 +943,13 @@ def get_null_dist(raw_excl_incl_counts, incl_iso_len, total_counts, all_psis,
             
             for batch in batch2setLabels:
                 samp_shuffle = list(batch2setLabels[batch]["samp_set"])
+                random.seed(random_seed + sum(map(ord,batch)) + iter_ctr + k)
                 random.shuffle(samp_shuffle)
 
                 # Assign idx2sampset
                 for j in range(batch2len[batch]):
                     this_idx2sample_set[batch2setLabels[batch]["idx"][j]] = samp_shuffle[j]
+
 
             # Sample labels have been shuffled
             this_set1_psis = []
@@ -922,19 +957,21 @@ def get_null_dist(raw_excl_incl_counts, incl_iso_len, total_counts, all_psis,
             for idx in this_idx2sample_set:
                 if all_psis[idx] == NA:
                     continue
-                this_incl = float(round(idx2incl_iter[idx][k]/(incl_iso_len/DEF_EXON_LEN_NORM)))
+#                this_incl = float(round(idx2incl_iter[idx][k]/(incl_iso_len/DEF_EXON_LEN_NORM)))
+                this_incl = float(idx2incl_iter[idx][k])
 
 #               this_incl =  float(robjects.r["rbinom"](1,total_counts[idx],
 #                                                      all_psis[idx]/100)[0])
                 this_psi = (this_incl/total_counts[idx]) * 100
                 if this_psi > 100.0:
-                    if abs(this_incl - total_counts[idx]) == 1:
-                        # There are small adjustments for rounding
-                        this_psi = 100.0
-                    else:
-                        pdb.set_trace()
-                        print "Error in getting PSI value from iteration"
-                        sys.exit(1)
+                    print "Error in getting PSI value from iteration"
+                    sys.exit(1)
+#                   if abs(this_incl - total_counts[idx]) <= 2:
+#                       # There are small adjustments for rounding
+#                       this_psi = 100.0
+#                   else:
+#                       print "Error in getting PSI value from iteration"
+#                       sys.exit(1)
 
                 if this_idx2sample_set[idx] == 0:
                     this_set1_psis.append(this_psi)
@@ -943,6 +980,7 @@ def get_null_dist(raw_excl_incl_counts, incl_iso_len, total_counts, all_psis,
 
             stats.append(robjects.r[which_test](robjects.FloatVector(this_set1_psis),
                                                 robjects.FloatVector(this_set2_psis))[0][0])
+
     return stats
 
 def getPSI_sample_sum(excl_incl_ct_str, sum_thresh):
