@@ -231,6 +231,33 @@ def findInternalCoords(coordTree, coord_list, this_coord):
                 return
             return findInternalCoords(this_tree.getRight(), coord_list, this_coord)
 
+def findOverlapCoords(coordTree, coord_list, this_coord):
+
+    this_tree = coordTree
+    try:
+        this_key = this_tree.getKey()
+    except:
+        return
+
+    thisIsOverlap = False
+    if coordsOverlap(this_coord[0],
+                     this_coord[1],
+                     this_key[0],
+                     this_key[1]):
+        coord_list.append(this_tree.getKey())
+        thisIsOverlap = True
+
+    if not this_tree.getIsLeaf():
+        if this_coord < this_key or thisIsOverlap:
+            if this_tree.getLeft().isEmpty:
+                return
+            return findOverlapCoords(this_tree.getLeft(), coord_list, this_coord)
+
+        if this_coord > this_key or thisIsOverlap:
+            if this_tree.getRight().isEmpty:
+                return
+            return findOverlapCoords(this_tree.getRight(), coord_list, this_coord)
+
 def formatDir(i_dir):
     i_dir = os.path.realpath(i_dir)
     if i_dir.endswith("/"):
