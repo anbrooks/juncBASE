@@ -72,6 +72,14 @@ def main():
                                   events in both tables, (2) events in 1 but not
                                   2, (3) events in 2 but not 1.""",
                           default=None)
+    opt_parser.add_option("--compare_pval",
+                          dest="compare_pval",
+                          action="store_true",
+                          help="""When the same event has been identified, the
+                                  p-value of the significance for table 1 and
+                                  table 2 will be given in the last two
+                                  columns.""",
+                          default=False)
     opt_parser.add_option("--subset",
                           dest="subset_prefix",
                           type="string",
@@ -105,7 +113,8 @@ def main():
     opt_parser.check_required("--out_prefix")
 
     subset = options.subset_prefix
-    
+    compare_pval = options.compare_pval    
+
     subset_file = None
     if subset:
         subset_file = open(subset + "_subset.txt", "w")
@@ -117,7 +126,7 @@ def main():
     out_1_not_2 = open("%s_1_not_2.txt" % options.out_prefix, "w")
     out_2_not_1 = open("%s_2_not_1.txt" % options.out_prefix, "w")
 
-    as_type2redundantGroup2event = {}
+    as_type2chr2strand2redundantGroup2event = {}
 
     # Insert events from table 1
     for event in table1:
@@ -130,7 +139,7 @@ def main():
             out_2_not_1.write(event + "\n")
             continue
 
-        buildDictionary(as_type2redundantGroup2event, event, "1")
+        buildDictionary(as_type2chr2strand2redundantGroup2event, event, "1")
     table1.close()
 
     table2_events = set([])
@@ -141,7 +150,7 @@ def main():
 
         event = formatLine(event)
 
-        buildDictionary(as_type2redundantGroup2event, event, "2")
+        buildDictionary(as_type2chr2strand2redundantGroup2event, event, "2")
 
         if subset_file:
             lineList = event.split("\t")
@@ -154,25 +163,32 @@ def main():
     table2.close()
 
     # Now go through dictionary and output events
-    for as_type in as_type2redundantGroup2event:
-        for rGroup in as_type2redundantGroup2event[as_type]:
-            which_tables = getTableNums(as_type2redundantGroup2event[as_type][rGroup])
-
-            if which_tables == [1,2]:
-                this_event = as_type2redundantGroup2event[as_type][rGroup].pop()
-                this_event_list = this_event.split("\t")
-                out_1_and_2.write("\t".join(this_event_list[:-1]) + "\n")
-            elif which_tables == [1]:
-                for this_event in as_type2redundantGroup2event[as_type][rGroup]:
-                    this_event_list = this_event.split("\t")
-                    out_1_not_2.write("\t".join(this_event_list[:-1]) + "\n")
-            elif which_tables == [2]:
-                for this_event in as_type2redundantGroup2event[as_type][rGroup]:
-                    this_event_list = this_event.split("\t")
-                    out_2_not_1.write("\t".join(this_event_list[:-1]) + "\n")
-            else:
-                print "Error in redundant group: %s" % repr(rGroup)
-        
+    for as_type in as_type2chr2strand2redundantGroup2event:
+        for chr in as_type2chr2strand2redundantGroup2event[as_type]:
+            for strand in as_type2chr2strand2redundantGroup2event[as_type][chr]:
+                for rGroup in as_type2chr2strand2redundantGroup2event[as_type][chr][strand]:
+                    which_tables, pvals = getTableNums(as_type2chr2strand2redundantGroup2event[as_type][chr][strand][rGroup],
+                                                       compare_pval)
+                    if which_tables == [1,2]:
+                        this_event = as_type2chr2strand2redundantGroup2event[as_type][chr][strand][rGroup].pop()
+                        this_event_list = this_event.split("\t")
+                        # Only the event information will be given as output 
+                        out_1_and_2.write("\t".join(this_event_list[:11])) 
+                        if compare_pval:
+                            out_1_and_2.write("\t%.3f\t%.3f" % (pvals[0],
+                                                                pvals[1]))
+                        out_1_and_2.write("\n")
+                    elif which_tables == [1]:
+                        for this_event in as_type2chr2strand2redundantGroup2event[as_type][chr][strand][rGroup]:
+                            this_event_list = this_event.split("\t")
+                            out_1_not_2.write("\t".join(this_event_list[:-1]) + "\n")
+                    elif which_tables == [2]:
+                        for this_event in as_type2chr2strand2redundantGroup2event[as_type][chr][strand][rGroup]:
+                            this_event_list = this_event.split("\t")
+                            out_2_not_1.write("\t".join(this_event_list[:-1]) + "\n")
+                    else:
+                        print "Error in redundant group: %s" % repr(rGroup)
+                
 
     out_1_and_2.close()
     out_1_not_2.close()
@@ -210,14 +226,14 @@ def main():
 #############
 # FUNCTIONS #
 #############
-def buildDictionary(as_type2redundantGroup2event, event, which_table):
+def buildDictionary(as_type2chr2strand2redundantGroup2event, event, which_table):
    
     redundantRegion, as_type = get_rGroup_as_event(event)
 
     # Add on table num to the end fo the event
     event = event + "\t%s" % which_table
 
-    updateRedundantDictionary(as_type2redundantGroup2event, as_type,
+    updateRedundantDictionary(as_type2chr2strand2redundantGroup2event, as_type,
                               redundantRegion, event)
 
 def formatDir(i_dir):
@@ -251,18 +267,37 @@ def get_rGroup_as_event(event):
     return redundantRegion, as_type
 
 
-def getTableNums(event_set):
+def getTableNums(event_set, compare_pval=False):
     tables = set([])
+    pvals = None
+
+    if compare_pval:
+        tab1_pval = 1.0
+        tab2_pval = 1.0
 
     for event in event_set:
         event_list = event.split("\t")
+        table_number = int(event_list[-1])
 
-        tables.add(int(event_list[-1]))
+        tables.add(table_number)
+
+        if compare_pval:
+            pval = float(event_list[-3])
+
+            if table_number == 1:
+                if pval < tab1_pval:
+                    tab1_pval = pval
+            else:
+                if pval < tab2_pval:
+                    tab2_pval = pval
 
     table_list = list(tables)
     table_list.sort()
 
-    return table_list
+    if compare_pval:
+        pvals = [tab1_pval, tab2_pval]
+
+    return table_list, pvals
 
 #################
 # END FUNCTIONS #	
