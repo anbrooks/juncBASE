@@ -53,6 +53,8 @@ NUM_IN_BATCH = 10000
 
 INFINITY = 100000000000000000000000000000000000000000000
 DEF_EXON_LEN_NORM = 100.0
+
+MAX_ITERATION = 1000000
 #################
 # END CONSTANTS #
 #################
@@ -133,6 +135,15 @@ def main():
                                   corrected p-value. If a generic file is used,
                                   this will be the output file""",
                           default=None)
+    opt_parser.add_option("--simple_IR",
+                          dest="simple_IR",
+                          action="store_true",
+                          help="""Will test intron_retention events using total
+                                  inclusion/exclusion reads and will not test
+                                  the left and right side separately. It will
+                                  still test for thresholds for both the left
+                                  and right side"""
+                          default=False)
     opt_parser.add_option("--thresh",
                           dest="threshold",
                           type="float",
@@ -262,6 +273,8 @@ def main():
     sum_thresh = options.threshold
 
     delta_thresh = options.delta_thresh
+
+#    simple_IR = options.simple_IR
 
     samp2batch = None
     if options.samp2batch_file:
@@ -534,11 +547,12 @@ def main():
                                           which_test,
                                           batch2setLabels,
                                           batch2len,
-                                          sum(map(ord,event)))
+                                          sum(map(ord,event)),
+                                          samp_set_thresh1,
+                                          samp_set_thresh2)
 
                 this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis),
                                                    robjects.FloatVector(set2_psis))[0][0]
-   
                 # For debugging 
 #               fig = plt.figure()
 #               ax = fig.add_subplot(111)
@@ -551,6 +565,7 @@ def main():
                 raw_pval = robjects.r[which_test](robjects.FloatVector(set1_psis),
                                                   robjects.FloatVector(set2_psis))[2][0]
         except:
+            print "Warning: Event not tested: %s" % event
             continue
 
         if robjects.r["is.nan"](raw_pval)[0]:
@@ -661,9 +676,6 @@ def main():
 
             cur_len = len(event_type2pvals["intron_retention"])
 
-#           if "PACAP" in event:
-#               pdb.set_trace()
-
             try:
                 if permutation:
 #                    incl_iso_len = getEventInclLen(event, jcn_seq_len)
@@ -672,7 +684,9 @@ def main():
                                               which_test,
                                               batch2setLabels,
                                               batch2len,
-                                              sum(map(ord,event)))
+                                              sum(map(ord,event)),
+                                              samp_set_thresh1,
+                                              samp_set_thresh2)
 #                   # For debugging 
 #                   fig = plt.figure()
 #                   ax = fig.add_subplot(111)
@@ -682,7 +696,6 @@ def main():
                     this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
                                                        robjects.FloatVector(set2_psis_left))[0][0]
 
-#                    pdb.set_trace()
 
                     left_pval = get_emp_pval(null_dist, this_stat)
 
@@ -691,7 +704,9 @@ def main():
                                               which_test,
                                               batch2setLabels,
                                               batch2len,
-                                              sum(map(ord,event)))
+                                              sum(map(ord,event)),
+                                              samp_set_thresh1,
+                                              samp_set_thresh2)
 #                   # For debugging 
 #                   fig = plt.figure()
 #                   ax = fig.add_subplot(111)
@@ -701,8 +716,6 @@ def main():
                     this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
                                                        robjects.FloatVector(set2_psis_right))[0][0]
 
-#                    pdb.set_trace()
-
                     right_pval = get_emp_pval(null_dist, this_stat)
                 else:
                     left_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
@@ -711,6 +724,7 @@ def main():
                     right_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
                                                         robjects.FloatVector(set2_psis_right))[2][0]
             except:
+                print "Warning: Event not tested: %s" % event
                 continue
 
             if robjects.r["is.nan"](left_pval)[0] or robjects.r["is.nan"](right_pval)[0]:
@@ -910,13 +924,15 @@ def get_emp_pval(null_dist, this_stat):
 
 
 def get_null_dist(excl_incl_counts, total_counts, all_psis, 
-                  which_test, batch2setLabels, batch2len, random_seed):
+                  which_test, batch2setLabels, batch2len, random_seed,
+                  samp_set_thresh1, samp_set_thresh2):
     """ 
     Uses beta binomial to select inclusion isoform abundances from the length
     normalized counts for permutation testing
     """
     stats = []
     ctr = 0
+
     for i in xrange(0, NUM_ITERATIONS, NUM_IN_BATCH):
         # Calls to R will be batched to reduce time
         idx2incl_iter = []
@@ -940,16 +956,36 @@ def get_null_dist(excl_incl_counts, total_counts, all_psis,
         for k in xrange(NUM_IN_BATCH):
 
             this_idx2sample_set = {}
-            
-            for batch in batch2setLabels:
-                samp_shuffle = list(batch2setLabels[batch]["samp_set"])
-                random.seed(random_seed + sum(map(ord,batch)) + iter_ctr + k)
-                random.shuffle(samp_shuffle)
 
-                # Assign idx2sampset
-                for j in range(batch2len[batch]):
-                    this_idx2sample_set[batch2setLabels[batch]["idx"][j]] = samp_shuffle[j]
+            ctr = 0
+            samp_set_thresh_met = False
+            while ctr < MAX_ITERATION:
+                this_samp_set1_ct = 0
+                this_samp_set2_ct = 0
 
+                for batch in batch2setLabels:
+                    samp_shuffle = list(batch2setLabels[batch]["samp_set"])
+                    random.seed(random_seed + sum(map(ord,batch)) + iter_ctr + k + ctr)
+                    random.shuffle(samp_shuffle)
+
+                    # Assign idx2sampset
+                    for j in range(batch2len[batch]):
+                        this_idx2sample_set[batch2setLabels[batch]["idx"][j]] = samp_shuffle[j]
+                        # Count non-NA sample values in each set
+                        if all_psis[batch2setLabels[batch]["idx"][j]] != NA:
+                            if samp_shuffle[j] == 0:
+                                this_samp_set1_ct += 1
+                            else:
+                                this_samp_set2_ct += 1
+
+                # Break out of loop if thresholds are met
+                if this_samp_set1_ct > samp_set_thresh1 and this_samp_set2_ct > samp_set_thresh2:
+                    samp_set_thresh_met = True
+                    break
+                ctr += 1
+
+            if not samp_set_thresh_met:
+                raise Exception()
 
             # Sample labels have been shuffled
             this_set1_psis = []
