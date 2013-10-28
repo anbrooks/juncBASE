@@ -274,7 +274,7 @@ def main():
 
     delta_thresh = options.delta_thresh
 
-#    simple_IR = options.simple_IR
+    simple_IR = options.simple_IR
 
     samp2batch = None
     if options.samp2batch_file:
@@ -605,10 +605,19 @@ def main():
             set1_psis_right = []        
             set2_psis_right = []
 
+            if simpleIR:
+                set1_total_psis = []
+                set2_total_psis = []
+
             left_total_counts = []
             right_total_counts = []
             left_all_psis = []
             right_all_psis = []
+        
+            if simpleIR:
+                total_counts = []
+                total_str_counts = [] # to mimic left_events2counts structure
+                all_psis = []
 
             left_min_psi = 200
             left_max_psi = -1
@@ -622,6 +631,15 @@ def main():
                 right_total = right_col_excl + right_col_incl
                 left_total_counts.append(left_total)
                 right_total_counts.append(right_total)
+
+                if simpleIR:
+                    # the exclusion counts are not necessarily the same on both
+                    # left and right because there may be other splice junctions
+                    # associated with the 5' and 3' splice site. For simplicity,
+                    # I will average the two values
+                    total_excl = int(round((left_col_excl + right_col_excl)/2.0))
+                    total_incl = left_col_incl + right_col_incl
+                    total_counts.append(total_excl + total_incl)
                 # Both samples have to be non-zero
 #               if (belowThreshold(sum_thresh, left_col_excl, left_col_incl)
 #                                  or
@@ -630,6 +648,12 @@ def main():
 
                 (left_psi, sum_ct) = getPSI_sample_sum(left_events2counts[event][j], sum_thresh)
                 (right_psi, sum_ct) = getPSI_sample_sum(right_events2counts[event][j], sum_thresh)
+
+                if simpleIR:
+                    (total_psi, total_sum_ct) = getPSI_sample_sum("%d;%d" % (total_excl,
+                                                                             total_incl),
+                                                                  sum_thresh)
+                    total_str_counts.append("%d;%d" % (total_excl, total_incl))
 
                 if left_psi != NA:
                     left_psi_val = float(left_psi)
@@ -651,6 +675,12 @@ def main():
                 else:
                     right_all_psis.append(NA)
 
+                if simpleIR:
+                    if left_psi == NA or right_psi == NA:
+                        all_psis.append(NA)
+                    else:
+                        all_psis.append(float(total_psi))
+
                 if left_total < sum_thresh or right_total < sum_thresh:
                     continue
 
@@ -659,11 +689,20 @@ def main():
                         set1_psis_left.append(left_psi)
                     if right_psi != NA:
                         set1_psis_right.append(right_psi)
+
+                    if simpleIR:
+                        if left_psi != NA and right_psi != NA:
+                            set1_total_psis.append(total_psi)
+
                 elif idx2sample[j] in sample_set2:
                     if left_psi != NA:
                         set2_psis_left.append(left_psi)
                     if right_psi != NA:
                         set2_psis_right.append(right_psi)
+
+                    if simpleIR:
+                        if left_psi != NA and right_psi != NA:
+                            set2_total_psis.append(total_psi)
 
             if len(set1_psis_left) <= samp_set_thresh1 or len(set1_psis_right) <= samp_set_thresh1\
                 or len(set2_psis_left) <= samp_set_thresh2 or len(set2_psis_right) <= samp_set_thresh2:
@@ -678,59 +717,85 @@ def main():
 
             try:
                 if permutation:
-#                    incl_iso_len = getEventInclLen(event, jcn_seq_len)
-                    null_dist = get_null_dist(left_events2counts[event],
-                                              left_total_counts, left_all_psis,
-                                              which_test,
-                                              batch2setLabels,
-                                              batch2len,
-                                              sum(map(ord,event)),
-                                              samp_set_thresh1,
-                                              samp_set_thresh2)
-#                   # For debugging 
-#                   fig = plt.figure()
-#                   ax = fig.add_subplot(111)
-#                   ax.hist(null_dist, 100, normed=1)
-#                   plt.show() 
+                    if simpleIR:
+                        null_dist = get_null_dist(total_str_counts,
+                                                  total_counts, all_psis,
+                                                  which_test,
+                                                  batch2setLabels,
+                                                  batch2len,
+                                                  sum(map(ord,event)),
+                                                  samp_set_thresh1,
+                                                  samp_set_thresh2)
 
-                    this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
-                                                       robjects.FloatVector(set2_psis_left))[0][0]
+                        this_stat = robjects.r[which_test](robjects.FloatVector(set1_total_psis),
+                                                           robjects.FloatVector(set2_total_psis))[0][0]
+
+                        pval = get_emp_pval(null_dist, this_stat)
+                    else:
+    #                    incl_iso_len = getEventInclLen(event, jcn_seq_len)
+                        null_dist = get_null_dist(left_events2counts[event],
+                                                  left_total_counts, left_all_psis,
+                                                  which_test,
+                                                  batch2setLabels,
+                                                  batch2len,
+                                                  sum(map(ord,event)),
+                                                  samp_set_thresh1,
+                                                  samp_set_thresh2)
+    #                   # For debugging 
+    #                   fig = plt.figure()
+    #                   ax = fig.add_subplot(111)
+    #                   ax.hist(null_dist, 100, normed=1)
+    #                   plt.show() 
+
+                        this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
+                                                           robjects.FloatVector(set2_psis_left))[0][0]
 
 
-                    left_pval = get_emp_pval(null_dist, this_stat)
+                        left_pval = get_emp_pval(null_dist, this_stat)
 
-                    null_dist = get_null_dist(right_events2counts[event],
-                                              right_total_counts, right_all_psis,
-                                              which_test,
-                                              batch2setLabels,
-                                              batch2len,
-                                              sum(map(ord,event)),
-                                              samp_set_thresh1,
-                                              samp_set_thresh2)
-#                   # For debugging 
-#                   fig = plt.figure()
-#                   ax = fig.add_subplot(111)
-#                   ax.hist(null_dist, 100, normed=1)
-#                   plt.show() 
+                        null_dist = get_null_dist(right_events2counts[event],
+                                                  right_total_counts, right_all_psis,
+                                                  which_test,
+                                                  batch2setLabels,
+                                                  batch2len,
+                                                  sum(map(ord,event)),
+                                                  samp_set_thresh1,
+                                                  samp_set_thresh2)
+    #                   # For debugging 
+    #                   fig = plt.figure()
+    #                   ax = fig.add_subplot(111)
+    #                   ax.hist(null_dist, 100, normed=1)
+    #                   plt.show() 
 
-                    this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
-                                                       robjects.FloatVector(set2_psis_right))[0][0]
+                        this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
+                                                           robjects.FloatVector(set2_psis_right))[0][0]
 
-                    right_pval = get_emp_pval(null_dist, this_stat)
+                        right_pval = get_emp_pval(null_dist, this_stat)
                 else:
-                    left_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
-                                                       robjects.FloatVector(set2_psis_left))[2][0]
-                        
-                    right_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
-                                                        robjects.FloatVector(set2_psis_right))[2][0]
+                    if simpleIR:
+                        pval = robjects.r[which_test](robjects.FloatVector(set1_total_psis),
+                                                      robjects.FloatVector(set2_total_psis))[2][0]
+                    else:
+                        left_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
+                                                           robjects.FloatVector(set2_psis_left))[2][0]
+                            
+                        right_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
+                                                            robjects.FloatVector(set2_psis_right))[2][0]
             except:
                 print "Warning: Event not tested: %s" % event
                 continue
 
-            if robjects.r["is.nan"](left_pval)[0] or robjects.r["is.nan"](right_pval)[0]:
-                continue
+            if simpleIR:
+                if robjects.r["is.nan"](pval)[0]:
+                    continue
+                else:
+                    combined_pval = pval
             else:
-                combined_pval = (left_pval + right_pval) - left_pval * right_pval
+
+                if robjects.r["is.nan"](left_pval)[0] or robjects.r["is.nan"](right_pval)[0]:
+                    continue
+                else:
+                    combined_pval = (left_pval + right_pval) - left_pval * right_pval
 
             event_type2pvals["intron_retention"].append(combined_pval)
             event2idx[event] = cur_len
