@@ -142,7 +142,7 @@ def main():
                                   inclusion/exclusion reads and will not test
                                   the left and right side separately. It will
                                   still test for thresholds for both the left
-                                  and right side"""
+                                  and right side""",
                           default=False)
     opt_parser.add_option("--thresh",
                           dest="threshold",
@@ -605,7 +605,7 @@ def main():
             set1_psis_right = []        
             set2_psis_right = []
 
-            if simpleIR:
+            if simple_IR:
                 set1_total_psis = []
                 set2_total_psis = []
 
@@ -614,7 +614,7 @@ def main():
             left_all_psis = []
             right_all_psis = []
         
-            if simpleIR:
+            if simple_IR:
                 total_counts = []
                 total_str_counts = [] # to mimic left_events2counts structure
                 all_psis = []
@@ -632,7 +632,7 @@ def main():
                 left_total_counts.append(left_total)
                 right_total_counts.append(right_total)
 
-                if simpleIR:
+                if simple_IR:
                     # the exclusion counts are not necessarily the same on both
                     # left and right because there may be other splice junctions
                     # associated with the 5' and 3' splice site. For simplicity,
@@ -649,7 +649,7 @@ def main():
                 (left_psi, sum_ct) = getPSI_sample_sum(left_events2counts[event][j], sum_thresh)
                 (right_psi, sum_ct) = getPSI_sample_sum(right_events2counts[event][j], sum_thresh)
 
-                if simpleIR:
+                if simple_IR:
                     (total_psi, total_sum_ct) = getPSI_sample_sum("%d;%d" % (total_excl,
                                                                              total_incl),
                                                                   sum_thresh)
@@ -675,7 +675,7 @@ def main():
                 else:
                     right_all_psis.append(NA)
 
-                if simpleIR:
+                if simple_IR:
                     if left_psi == NA or right_psi == NA:
                         all_psis.append(NA)
                     else:
@@ -690,7 +690,7 @@ def main():
                     if right_psi != NA:
                         set1_psis_right.append(right_psi)
 
-                    if simpleIR:
+                    if simple_IR:
                         if left_psi != NA and right_psi != NA:
                             set1_total_psis.append(total_psi)
 
@@ -700,7 +700,7 @@ def main():
                     if right_psi != NA:
                         set2_psis_right.append(right_psi)
 
-                    if simpleIR:
+                    if simple_IR:
                         if left_psi != NA and right_psi != NA:
                             set2_total_psis.append(total_psi)
 
@@ -717,7 +717,7 @@ def main():
 
             try:
                 if permutation:
-                    if simpleIR:
+                    if simple_IR:
                         null_dist = get_null_dist(total_str_counts,
                                                   total_counts, all_psis,
                                                   which_test,
@@ -772,7 +772,7 @@ def main():
 
                         right_pval = get_emp_pval(null_dist, this_stat)
                 else:
-                    if simpleIR:
+                    if simple_IR:
                         pval = robjects.r[which_test](robjects.FloatVector(set1_total_psis),
                                                       robjects.FloatVector(set2_total_psis))[2][0]
                     else:
@@ -785,7 +785,7 @@ def main():
                 print "Warning: Event not tested: %s" % event
                 continue
 
-            if simpleIR:
+            if simple_IR:
                 if robjects.r["is.nan"](pval)[0]:
                     continue
                 else:
