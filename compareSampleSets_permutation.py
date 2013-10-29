@@ -703,7 +703,7 @@ def main():
                     if simple_IR:
                         if left_psi != NA and right_psi != NA:
                             set2_total_psis.append(total_psi)
-
+        
             if len(set1_psis_left) <= samp_set_thresh1 or len(set1_psis_right) <= samp_set_thresh1\
                 or len(set2_psis_left) <= samp_set_thresh2 or len(set2_psis_right) <= samp_set_thresh2:
                 continue
