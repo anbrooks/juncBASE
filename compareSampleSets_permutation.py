@@ -791,11 +791,12 @@ def main():
                 else:
                     combined_pval = pval
             else:
-
                 if robjects.r["is.nan"](left_pval)[0] or robjects.r["is.nan"](right_pval)[0]:
                     continue
                 else:
-                    combined_pval = (left_pval + right_pval) - left_pval * right_pval
+                    # Old combined p_val method
+#                    combined_pval = (left_pval + right_pval) - left_pval * right_pval
+                    combined_pval = max(left_pval, right_pval)
 
             event_type2pvals["intron_retention"].append(combined_pval)
             event2idx[event] = cur_len
