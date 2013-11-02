@@ -493,16 +493,21 @@ def main():
                 if psi < sum_thresh:
                     continue
             else:
-                # Compare samples groups together in a wilcoxon rank sum test
-                [col_excl, col_incl] = map(int,counts[i].split(";"))
+                if permutation:
+                    # Compare samples groups together in a wilcoxon rank sum test
+                    [col_excl, col_incl] = map(int,counts[i].split(";"))
 
-                total_count = col_excl + col_incl
-                total_counts.append(total_count)
-                if total_count < sum_thresh:
-                    continue
+                    total_count = col_excl + col_incl
+                    total_counts.append(total_count)
+                    if total_count < sum_thresh:
+                        continue
                 # Both samples have to be non-zero
 #               if belowThreshold(sum_thresh, col_excl, col_incl):
 #                   continue
+
+        if as_only or k_means:
+            if (float(total_samples - na_count)/total_samples) < PROP_NON_NA:
+                continue 
 
         # Do k_means on PSI values to determine cluster assignments
         (sample_set1, sample_set2) = find_clusters(event,
@@ -523,12 +528,8 @@ def main():
                 if event2col2psi[event][i] != NA:
                     set2_psis.append(event2col2psi[event][i])
 
-        if as_only or k_means:
-            if (float(total_samples - na_count)/total_samples) < PROP_NON_NA:
-                continue 
-        else:
-            if len(set1_psis) <= samp_set_thresh1 or len(set2_psis) <= samp_set_thresh2:
-                continue
+        if len(set1_psis) <= samp_set_thresh1 or len(set2_psis) <= samp_set_thresh2:
+            continue
 
         if (max_psi - min_psi) < delta_thresh:
             continue
@@ -1015,8 +1016,11 @@ def find_clusters(event, all_psis, idx2sample):
     # Perform k_means on non_NA_all_psis
 
     # The event string helps keep the same seed for intron retention events
-    robjects.r["set.seed"](sum(map(ord,event)))
-    clusters = list(robjects.r["kmeans"](robjects.FloatVector(non_NA_all_psis),2)[0])
+    try:
+        robjects.r["set.seed"](sum(map(ord,event)))
+        clusters = list(robjects.r["kmeans"](robjects.FloatVector(non_NA_all_psis),2)[0])
+    except:
+        pdb.set_trace()
 
     # Assign sample sets based on returned clusters
     sample_set1 = []

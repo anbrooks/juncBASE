@@ -476,13 +476,14 @@ def main():
                 if psi < sum_thresh:
                     continue
             else:
-                # Compare samples groups together in a wilcoxon rank sum test
-                [col_excl, col_incl] = map(int,counts[i].split(";"))
+                if permutation:
+                    # Compare samples groups together in a wilcoxon rank sum test
+                    [col_excl, col_incl] = map(int,counts[i].split(";"))
 
-                total_count = col_excl + col_incl
-                total_counts.append(total_count)
-                if total_count < sum_thresh:
-                    continue
+                    total_count = col_excl + col_incl
+                    total_counts.append(total_count)
+                    if total_count < sum_thresh:
+                        continue
                 # Both samples have to be non-zero
 #               if belowThreshold(sum_thresh, col_excl, col_incl):
 #                   continue
