@@ -510,9 +510,10 @@ def main():
                 continue 
 
         # Do k_means on PSI values to determine cluster assignments
-        (sample_set1, sample_set2) = find_clusters(event,
-                                                   all_psis,
-                                                   idx2sample)
+        if k_means:
+            (sample_set1, sample_set2) = find_clusters(event,
+                                                       all_psis,
+                                                       idx2sample)
         (batch2setLabels,
          batch2len) = buildBatchDict(sampleList,
                                      samp2batch,
@@ -719,8 +720,9 @@ def main():
                     continue
 
             # Do k_means on PSI values to determine cluster assignments
-            (sample_set1, sample_set2) = find_clusters(event,
-                                                       all_psis,
+            if k_means:
+                (sample_set1, sample_set2) = find_clusters(event,
+                                                           all_psis,
                                                        idx2sample)
             (batch2setLabels,
              batch2len) = buildBatchDict(sampleList,
@@ -1016,11 +1018,8 @@ def find_clusters(event, all_psis, idx2sample):
     # Perform k_means on non_NA_all_psis
 
     # The event string helps keep the same seed for intron retention events
-    try:
-        robjects.r["set.seed"](sum(map(ord,event)))
-        clusters = list(robjects.r["kmeans"](robjects.FloatVector(non_NA_all_psis),2)[0])
-    except:
-        pdb.set_trace()
+    robjects.r["set.seed"](sum(map(ord,event)))
+    clusters = list(robjects.r["kmeans"](robjects.FloatVector(non_NA_all_psis),2)[0])
 
     # Assign sample sets based on returned clusters
     sample_set1 = []
