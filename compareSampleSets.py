@@ -264,6 +264,9 @@ def main():
         image_file_type = "pdf"
 
     as_only = options.as_only
+
+    in_sample_set1 = options.sample_set1
+    in_sample_set2 = options.sample_set2
     
     # JuncBASE table default
     samp_start_idx = 11
@@ -325,7 +328,6 @@ def main():
     event2col2psi = {}
 
     # {event:{col:sum_counts}}
-
     header = None
     total_samples = None
     for line in input_file:
@@ -341,6 +343,11 @@ def main():
             for i in range(len(sampleList)):
                 idx2sample[i] = sampleList[i]
 
+            if as_only:
+                # These are arbitrarily chosen and not really used
+                in_sample_set1 = sampleList[0]
+                in_sample_set2 = sampleList[1]
+
             # If there were no batches, all samples are in the same batch
             if permutation:
                 if samp2batch is None:
@@ -350,8 +357,8 @@ def main():
 #           for sample in sample_set2:
 #               idx2sample[sampleList.index(sample)] = sample
 
-            sample_set1 = getSamples(options.sample_set1)
-            sample_set2 = getSamples(options.sample_set2)
+            sample_set1 = getSamples(in_sample_set1)
+            sample_set2 = getSamples(in_sample_set2)
 
             sample_set1_checked = checkSamples(sampleList, sample_set1)
             sample_set2_checked = checkSamples(sampleList, sample_set2)
@@ -948,7 +955,6 @@ def makePlot(grdevices, plotName, samp_set1_vals, samp_set2_vals,
     pp = gp + \
      ggplot2.aes_string(x="sample", y='value') + \
      ggplot2.geom_jitter(position=ggplot2.position_jitter(width=0.2, height=0.01)) +\
-#     ggplot2.geom_jitter(position=ggplot2.position_jitter(width=0.2, height=0.01, ylim=robjects.IntVector([0,100]))) +\
      ggplot2.coord_cartesian(ylim=robjects.IntVector([0,100])) +\
      ggplot2.theme_bw()
 
