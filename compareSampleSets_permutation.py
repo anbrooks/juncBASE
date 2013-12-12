@@ -1014,7 +1014,7 @@ def get_null_dist(excl_incl_counts, total_counts, all_psis,
                 idx2incl_iter.append([0 for n in range(NUM_IN_BATCH)])
                 continue
 
-            idx2incl_iter.append(list(vgam.rbetabin_ab(NUM_IN_BATCH,
+            idx2incl_iter.append(list(vgam.rbetabinom_ab(NUM_IN_BATCH,
                                                        tot_count,
                                                        incl + 1,
                                                        excl + 1)))
