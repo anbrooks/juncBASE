@@ -52,6 +52,7 @@ NUM_ITERATIONS = 10000
 NUM_IN_BATCH = 10000
 
 INFINITY = 100000000000000000000000000000000000000000000
+VERY_SMALL_NUMBER = 0.0000000000001
 DEF_EXON_LEN_NORM = 100.0
 
 MAX_ITERATION = 1000000
@@ -561,8 +562,10 @@ def main():
                                           samp_set_thresh1,
                                           samp_set_thresh2)
 
-                this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis),
-                                                   robjects.FloatVector(set2_psis))[0][0]
+                this_stat = compareTest(which_test, 
+                                        set1_psis, 
+                                        set2_psis, 
+                                        give_pvals=False)
                 # For debugging 
 #               fig = plt.figure()
 #               ax = fig.add_subplot(111)
@@ -572,8 +575,9 @@ def main():
                 raw_pval = get_emp_pval(null_dist, this_stat)
 
             else:
-                raw_pval = robjects.r[which_test](robjects.FloatVector(set1_psis),
-                                                  robjects.FloatVector(set2_psis))[2][0]
+                raw_pval = compareTest(which_test, 
+                                        set1_psis, 
+                                        set2_psis)
         except:
             print "Warning: Event not tested: %s" % event
             continue
@@ -737,8 +741,11 @@ def main():
                                                   samp_set_thresh1,
                                                   samp_set_thresh2)
 
-                        this_stat = robjects.r[which_test](robjects.FloatVector(set1_total_psis),
-                                                           robjects.FloatVector(set2_total_psis))[0][0]
+
+                        this_stat = compareTest(which_test, 
+                                                set1_total_psis, 
+                                                set2_total_psis, 
+                                                give_pvals=False)
 
                         pval = get_emp_pval(null_dist, this_stat)
                     else:
@@ -757,9 +764,10 @@ def main():
     #                   ax.hist(null_dist, 100, normed=1)
     #                   plt.show() 
 
-                        this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
-                                                           robjects.FloatVector(set2_psis_left))[0][0]
-
+                        this_stat = compareTest(which_test, 
+                                                set1_psis_left, 
+                                                set2_psis_left, 
+                                                give_pvals=False)
 
                         left_pval = get_emp_pval(null_dist, this_stat)
 
@@ -777,20 +785,26 @@ def main():
     #                   ax.hist(null_dist, 100, normed=1)
     #                   plt.show() 
 
-                        this_stat = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
-                                                           robjects.FloatVector(set2_psis_right))[0][0]
+
+                        this_stat = compareTest(which_test, 
+                                                set1_psis_right, 
+                                                set2_psis_right, 
+                                                give_pvals=False)
 
                         right_pval = get_emp_pval(null_dist, this_stat)
                 else:
                     if simple_IR:
-                        pval = robjects.r[which_test](robjects.FloatVector(set1_total_psis),
-                                                      robjects.FloatVector(set2_total_psis))[2][0]
+                        pval = compareTest(which_test, 
+                                           set1_total_psis,
+                                           set2_total_psis)
                     else:
-                        left_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_left),
-                                                           robjects.FloatVector(set2_psis_left))[2][0]
-                            
-                        right_pval = robjects.r[which_test](robjects.FloatVector(set1_psis_right),
-                                                            robjects.FloatVector(set2_psis_right))[2][0]
+                        left_pval = compareTest(which_test, 
+                                                set1_psis_left,
+                                                set2_psis_left)
+
+                        right_pval = compareTest(which_test, 
+                                                set1_psis_right,
+                                                set2_psis_right)
             except:
                 print "Warning: Event not tested: %s" % event
                 continue
@@ -951,6 +965,36 @@ def checkSamples(sampleList, sample_set):
 
     return checkedSamples
 
+def compareTest(which_test, set1_vals, set2_vals, give_pvals=True):
+    """
+    If it is a t.test, and all values are the same in one set, then add a very
+    very small value to one of the values so that they are not identical
+    
+    Will return the p-val result of the test. If give_pvals is False, it will
+    return the statistic
+    """
+    # I don't want to change the original values
+    set1_copy = list(set1_vals)
+    set2_copy = list(set2_vals)
+
+    if which_test == "t.test":
+        # check for duplicates values in both set 
+        unq_set1 = set(set1_copy)
+        unq_set2 = set(set2_copy)
+
+        if len(unq_set1) == 1 and len(unq_set2) == 1:
+            # Aribitrarily add a very small value to one of the values so that
+            # all numbers are not the same
+            set1_copy[0] += VERY_SMALL_NUMBER
+          
+    if give_pvals:
+        idx = 2
+    else:
+        idx = 0 
+     
+    return robjects.r[which_test](robjects.FloatVector(set1_copy),
+                                  robjects.FloatVector(set2_copy))[idx][0]
+
 def formatDir(i_dir):
     i_dir = os.path.realpath(i_dir)
     if i_dir.endswith("/"):
@@ -1090,8 +1134,10 @@ def get_null_dist(excl_incl_counts, total_counts, all_psis,
                 else:
                     this_set2_psis.append(this_psi)
 
-            stats.append(robjects.r[which_test](robjects.FloatVector(this_set1_psis),
-                                                robjects.FloatVector(this_set2_psis))[0][0])
+            stats.append(compareTest(which_test, 
+                                     this_set1_psis, 
+                                     this_set2_psis, 
+                                     give_pvals=False))
 
     return stats
 
