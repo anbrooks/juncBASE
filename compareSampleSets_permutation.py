@@ -242,8 +242,6 @@ def main():
 #    opt_parser.check_required("-i")
     opt_parser.check_required("--all_psi_output")
     opt_parser.check_required("--mt_correction")
-    opt_parser.check_required("--sample_set1")
-    opt_parser.check_required("--sample_set2")
 
     permutation = options.permutation
     if permutation:
@@ -300,6 +298,12 @@ def main():
         image_file_type = "pdf"
 
     as_only = options.as_only
+    if not as_only:
+        opt_parser.check_required("--sample_set1")
+        opt_parser.check_required("--sample_set2")
+
+    in_sample_set1 = options.sample_set1
+    in_sample_set2 = options.sample_set2
     
     # JuncBASE table default
     samp_start_idx = 11
@@ -383,6 +387,11 @@ def main():
             for i in range(len(sampleList)):
                 idx2sample[i] = sampleList[i]
 
+            if as_only:
+                # These are arbitrarily chosen and not really used
+                in_sample_set1 = sampleList[0]
+                in_sample_set2 = sampleList[1] 
+
             # If there were no batches, all samples are in the same batch
             if permutation:
                 if samp2batch is None:
@@ -392,8 +401,8 @@ def main():
 #           for sample in sample_set2:
 #               idx2sample[sampleList.index(sample)] = sample
 
-            sample_set1 = getSamples(options.sample_set1)
-            sample_set2 = getSamples(options.sample_set2)
+            sample_set1 = getSamples(in_sample_set1)
+            sample_set2 = getSamples(in_sample_set2)
 
             sample_set1_checked = checkSamples(sampleList, sample_set1)
             sample_set2_checked = checkSamples(sampleList, sample_set2)
