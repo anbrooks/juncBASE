@@ -30,6 +30,8 @@ import math
 
 import pysam
 import gzip
+
+from preProcess_getASEventReadCounts import DEF_BEG_JCN_OVERHANG
 #############
 # CONSTANTS #
 #############
@@ -566,7 +568,11 @@ def main():
                                                    chr,
                                                   chr_start + upstr_len,
                                                   chr_start + upstr_len + intron_len - 1)
-                                                  
+
+                    # Check for odd junctions that are aligned toward the
+                    # beginning of the chromosome, which causes problems later
+                    if (chr_start + upstr_len) < DEF_BEG_JCN_OVERHANG:
+                        continue
 
                     if not jcn_strand:
                         jcn_strand = "."
