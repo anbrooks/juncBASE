@@ -41,6 +41,12 @@ N_RGB_STR = "0,60,120"
 # Corresponds to reads equally split between 2 different offsets.
 DEF_CONFIDENCE = 1.0
 
+# Some strange junction alignments occur towards the beginning of the chromosome
+# which gives errors later. These are likely artifacts, anyway. Junction
+# alignments at the beginning of the chromosome must have at least this number
+# of bases in the resulting alignments
+DEF_BEG_JCN_OVERHANG = 25
+
 SHELL = "/bin/tcsh"
 
 MAX_CHAR = 60
@@ -511,6 +517,11 @@ def main():
                                                    chr,
                                                   chr_start + upstr_len,
                                                   chr_start + upstr_len + intron_len - 1)
+
+                    # Check for odd junctions that are aligned toward the
+                    # beginning of the chromosome, which causes problems later
+                    if (chr_start + upstr_len) < DEF_BEG_JCN_OVERHANG:
+                        continue
                                                   
 
                     if not jcn_strand:
