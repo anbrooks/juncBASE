@@ -147,12 +147,8 @@ def createTmpJcnBed(input_dir, intron_junction2strand, by_chr):
         output_bed.write(header)
 
         for jcn_str in this_intron_junction2strand:
-            try:
-                (chr, chrStart, chrEnd,
-                 blockLens,
-                 secondBlockStart) = parse_jcn_str(jcn_str)
-            except:
-                pdb.set_trace()
+            (chr, chrStart, chrEnd,
+             blockLens, secondBlockStart) = parse_jcn_str(jcn_str)
 
             bed_line = "%s\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t0,0,0\t2\t%d,%d\t0,%d\n" % (chr,
                                                                                     chrStart,
