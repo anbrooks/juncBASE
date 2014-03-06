@@ -191,7 +191,7 @@ def main():
                                   any statistical analyses.
                                   Names must be in header columns of input
                                   files.""",
-                          default=None)
+                          default=False)
     opt_parser.add_option("--html_dir",
                          dest="html_dir",
                          type="string",
@@ -217,8 +217,8 @@ def main():
 #    opt_parser.check_required("-i")
     opt_parser.check_required("--all_psi_output")
     opt_parser.check_required("--mt_correction")
-    opt_parser.check_required("--sample_set1")
-    opt_parser.check_required("--sample_set2")
+#   opt_parser.check_required("--sample_set1")
+#   opt_parser.check_required("--sample_set2")
 
     if options.in_prefix:
         prefix = options.in_prefix
@@ -264,6 +264,9 @@ def main():
         image_file_type = "pdf"
 
     as_only = options.as_only
+    if not as_only:
+        opt_parser.check_required("--sample_set1")
+        opt_parser.check_required("--sample_set2") 
 
     in_sample_set1 = options.sample_set1
     in_sample_set2 = options.sample_set2
