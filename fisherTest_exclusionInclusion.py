@@ -45,7 +45,7 @@ class OptionParser(optparse.OptionParser):
 
 ###############
 # END CLASSES #
-###############
+#############
  
 ########
 # MAIN #	
@@ -98,10 +98,15 @@ def main():
 
     infile_lines_w_zeros = map(formatLine, infile_lines_preFormat)
 
+    # Remove headerline
+    if infile_lines_w_zeros[0].startswith("#"):
+        infile_lines_w_zeros.pop(0)
+
     if filter: 
         infile_lines = removeZeros(infile_lines_w_zeros)
     else:
         infile_lines = infile_lines_w_zeros
+
 
     # Parallel list of p_values
     p_vals = [None for i in range(len(infile_lines))]
