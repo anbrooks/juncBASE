@@ -76,7 +76,10 @@ def main():
                           dest="samples",
                           type="string",
                           help="""Comma separated list of samples to run or a file
-                                  with the names of the samples to run.""",
+                                  with the names of the samples to run. If a
+                                  file is given, the first column will be used
+                                  as the sample column and is assumed
+                                  tab-delimited""",
                           default=None)
     opt_parser.add_option("-i",
                           dest="input_dir",
@@ -534,7 +537,8 @@ def getSampleNames(samples_option):
     samples = []
     for line in s_file:
         line = formatLine(line)
-        samples.append(line) 
+        lineList = line.split("\t")
+        samples.append(lineList[0]) 
 
     return samples
     
