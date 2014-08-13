@@ -81,6 +81,9 @@ def main():
         if not os.path.isdir(samp_dir):
             continue
 
+        if "pseudo" in samp_dir:
+            continue
+
         # Create junction bed file
         combined_bed = open("%s/%s_junctions.bed" % (samp_dir,
                                                      subdir),
@@ -96,6 +99,9 @@ def main():
                     continue
 
             chr_dir = samp_dir + "/" + sub_subdir
+            if "pseudo" in chr_dir:
+                continue
+
             if not os.path.isdir(chr_dir):
                 continue
 
