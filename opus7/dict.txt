@@ -1,0 +1,12 @@
+ett one
+tva two
+tre three
+fyra four
+fem five
+sex six
+sju seven
+atta eight
+nio nine
+tio ten
+elva eleven
+tolv twelve
