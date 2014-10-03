@@ -18,7 +18,7 @@ from subprocess import Popen
 from helperFunctions import runCmd
 from merge_by_chr_juncBASE_junction_file import isBadChr
 from getASEventReadCounts import convertCoordStr, formatCoordStr
-from preProcess_getASEventReadCounts.py import DEF_BEG_JCN_OVERHANG as DEF_JCN_OVERHANG
+from preProcess_getASEventReadCounts import DEF_BEG_JCN_OVERHANG as DEF_JCN_OVERHANG
 #############
 # CONSTANTS #
 #############
@@ -108,7 +108,7 @@ def main():
     intron_jcn2strand = getAllJcns(input_dir, by_chr, no_clean_chr)
 
     # Junciton bed will contain all junctions.
-    createTmpJcnBed(input_dir, intron_jcn2strand, by_chr)
+    createTmpJcnBed(intron_jcn2strand, by_chr)
 
     sys.exit(0)
 
@@ -119,7 +119,7 @@ def main():
 #############
 # FUNCTIONS #
 #############
-def createTmpJcnBed(input_dir, intron_junction2strand, by_chr):
+def createTmpJcnBed(intron_junction2strand, by_chr):
     """
     if by_chr, intron_junction2strand is really chr2intron_junction2strand
     """
@@ -127,10 +127,9 @@ def createTmpJcnBed(input_dir, intron_junction2strand, by_chr):
 
     if by_chr:
         for this_chr in intron_junction2strand:
-            chr2jcn_bed[this_chr] = "%stmp_%s_preProcess_getASEventReadCounts_step2.bed" % (input_dir, 
-                                                                                            this_chr)
+            chr2jcn_bed[this_chr] = "tmp_%s_preProcess_getASEventReadCounts_step2.bed" % (this_chr)
     else:
-        chr2jcn_bed["all"] = input_dir + "tmp_preProcess_getASEventReadCounts_step2.bed"
+        chr2jcn_bed["all"] = "tmp_preProcess_getASEventReadCounts_step2.bed"
         
     for this_chr in chr2jcn_bed:
         # Create temporary junction bed
