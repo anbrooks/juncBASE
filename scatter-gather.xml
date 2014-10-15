@@ -1,0 +1,5 @@
+<scatter-gather lsf-project="Firehose">
+  <prepare exe="sh ${libdir}prepare.sh"/>
+  <scatter exe="sh ${libdir}scatter.sh" memory="4"/>
+  <gather exe="sh ${libdir}gather.sh" memory="4"/>
+</scatter-gather>
