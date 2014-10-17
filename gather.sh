@@ -4,14 +4,20 @@ reuse -q Python-2.7
 
 libdir=$1
 samples=$2
-chrList=$3
-jcn_seq_len=$4
-sample_set_name=$5
-thresh=$6
-delta_thresh=$7
-mt_correction=$8
+jcn_seq_len=$3
+sample_set_name=$4
+thresh=$5
+delta_thresh=$6
+mt_correction=$7
 
 set -e
+
+chrList=()
+for f in *.bed
+do
+  arr=($(echo $f | tr "_" "\n"))
+  chrList=("${chrList[@]} "${arr[1]})
+done
 
 #createAS_CountTables.py
 echo "running python ${libdir}createAS_CountTables.py -d $(pwd) -s ${samples} -o $(pwd)/tmp_createAS_CountTables_${chr} --which_chr ${chr} --jcn_seq_len ${jcn_seq_len}"

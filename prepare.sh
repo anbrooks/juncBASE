@@ -37,4 +37,4 @@ done
 
 # for gather job
 printf '%s\n' "${dirs[@]}" > $(pwd)/samples.txt
-echo $libdir $(pwd)/samples.txt ${chrList} ${jcn_seq_len} ${sample_set_name} ${thresh} ${delta_thresh} ${mt_correction}
+echo $libdir $(pwd)/samples.txt ${jcn_seq_len} ${sample_set_name} ${thresh} ${delta_thresh} ${mt_correction}
