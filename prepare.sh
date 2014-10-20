@@ -28,10 +28,8 @@ for sampleDir in ${dirs[@]}
 do
   for chr in ${chrList}
     do
-      expected_out_file=${sampleDir}_${chr}_intron_exon_junction_counts.txt
-      #echo $expected_out_file
       #print the params passing to scatter.sh
-      echo $libdir $(pwd) ${inputDir}/${sampleDir} ${sampleDir} ${chr} $(pwd)/tmp_${chr}_preProcess_getASEventReadCounts_step2.bed ${min_overhang} ${inputDir}/${sampleDir}/${sampleDir}_${chr}/${sampleDir}_${chr} ${txt_db1} ${txt_db2} ${txt_db3} ${jcn_seq_len} ${sqlite_db_dir}
+      echo $libdir $(pwd)/${sample_set_name} ${inputDir}/${sampleDir} ${sampleDir} ${chr} $(pwd)/tmp_${chr}_preProcess_getASEventReadCounts_step2.bed ${min_overhang} ${inputDir}/${sampleDir}/${sampleDir}_${chr}/${sampleDir}_${chr} ${txt_db1} ${txt_db2} ${txt_db3} ${jcn_seq_len} ${sqlite_db_dir}
     done
 done
 

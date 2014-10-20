@@ -1,6 +1,7 @@
 #!/bin/bash
 . /broad/tools/scripts/useuse
 reuse -q Python-2.7
+ewuaw -q R-2.10
 
 libdir=$1
 samples=$2
@@ -19,12 +20,12 @@ do
   chrList=("${chrList[@]} "${arr[1]})
 done
 
-#createAS_CountTables.py
-echo "running python ${libdir}createAS_CountTables.py -d $(pwd) -s ${samples} -o $(pwd)/tmp_createAS_CountTables_${chr} --which_chr ${chr} --jcn_seq_len ${jcn_seq_len}"
 mkdir -p countTables
 for chr in ${chrList}
 do
-  python ${libdir}createAS_CountTables.py -d $(pwd) -s ${samples} -o countTables/tmp_createAS_CountTables_${chr} --which_chr ${chr} --jcn_seq_len ${jcn_seq_len}
+  #createAS_CountTables.py
+  echo "running python ${libdir}createAS_CountTables.py -d $(pwd) -s ${samples} -o $(pwd)/tmp_createAS_CountTables_${chr} --which_chr ${chr} --jcn_seq_len ${jcn_seq_len}"
+  python ${libdir}createAS_CountTables.py -d $(pwd)/${sample_set_name} -s ${samples} -o countTables/tmp_createAS_CountTables_${chr} --which_chr ${chr} --jcn_seq_len ${jcn_seq_len}
 done
 
 python ${libdir}combine_createAS_CountTables_by_chr.py -d countTables/ -o ${sample_set_name}
