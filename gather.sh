@@ -1,7 +1,7 @@
 #!/bin/bash
 . /broad/tools/scripts/useuse
 reuse -q Python-2.7
-ewuaw -q R-2.10
+reuse -q R-2.10
 
 libdir=$1
 samples=$2
