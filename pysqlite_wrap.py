@@ -65,9 +65,9 @@ class DB:
 		conn.close()
 		
 	def createIndex(self,index_name, table_name, comma_separated_cols,
-					database_name):
+					database_name, check_same_thread = True):
 			
-		conn = self.__connect( database_name )
+		conn = self.__connect( database_name, check_same_thread )
 		cursor = conn.cursor()
 	
 		create_index = "CREATE INDEX %s ON %s " % (index_name, table_name)
@@ -79,8 +79,9 @@ class DB:
 		cursor.close()
 		conn.close()
 
-	def createTable(self, table_name, create_definition, database):
-		conn = self.__connect( database )
+	def createTable(self, table_name, create_definition, database,
+                    check_same_thread = True):
+		conn = self.__connect( database, check_same_thread )
 		cursor = conn.cursor()
 	
 		#Delete previous table
@@ -100,8 +101,8 @@ class DB:
 		conn.close()
 	
 	def insertIntoTable(self, table_name, column_names, values, database,
-                      val_string=None ):
-		conn = self.__connect( database )
+                      val_string=None, check_same_thread = True ):
+		conn = self.__connect( database, check_same_thread )
 		cursor = conn.cursor()
 		
 		if not val_string:
@@ -141,8 +142,9 @@ class DB:
 		cursor.close()
 		conn.close()	
 
-	def updateTable(self, table_name, update_statement, database):
-		conn = self.__connect(database)
+	def updateTable(self, table_name, update_statement, database,
+                    check_same_thread = True):
+		conn = self.__connect(database, check_same_thread)
 		cursor = conn.cursor()
 
 		try:
@@ -154,14 +156,16 @@ class DB:
 		cursor.close()
 		conn.close()
 	
-	def getDBRecords_Dict( self, select_statement, database):
+	def getDBRecords_Dict( self, select_statement, database, check_same_thread = True):
 		"""
 		Returns [] if no records exist.
 		"""
         	#Connect to Database
-        	conn = self.__connect(database)
+        	conn = self.__connect(database, check_same_thread)
 
-	        cursor = conn.cursor(factory=DictCursor)
+        	conn.row_factory = sqlite.Row
+        	cursor = conn.cursor()
+#	        cursor = conn.cursor(factory=DictCursor)
 		try:
 			cursor.execute ( select_statement )
 			return_result =  cursor.fetchall()
@@ -176,14 +180,16 @@ class DB:
 
         	return return_result
 
-	def getDBRow_Dict( self, select_statement, database):
+	def getDBRow_Dict( self, select_statement, database, check_same_thread = True):
 		"""
 		Returns None if no row exists
 		"""
                 #Connect to Database
-		conn = self.__connect(database)
+		conn = self.__connect(database, check_same_thread)
 
-		cursor = conn.cursor(factory=DictCursor)
+		conn.row_factory = sqlite.Row
+		cursor = conn.cursor()
+#		cursor = conn.cursor(factory=DictCursor)
 
 		try:
 			cursor.execute ( select_statement )
