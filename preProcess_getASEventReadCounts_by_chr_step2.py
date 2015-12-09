@@ -18,7 +18,7 @@ from subprocess import Popen
 from helperFunctions import runCmd
 from merge_by_chr_juncBASE_junction_file import isBadChr
 from getASEventReadCounts import convertCoordStr, formatCoordStr
-from preProcess_getASEventReadCounts.py import DEF_BEG_JCN_OVERHANG as DEF_JCN_OVERHANG
+from preProcess_getASEventReadCounts import DEF_BEG_JCN_OVERHANG as DEF_JCN_OVERHANG
 #############
 # CONSTANTS #
 #############
