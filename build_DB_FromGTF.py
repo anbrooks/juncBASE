@@ -192,7 +192,6 @@ def main():
 
     use_gene_name = options.use_gene_name
 
-
     genome_file = options.genome_file_name
 
     chr2gtf_lines = getGTFLines(options.gtf_file)
@@ -230,6 +229,9 @@ def buildAnnotDB(db, chr2gtf_lines, db_name, use_gene_name):
 
         for line in chr2gtf_lines[chr]:
             gff_obj = GFF_Record(line)
+
+            if gff_obj.feature != 'exon':
+                continue
 
             transcript_id = get_transcript_id(gff_obj) 
         
