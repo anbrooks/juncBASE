@@ -1,0 +1,3 @@
+Scripts in this directory are provided, but were designed for a specialized usage and changes will not be supported. 
+
+These scripts were used a specialized cluster to run Cufflinks tools. You should be able to modify them for your own cluster systems.
