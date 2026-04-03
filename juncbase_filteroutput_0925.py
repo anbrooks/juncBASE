@@ -11,7 +11,7 @@ REGIONSIZE = 10 ** 6 * 2
 def parse_args():
     parser = argparse.ArgumentParser(description='filters and converts the format of juncBase output to make it usable for downstream analyses')
     parser.add_argument('-j', '--juncbase', required=True,
-                        help='juncbase table with full event info and inclusion;exclusion counts')
+                        help='juncbase table with full event info and exclusion;inclusion counts')
     parser.add_argument('-o', '--output', required=True,
                         help='output prefix')
     parser.add_argument('--gtf',
@@ -28,57 +28,49 @@ def parse_gtf_line(line):
     line = line.split('\t')
     chrom = line[0]
     start, end = int(line[3]), int(line[4])
-    gene = line[8].split('gene_id "')[1].split('"')[0]
-    
+    gene = line[8].split('gene_name "')[1].split('"')[0]
     strand = line[6]
     return chrom, strand, start, end, gene
 
-def consolidate_junctions(genetotranscripttoexons):#, genetochromstrand):
-    chromstrandtoregiontojuncs, chromstrandtoregiontogenes = {}, {}
-    for chrom, strand, gene in genetotranscripttoexons:
+def consolidate_junctions(genetotranscripttoexons, genetochromstrand, chromstrandtoregiontojuncs):
+    for gene in genetotranscripttoexons:
         allgenejuncs = set()
-        genestart, geneend = None, None
-        for transcript in genetotranscripttoexons[(chrom, strand, gene)]:
-            exons = sorted(genetotranscripttoexons[(chrom, strand, gene)][transcript])
+        for transcript in genetotranscripttoexons[gene]:
+            exons = sorted(genetotranscripttoexons[gene][transcript])
             junctions = [(exons[i][1]+1, exons[i+1][0]-1) for i in range(len(exons)-1)]
             allgenejuncs.update(junctions)
-            if not genestart or exons[0][0] < genestart:
-                genestart = exons[0][0]
-            if not geneend or exons[-1][1] > geneend:
-                geneend = exons[-1][1]
-        # chrom, strand = genetochromstrand[gene]
-
-        if (chrom, strand) not in chromstrandtoregiontogenes:
-            chromstrandtoregiontogenes[(chrom, strand)] = {}
-            chromstrandtoregiontojuncs[(chrom, strand)] = {}
-        for region in range(getregion(genestart), getregion(geneend) + 1, REGIONSIZE):
-            if region not in chromstrandtoregiontogenes[(chrom, strand)]:
-                chromstrandtoregiontogenes[(chrom, strand)][region] = set()
-                chromstrandtoregiontojuncs[(chrom, strand)][region] = {}
-            chromstrandtoregiontogenes[(chrom, strand)][region].add((genestart, geneend, gene))
-
-
+        chrom, strand = genetochromstrand[gene]
         for j in allgenejuncs:
             chromstrandtoregiontojuncs[(chrom, strand)][getregion(j[0])][j] = gene
-    return chromstrandtoregiontojuncs, chromstrandtoregiontogenes
+    return chromstrandtoregiontojuncs
 
 def parse_gtf_to_juncs_regions(gtffile):
+    chromstrandtoregiontojuncs, chromstrandtoregiontogenes = {}, {}
     genetotranscripttoexons = {}
-    # genetochromstrand = {}
+    genetochromstrand = {}
     for line in open(gtffile):
         if line[0] != '#':
             etype = line.split('\t', 3)[2]
-            if etype == 'exon':
-                chrom, strand, start, end, gene = parse_gtf_line(line)  
-                
-                if gene not in genetotranscripttoexons:
-                    genetotranscripttoexons[(chrom, strand, gene)] = {}
-                    # genetochromstrand[gene] = (chrom, strand)#, getregion(start), getregion(end))
-
-                transcript = line.split('transcript_id "')[1].split('"')[0]
-                if transcript not in genetotranscripttoexons[(chrom, strand, gene)]: genetotranscripttoexons[(chrom, strand, gene)][transcript] = []
-                genetotranscripttoexons[(chrom, strand, gene)][transcript].append((start, end))
-    chromstrandtoregiontojuncs, chromstrandtoregiontogenes = consolidate_junctions(genetotranscripttoexons) #, genetochromstrand)
+            if etype == 'gene' or etype == 'exon':
+                chrom, strand, start, end, gene = parse_gtf_line(line)
+                if etype == 'gene':
+                    if (chrom, strand) not in chromstrandtoregiontogenes:
+                        chromstrandtoregiontogenes[(chrom, strand)] = {}
+                        chromstrandtoregiontojuncs[(chrom, strand)] = {}
+                    for region in range(getregion(start), getregion(end) + 1, REGIONSIZE):
+                        if region not in chromstrandtoregiontogenes[(chrom, strand)]:
+                            chromstrandtoregiontogenes[(chrom, strand)][region] = set()
+                            chromstrandtoregiontojuncs[(chrom, strand)][region] = {}
+                        chromstrandtoregiontogenes[(chrom, strand)][region].add((start, end, gene))
+                    if gene not in genetotranscripttoexons:
+                        genetotranscripttoexons[gene] = {}
+                        genetochromstrand[gene] = (chrom, strand)#, getregion(start), getregion(end))
+                elif etype == 'exon':
+                    transcript = line.split('transcript_id "')[1].split('"')[0]
+                    if transcript not in genetotranscripttoexons[gene]: genetotranscripttoexons[gene][transcript] = []
+                    genetotranscripttoexons[gene][transcript].append((start, end))
+    chromstrandtoregiontojuncs = consolidate_junctions(genetotranscripttoexons, genetochromstrand,
+                                                       chromstrandtoregiontojuncs)
     return chromstrandtoregiontogenes, chromstrandtoregiontojuncs
 
 
@@ -246,7 +238,7 @@ def generate_overlap_groups(eventposlist):
 def collapse_groups_write_out(outprefix, header, einfotoepos):
 
     with open(outprefix + '.drimformat.tsv', 'w') as out, \
-        open(outprefix + 'jb.dedup.psi.tsv', 'w') as outpsi, \
+        open(outprefix + '.jb.dedup.psi.tsv', 'w') as outpsi, \
         open(outprefix + '.dedup.bed', 'w') as outbed:
 
 
